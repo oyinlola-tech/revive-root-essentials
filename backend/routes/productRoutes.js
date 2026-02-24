@@ -11,7 +11,9 @@ const upload = require('../middlewares/uploadMiddleware');
 router.get('/', productController.getAllProducts);
 router.get('/featured', productController.getFeaturedProducts);
 router.get('/bestsellers', productController.getBestsellers);
+router.get('/slug/:slug', productController.getProductBySlug);
 router.get('/:id', productController.getProductById);
+router.get('/resolve/:identifier', productController.getProductByIdentifier);
 
 // Admin only
 router.post('/upload-image', protect, restrictTo('admin', 'superadmin'), upload.single('image'), productController.uploadProductImage);

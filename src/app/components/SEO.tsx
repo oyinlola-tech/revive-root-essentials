@@ -11,6 +11,7 @@ type SEOProps = {
   canonicalPath?: string;
   keywords?: string;
   jsonLd?: Record<string, any>;
+  noIndex?: boolean;
 };
 
 const upsertMeta = (selector: string, attribute: 'name' | 'property', value: string) => {
@@ -36,14 +37,22 @@ export function SEO({
   canonicalPath = '/',
   keywords,
   jsonLd,
+  noIndex = false,
 }: SEOProps) {
   useEffect(() => {
     const fullTitle = SITE_NAME ? `${title} | ${SITE_NAME}` : title;
     const origin = SITE_URL || window.location.origin;
     const canonical = canonicalPath.startsWith('http') ? canonicalPath : `${origin}${canonicalPath}`;
+    const resolvedImage = image
+      ? (image.startsWith('http') ? image : `${origin}${image.startsWith('/') ? image : `/${image}`}`)
+      : undefined;
+    const robots = noIndex ? 'noindex, nofollow, noarchive' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
     document.title = fullTitle;
     upsertMeta('description', 'name', description);
+    upsertMeta('robots', 'name', robots);
+    upsertMeta('googlebot', 'name', robots);
+    upsertMeta('author', 'name', SITE_NAME || 'Revive Roots Essentials');
     if (keywords) {
       upsertMeta('keywords', 'name', keywords);
     } else {
@@ -53,12 +62,15 @@ export function SEO({
     upsertMeta('og:description', 'property', description);
     upsertMeta('og:type', 'property', type);
     upsertMeta('og:url', 'property', canonical);
+    upsertMeta('og:site_name', 'property', SITE_NAME || 'Revive Roots Essentials');
+    upsertMeta('og:locale', 'property', 'en_US');
     upsertMeta('twitter:title', 'name', fullTitle);
     upsertMeta('twitter:description', 'name', description);
+    upsertMeta('twitter:url', 'name', canonical);
 
-    if (image) {
-      upsertMeta('og:image', 'property', image);
-      upsertMeta('twitter:image', 'name', image);
+    if (resolvedImage) {
+      upsertMeta('og:image', 'property', resolvedImage);
+      upsertMeta('twitter:image', 'name', resolvedImage);
       upsertMeta('twitter:card', 'name', 'summary_large_image');
     } else {
       removeMeta('og:image', 'property');
@@ -74,10 +86,12 @@ export function SEO({
     }
     canonicalLink.setAttribute('href', canonical);
 
-    let jsonLdTag: HTMLScriptElement | null = null;
-    if (jsonLd) {
+    let jsonLdTag = document.head.querySelector<HTMLScriptElement>('script[data-seo-jsonld="true"]');
+    if (jsonLdTag) jsonLdTag.remove();
+    if (jsonLd && !noIndex) {
       jsonLdTag = document.createElement('script');
       jsonLdTag.type = 'application/ld+json';
+      jsonLdTag.dataset.seoJsonld = 'true';
       jsonLdTag.text = JSON.stringify(jsonLd);
       document.head.appendChild(jsonLdTag);
     }
@@ -87,7 +101,7 @@ export function SEO({
         jsonLdTag.parentNode.removeChild(jsonLdTag);
       }
     };
-  }, [title, description, image, type, canonicalPath, keywords, jsonLd]);
+  }, [title, description, image, type, canonicalPath, keywords, jsonLd, noIndex]);
 
   return null;
 }

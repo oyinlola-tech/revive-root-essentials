@@ -13,18 +13,24 @@ import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
+  slug?: string;
   name: string;
   price: number;
   image: string;
   category: string;
+  isFeatured?: boolean;
+  stock?: number;
 }
 
 const mapProduct = (product: any): Product => ({
   id: product.id,
+  slug: product.slug,
   name: product.name,
   price: Number(product.price),
   image: product.imageUrl || product.image || '',
   category: product.Category?.name || product.category || 'Uncategorized',
+  isFeatured: Boolean(product.isFeatured),
+  stock: Number(product.stock || 0),
 });
 
 export default function Shop() {
@@ -35,7 +41,7 @@ export default function Shop() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'ranked');
 
   useEffect(() => {
     loadCategories();
@@ -62,7 +68,7 @@ export default function Shop() {
         category: searchParams.get('category') || undefined,
         minPrice: searchParams.get('minPrice') || undefined,
         maxPrice: searchParams.get('maxPrice') || undefined,
-        sort: sortBy,
+        sort: searchParams.get('sort') || sortBy,
       };
       
       const data = await productAPI.getAllProducts(params);
@@ -81,6 +87,7 @@ export default function Shop() {
     if (selectedCategories.length > 0) params.category = selectedCategories.join(',');
     if (priceRange.min) params.minPrice = priceRange.min;
     if (priceRange.max) params.maxPrice = priceRange.max;
+    if (sortBy) params.sort = sortBy;
     setSearchParams(params);
   };
 
@@ -99,6 +106,21 @@ export default function Shop() {
         description="Browse all Revive Roots Essentials products including cleansers, serums, moisturizers, and masks."
         canonicalPath="/shop"
         keywords="shop skincare, skincare products, natural face care, organic skincare"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'Shop Natural Skincare Products',
+          url: `${(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')}/shop`,
+          mainEntity: {
+            '@type': 'ItemList',
+            itemListElement: products.slice(0, 20).map((product, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              url: `${(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')}/product/${product.slug || product.id}`,
+              name: product.name,
+            })),
+          },
+        }}
       />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -138,6 +160,7 @@ export default function Shop() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="ranked">Ranked (Best Match)</SelectItem>
                       <SelectItem value="name">Name</SelectItem>
                       <SelectItem value="price-asc">Price: Low to High</SelectItem>
                       <SelectItem value="price-desc">Price: High to Low</SelectItem>
@@ -212,7 +235,7 @@ export default function Shop() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
-                  <Link key={product.id} to={`/product/${product.id}`}>
+                  <Link key={product.id} to={`/product/${product.slug || product.id}`}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
                       <div className="aspect-square bg-muted">
                         <ImageWithFallback
@@ -224,6 +247,9 @@ export default function Shop() {
                       <CardContent className="p-4">
                         <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
                         <h3 className="font-medium mb-2 line-clamp-2">{product.name}</h3>
+                        {product.isFeatured && (
+                          <p className="text-[11px] font-semibold tracking-wide text-[#7a5b48] mb-1">Featured</p>
+                        )}
                         <p className="font-semibold">${product.price}</p>
                       </CardContent>
                     </Card>

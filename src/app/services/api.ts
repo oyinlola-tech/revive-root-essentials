@@ -205,8 +205,11 @@ export const productAPI = {
     sort?: string;
   }) => apiCall(`/products${toQueryString(params)}`),
 
-  // GET /products/:id - Get product by ID
+  // GET /products/:id - Get product by ID (legacy)
   getProductById: (id: string) => apiCall(`/products/${id}`),
+
+  // GET /products/slug/:slug - Get product by SEO slug
+  getProductBySlug: (slug: string) => apiCall(`/products/slug/${slug}`),
 
   // POST /products - Create product (Admin/Superadmin only)
   createProduct: (data: any) =>

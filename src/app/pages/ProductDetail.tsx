@@ -13,8 +13,10 @@ import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
+  slug?: string;
   name: string;
   price: number;
+  currency?: string;
   description: string;
   image: string;
   category: string;
@@ -36,8 +38,10 @@ interface Review {
 
 const mapProduct = (product: any): Product => ({
   id: product.id,
+  slug: product.slug,
   name: product.name,
   price: Number(product.price),
+  currency: product.currency || 'NGN',
   description: product.description || '',
   image: product.imageUrl || product.image || '',
   category: product.Category?.name || product.category || 'Uncategorized',
@@ -58,7 +62,7 @@ const mapReview = (review: any): Review => ({
 });
 
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
@@ -69,32 +73,27 @@ export default function ProductDetail() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (slug) {
       loadProduct();
-      loadReviews();
     }
-  }, [id]);
+  }, [slug]);
 
   const loadProduct = async () => {
     try {
-      // API Call: GET /products/:id
-      const data = await productAPI.getProductById(id!);
-      setProduct(mapProduct(data));
+      // API Call: GET /products/slug/:slug
+      const data = await productAPI.getProductBySlug(slug!);
+      const mapped = mapProduct(data);
+      setProduct(mapped);
+
+      // API Call: GET /reviews/product/:productId
+      const reviewsData = await reviewAPI.getProductReviews(mapped.id);
+      setReviews((reviewsData || []).map(mapReview));
     } catch (error) {
       console.error('Failed to load product:', error);
       setProduct(null);
+      setReviews([]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadReviews = async () => {
-    try {
-      // API Call: GET /reviews/product/:productId
-      const data = await reviewAPI.getProductReviews(id!);
-      setReviews((data || []).map(mapReview));
-    } catch (error) {
-      console.error('Failed to load reviews:', error);
     }
   };
 
@@ -107,7 +106,7 @@ export default function ProductDetail() {
     setIsAddingToCart(true);
     try {
       // API Call: POST /cart
-      await addToCart(id!, quantity);
+      await addToCart(product.id, quantity);
       toast.success('Added to cart!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to add to cart');
@@ -146,7 +145,7 @@ export default function ProductDetail() {
         description={product.metaDescription || product.description || `${product.name} by Revive Roots Essentials`}
         image={product.image}
         type="product"
-        canonicalPath={`/product/${product.id}`}
+        canonicalPath={`/product/${product.slug || product.id}`}
         keywords={product.metaKeywords || `${product.name}, natural skincare, ${product.category}`}
         jsonLd={{
           '@context': 'https://schema.org',
@@ -154,11 +153,12 @@ export default function ProductDetail() {
           name: product.name,
           image: product.image ? [product.image] : undefined,
           description: product.metaDescription || product.description,
-          sku: product.id,
+          sku: product.slug || product.id,
+          url: `${(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')}/product/${product.slug || product.id}`,
           brand: { '@type': 'Brand', name: 'Revive Roots Essentials' },
           offers: {
             '@type': 'Offer',
-            priceCurrency: 'USD',
+            priceCurrency: product.currency || 'NGN',
             price: product.price,
             availability: 'https://schema.org/InStock',
           },

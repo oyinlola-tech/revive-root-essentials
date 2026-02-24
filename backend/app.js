@@ -24,6 +24,11 @@ const newsletterRoutes = require('./routes/newsletterRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
+app.disable('x-powered-by');
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
+
 const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -31,9 +36,10 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: true, message: 'Too many requests. Please try again shortly.' },
 });
 
 const authLimiter = rateLimit({
@@ -41,10 +47,17 @@ const authLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: true, message: 'Too many authentication attempts. Try again later.' },
 });
 
 // Middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: process.env.NODE_ENV === 'production'
+    ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+    : false,
+}));
 app.use(globalLimiter);
 app.use(cors({
   origin(origin, callback) {
@@ -56,13 +69,19 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
 }));
 app.use(compression());
 app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(morgan('dev'));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  },
+}));
 
 // Routes
 app.use('/api/auth', authLimiter);

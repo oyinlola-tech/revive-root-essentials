@@ -9,6 +9,7 @@ import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
+  slug?: string;
   name: string;
   price: number;
   image: string;
@@ -17,6 +18,7 @@ interface Product {
 
 const mapProduct = (product: any): Product => ({
   id: product.id,
+  slug: product.slug,
   name: product.name,
   price: Number(product.price),
   image: product.imageUrl || product.image || '',
@@ -51,6 +53,17 @@ export default function Home() {
         description="Shop clean, natural skincare products crafted for calm, healthy, radiant skin."
         canonicalPath="/"
         keywords="natural skincare, clean beauty, face serum, gentle cleanser, revive roots essentials"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'Revive Roots Essentials',
+          url: (import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, ''),
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: `${(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')}/shop?search={search_term_string}`,
+            'query-input': 'required name=search_term_string',
+          },
+        }}
       />
       {/* Hero Section */}
       <section className="relative h-[600px] bg-[#f5f1ed] flex items-center">
@@ -95,7 +108,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {featuredProducts.map((product) => (
-                <Link key={product.id} to={`/product/${product.id}`}>
+                <Link key={product.id} to={`/product/${product.slug || product.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="aspect-square bg-muted">
                       <ImageWithFallback

@@ -64,18 +64,19 @@ const getLatestProducts = async () => {
     where: {
       stock: { [Op.gt]: 0 },
     },
-    attributes: ['id', 'name', 'description', 'price', 'imageUrl'],
+    attributes: ['id', 'slug', 'name', 'description', 'price', 'imageUrl'],
     order: [['createdAt', 'DESC']],
     limit: 15,
   });
 
   return products.map((product) => ({
     id: product.id,
+    slug: product.slug,
     name: product.name,
     description: product.description,
     price: Number(product.price),
     imageUrl: product.imageUrl,
-    url: `${FRONTEND_URL}/product/${product.id}`,
+    url: `${FRONTEND_URL}/product/${product.slug || product.id}`,
   }));
 };
 
