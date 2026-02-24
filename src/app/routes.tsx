@@ -19,6 +19,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import OTPLogin from './pages/auth/OTPLogin';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import OAuthCallback from './pages/auth/OAuthCallback';
 import SuperadminDashboard from './pages/dashboard/SuperadminDashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import UserDashboard from './pages/dashboard/UserDashboard';
@@ -120,6 +121,10 @@ export const router = createBrowserRouter([
   {
     path: '/register/verify-otp',
     element: <VerifyOTP />,
+  },
+  {
+    path: '/auth/oauth-callback',
+    element: <OAuthCallback />,
   },
   {
     path: '/dashboard',

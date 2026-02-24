@@ -24,6 +24,10 @@ const protect = async (req, res, next) => {
       return next(new AppError('The user belonging to this token no longer exists.', 401));
     }
 
+    if (!decoded.sessionId || !user.currentSessionId || decoded.sessionId !== user.currentSessionId) {
+      return next(new AppError('Session invalidated. Please log in again.', 401));
+    }
+
     req.user = user;
     next();
   } catch (error) {

@@ -7,6 +7,14 @@ import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
+import { OAuthButton } from '../../components/auth/OAuthButton';
+import {
+  getGoogleIdToken,
+  getAppleIdToken,
+  isPopupBlockedError,
+  redirectToGoogleOAuth,
+  redirectToAppleOAuth,
+} from '../../services/socialAuth';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -19,7 +27,7 @@ export default function Register() {
     acceptedNewsletter: false,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,6 +67,73 @@ export default function Register() {
       navigate('/register/verify-otp');
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    if (!formData.acceptedTerms) {
+      toast.error('You must accept the Terms and Conditions to continue');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const idToken = await getGoogleIdToken();
+      await loginWithGoogle({
+        idToken,
+        acceptedTerms: formData.acceptedTerms,
+        acceptedMarketing: formData.acceptedMarketing,
+        acceptedNewsletter: formData.acceptedNewsletter,
+      });
+      toast.success('Account created with Google');
+      navigate('/');
+    } catch (error: any) {
+      if (isPopupBlockedError(error)) {
+        toast.message('Popup blocked. Redirecting to Google sign-up...');
+        redirectToGoogleOAuth({
+          acceptedTerms: formData.acceptedTerms,
+          acceptedMarketing: formData.acceptedMarketing,
+          acceptedNewsletter: formData.acceptedNewsletter,
+        });
+        return;
+      }
+      toast.error(error.message || 'Google sign-up failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignUp = async () => {
+    if (!formData.acceptedTerms) {
+      toast.error('You must accept the Terms and Conditions to continue');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { idToken, name } = await getAppleIdToken();
+      await loginWithApple({
+        idToken,
+        name,
+        acceptedTerms: formData.acceptedTerms,
+        acceptedMarketing: formData.acceptedMarketing,
+        acceptedNewsletter: formData.acceptedNewsletter,
+      });
+      toast.success('Account created with Apple');
+      navigate('/');
+    } catch (error: any) {
+      if (isPopupBlockedError(error)) {
+        toast.message('Popup blocked. Redirecting to Apple sign-up...');
+        await redirectToAppleOAuth({
+          acceptedTerms: formData.acceptedTerms,
+          acceptedMarketing: formData.acceptedMarketing,
+          acceptedNewsletter: formData.acceptedNewsletter,
+        });
+        return;
+      }
+      toast.error(error.message || 'Apple sign-up failed');
     } finally {
       setIsLoading(false);
     }
@@ -196,6 +271,11 @@ export default function Register() {
               Sign in
             </Link>
           </p>
+
+          <div className="mt-4 flex flex-col gap-3">
+            <OAuthButton provider="google" type="button" onClick={handleGoogleSignUp} disabled={isLoading} />
+            <OAuthButton provider="apple" type="button" onClick={handleAppleSignUp} disabled={isLoading} />
+          </div>
         </CardContent>
       </Card>
     </div>

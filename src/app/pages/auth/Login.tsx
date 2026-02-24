@@ -7,12 +7,20 @@ import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
+import { OAuthButton } from '../../components/auth/OAuthButton';
+import {
+  getGoogleIdToken,
+  getAppleIdToken,
+  isPopupBlockedError,
+  redirectToGoogleOAuth,
+  redirectToAppleOAuth,
+} from '../../services/socialAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,6 +34,44 @@ export default function Login() {
       navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const idToken = await getGoogleIdToken();
+      await loginWithGoogle({ idToken });
+      toast.success('Signed in with Google');
+      navigate('/');
+    } catch (error: any) {
+      if (isPopupBlockedError(error)) {
+        toast.message('Popup blocked. Redirecting to Google sign-in...');
+        redirectToGoogleOAuth();
+        return;
+      }
+      toast.error(error.message || 'Google login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { idToken, name } = await getAppleIdToken();
+      await loginWithApple({ idToken, name });
+      toast.success('Signed in with Apple');
+      navigate('/');
+    } catch (error: any) {
+      if (isPopupBlockedError(error)) {
+        toast.message('Popup blocked. Redirecting to Apple sign-in...');
+        await redirectToAppleOAuth();
+        return;
+      }
+      toast.error(error.message || 'Apple login failed');
     } finally {
       setIsLoading(false);
     }
@@ -92,6 +138,24 @@ export default function Login() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3">
+              <OAuthButton provider="google" type="button" onClick={handleGoogleLogin} disabled={isLoading} />
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary self-start"
+                onClick={() => redirectToGoogleOAuth()}
+                disabled={isLoading}
+              >
+                Use redirect sign-in with Google
+              </button>
+              <OAuthButton provider="apple" type="button" onClick={handleAppleLogin} disabled={isLoading} />
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary self-start"
+                onClick={() => void redirectToAppleOAuth()}
+                disabled={isLoading}
+              >
+                Use redirect sign-in with Apple
+              </button>
               <Button
                 type="button"
                 variant="outline"

@@ -19,6 +19,19 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (payload: {
+    idToken: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => Promise<void>;
+  loginWithApple: (payload: {
+    idToken: string;
+    name?: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => Promise<void>;
   register: (data: {
     email: string;
     password: string;
@@ -63,6 +76,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  const loginWithGoogle = async (payload: {
+    idToken: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => {
+    const response = await authAPI.oauthGoogle(payload);
+    localStorage.setItem('authToken', response.token);
+    setUser(response.user);
+  };
+
+  const loginWithApple = async (payload: {
+    idToken: string;
+    name?: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => {
+    const response = await authAPI.oauthApple(payload);
+    localStorage.setItem('authToken', response.token);
+    setUser(response.user);
+  };
+
   const register = async (data: {
     email: string;
     password: string;
@@ -102,6 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
+        loginWithApple,
         register,
         logout,
         updateUser,

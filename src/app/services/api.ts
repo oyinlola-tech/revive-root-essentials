@@ -98,6 +98,31 @@ export const authAPI = {
       body: JSON.stringify(data),
     }),
 
+  // POST /auth/oauth/google - Google OAuth login/register
+  oauthGoogle: (data: {
+    idToken: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) =>
+    apiCall('/auth/oauth/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // POST /auth/oauth/apple - Apple OAuth login/register
+  oauthApple: (data: {
+    idToken: string;
+    name?: string;
+    acceptedTerms?: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) =>
+    apiCall('/auth/oauth/apple', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // POST /auth/logout - Logout user
   logout: () =>
     apiCall('/auth/logout', {

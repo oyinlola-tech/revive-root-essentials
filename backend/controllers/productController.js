@@ -2,6 +2,7 @@ const { Product, Category } = require('../models');
 const { Op, fn } = require('sequelize');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const currencyService = require('../services/currencyService');
 
 const slugify = (value = '') =>
   value
@@ -32,7 +33,27 @@ const buildSeoPayload = (payload) => {
   };
 };
 
+const applyPricingContext = (product, pricingContext) => {
+  if (!product || !pricingContext.useUsd) {
+    if (product?.setDataValue) product.setDataValue('currency', 'NGN');
+    else if (product) product.currency = 'NGN';
+    return;
+  }
+
+  const basePrice = Number(product.price);
+  const usdPrice = currencyService.convertNgnToUsdWithBuffer(basePrice, pricingContext.rate);
+
+  if (product.setDataValue) {
+    product.setDataValue('price', usdPrice);
+    product.setDataValue('currency', 'USD');
+  } else {
+    product.price = usdPrice;
+    product.currency = 'USD';
+  }
+};
+
 exports.getAllProducts = catchAsync(async (req, res, next) => {
+  const pricingContext = await currencyService.getPricingContext(req);
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 12;
   const offset = (page - 1) * limit;
@@ -70,6 +91,7 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
     offset,
     order,
   });
+  products.forEach((product) => applyPricingContext(product, pricingContext));
 
   res.json({
     products,
@@ -80,12 +102,14 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 });
 
 exports.getProductById = catchAsync(async (req, res, next) => {
+  const pricingContext = await currencyService.getPricingContext(req);
   const product = await Product.findByPk(req.params.id, {
     include: [{ model: Category, attributes: ['id', 'name'] }],
   });
   if (!product) {
     return next(new AppError('Product not found', 404));
   }
+  applyPricingContext(product, pricingContext);
   res.json(product);
 });
 
@@ -117,20 +141,24 @@ exports.deleteProduct = catchAsync(async (req, res, next) => {
 });
 
 exports.getFeaturedProducts = catchAsync(async (req, res, next) => {
+  const pricingContext = await currencyService.getPricingContext(req);
   const products = await Product.findAll({
     where: { isFeatured: true },
     include: [{ model: Category, attributes: ['id', 'name'] }],
     limit: 10,
   });
+  products.forEach((product) => applyPricingContext(product, pricingContext));
   res.json(products);
 });
 
 exports.getBestsellers = catchAsync(async (req, res, next) => {
+  const pricingContext = await currencyService.getPricingContext(req);
   const products = await Product.findAll({
     include: [{ model: Category, attributes: ['id', 'name'] }],
     order: [[fn('RAND')]],
     limit: 10,
   });
+  products.forEach((product) => applyPricingContext(product, pricingContext));
   res.json(products);
 });
 

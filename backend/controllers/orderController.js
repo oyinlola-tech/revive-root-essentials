@@ -4,6 +4,7 @@ const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
 const paymentService = require('../services/paymentService');
 const notificationService = require('../services/notificationService');
+const currencyService = require('../services/currencyService');
 
 const mapOrderItems = (orderItems = []) => orderItems.map((item) => ({
   name: item.Product?.name || 'Product',
@@ -46,10 +47,11 @@ exports.getOrderById = catchAsync(async (req, res, next) => {
 exports.createOrder = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const { items, shippingAddress, paymentMethod } = req.body;
+  const pricingContext = await currencyService.getPricingContext(req);
 
   // Validate items (could be from cart or directly provided)
   // For simplicity, we assume items array is provided directly
-  const order = await orderService.createOrder(userId, { paymentMethod, shippingAddress }, items);
+  const order = await orderService.createOrder(userId, { paymentMethod, shippingAddress }, items, pricingContext);
   const fullOrder = await Order.findByPk(order.id, {
     include: [{ model: OrderItem, include: [Product] }],
   });
@@ -82,6 +84,9 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findByPk(order.userId);
+  if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
+    return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
+  }
   order.status = status;
   await order.save();
 
@@ -124,6 +129,11 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
   const succeeded = String(txn?.transaction_status || txn?.status || '').toLowerCase();
   if (!['success', 'successful', 'paid', 'completed'].includes(succeeded)) {
     return next(new AppError('Payment has not been confirmed yet', 400));
+  }
+
+  const paidAmount = Number(txn?.amount || txn?.transaction_amount || 0);
+  if (paidAmount && paidAmount < Number(order.totalAmount)) {
+    return next(new AppError('Paid amount is lower than order total. Verification rejected.', 400));
   }
 
   order.paymentStatus = 'paid';
