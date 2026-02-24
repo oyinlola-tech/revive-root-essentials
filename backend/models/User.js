@@ -33,6 +33,28 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM('user', 'admin', 'superadmin'),
       defaultValue: 'user',
     },
+    authProvider: {
+      type: DataTypes.ENUM('local', 'google', 'apple'),
+      allowNull: false,
+      defaultValue: 'local',
+      field: 'auth_provider',
+    },
+    oauthProvider: {
+      type: DataTypes.ENUM('google', 'apple'),
+      allowNull: true,
+      field: 'oauth_provider',
+    },
+    oauthSubject: {
+      type: DataTypes.STRING(191),
+      allowNull: true,
+      unique: true,
+      field: 'oauth_subject',
+    },
+    avatarUrl: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'avatar_url',
+    },
     isVerified: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
