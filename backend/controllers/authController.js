@@ -13,12 +13,18 @@ const normalizeIdentifier = (identifier, type) => {
   return String(identifier || '').trim();
 };
 
-const signToken = (id) => {
-  return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
+const signToken = (id, sessionId) => {
+  return jwt.sign({ id, sessionId }, jwtSecret, { expiresIn: jwtExpiresIn });
 };
 
-const signRefreshToken = (id) => {
-  return jwt.sign({ id }, jwtRefreshSecret, { expiresIn: jwtRefreshExpiresIn });
+const signRefreshToken = (id, sessionId) => {
+  return jwt.sign({ id, sessionId }, jwtRefreshSecret, { expiresIn: jwtRefreshExpiresIn });
+};
+
+const createSession = async (user) => {
+  user.currentSessionId = crypto.randomUUID();
+  await user.save();
+  return user.currentSessionId;
 };
 
 exports.register = catchAsync(async (req, res, next) => {
@@ -161,8 +167,9 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 
   await otpRecord.destroy(); // remove used OTP
 
-  const token = signToken(user.id);
-  const refreshToken = signRefreshToken(user.id);
+  const sessionId = await createSession(user);
+  const token = signToken(user.id, sessionId);
+  const refreshToken = signRefreshToken(user.id, sessionId);
 
   res.json({
     token,
@@ -193,8 +200,9 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Please verify your email before logging in', 403));
   }
 
-  const token = signToken(user.id);
-  const refreshToken = signRefreshToken(user.id);
+  const sessionId = await createSession(user);
+  const token = signToken(user.id, sessionId);
+  const refreshToken = signRefreshToken(user.id, sessionId);
 
   res.json({
     token,
@@ -215,7 +223,8 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
-  // In stateless JWT, just inform client to delete token
+  req.user.currentSessionId = null;
+  await req.user.save();
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -231,7 +240,12 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(refreshToken, jwtRefreshSecret);
-    const newToken = signToken(decoded.id);
+    const user = await User.findByPk(decoded.id);
+    if (!user || !user.currentSessionId || user.currentSessionId !== decoded.sessionId) {
+      return next(new AppError('Session expired. Please log in again.', 401));
+    }
+
+    const newToken = signToken(decoded.id, decoded.sessionId);
     res.json({ token: newToken });
   } catch (error) {
     return next(new AppError('Invalid or expired refresh token', 401));
