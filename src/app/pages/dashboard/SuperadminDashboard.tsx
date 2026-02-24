@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { userAPI, analyticsAPI } from '../../services/api';
+import { userAPI, analyticsAPI, orderAPI } from '../../services/api';
 import { UserRole } from '../../contexts/AuthContext';
 import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,6 +40,7 @@ export default function SuperadminDashboard() {
     totalRevenue: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -55,6 +56,9 @@ export default function SuperadminDashboard() {
       // API Call: GET /users
       const usersData = await userAPI.getAllUsers();
       setUsers((usersData.users || usersData || []).map(mapUser));
+
+      const ordersData = await orderAPI.getAllOrders({ limit: 50 });
+      setOrders(ordersData.orders || ordersData || []);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setStats({
@@ -64,6 +68,7 @@ export default function SuperadminDashboard() {
         totalRevenue: 0,
       });
       setUsers([]);
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +95,19 @@ export default function SuperadminDashboard() {
       loadDashboardData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete user');
+    }
+  };
+
+  const handleRefund = async (orderId: string) => {
+    const reason = prompt('Enter refund reason:');
+    if (!reason) return;
+
+    try {
+      await orderAPI.refundOrder(orderId, reason);
+      toast.success('Order refunded and email sent');
+      loadDashboardData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to refund order');
     }
   };
 
@@ -241,11 +259,36 @@ export default function SuperadminDashboard() {
                 <CardTitle>Order Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  Order management interface will be displayed here.
-                  <br />
-                  API Endpoints: GET /orders/all, PUT /orders/:id/status
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Payment</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                        <TableCell className="capitalize">{order.status}</TableCell>
+                        <TableCell className="capitalize">{order.paymentStatus}</TableCell>
+                        <TableCell>${Number(order.totalAmount).toFixed(2)}</TableCell>
+                        <TableCell>
+                          {order.paymentStatus === 'paid' ? (
+                            <Button variant="outline" size="sm" onClick={() => handleRefund(order.id)}>
+                              Refund
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No refund available</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

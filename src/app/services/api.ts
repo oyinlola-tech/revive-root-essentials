@@ -41,6 +41,24 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
+async function apiUpload(endpoint: string, formData: FormData) {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+    throw new Error(error.message || 'Upload failed');
+  }
+
+  return response.json();
+}
+
 // ============ AUTHENTICATION ENDPOINTS ============
 
 export const authAPI = {
@@ -51,8 +69,8 @@ export const authAPI = {
       body: JSON.stringify(data),
     }),
 
-  // POST /auth/send-otp - Send OTP to email
-  sendOTP: (data: { identifier: string }) =>
+  // POST /auth/send-otp - Send OTP to email/phone
+  sendOTP: (data: { identifier: string; type: 'email' | 'phone' }) =>
     apiCall('/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -125,6 +143,13 @@ export const userAPI = {
       method: 'PUT',
       body: JSON.stringify({ role }),
     }),
+
+  // POST /users/admin-account - Create admin account (Superadmin only)
+  createAdminAccount: (data: { name: string; email: string; password: string; phone?: string }) =>
+    apiCall('/users/admin-account', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // ============ PRODUCT ENDPOINTS ============
@@ -169,6 +194,13 @@ export const productAPI = {
 
   // GET /products/bestsellers - Get bestselling products
   getBestsellers: () => apiCall('/products/bestsellers'),
+
+  // POST /products/upload-image - Upload image (Admin/Superadmin only)
+  uploadImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return apiUpload('/products/upload-image', formData);
+  },
 };
 
 // ============ CATEGORY ENDPOINTS ============
@@ -260,6 +292,20 @@ export const orderAPI = {
     apiCall(`/orders/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
+    }),
+
+  // POST /orders/:id/verify-payment - Verify payment for order
+  verifyPayment: (id: string, reference?: string) =>
+    apiCall(`/orders/${id}/verify-payment`, {
+      method: 'POST',
+      body: JSON.stringify({ reference }),
+    }),
+
+  // POST /orders/:id/refund - Refund paid order (Admin/Superadmin only)
+  refundOrder: (id: string, reason?: string) =>
+    apiCall(`/orders/${id}/refund`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     }),
 
   // DELETE /orders/:id - Cancel order

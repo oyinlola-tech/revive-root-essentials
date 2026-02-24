@@ -4,7 +4,12 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
-const isConfigured = Boolean(accountSid && authToken && fromNumber);
+const isConfigured = Boolean(
+  accountSid &&
+  authToken &&
+  fromNumber &&
+  accountSid.startsWith('AC')
+);
 const client = isConfigured ? twilio(accountSid, authToken) : null;
 
 const sendSms = async (to, body) => {
@@ -19,4 +24,3 @@ const sendSms = async (to, body) => {
 };
 
 module.exports = { sendSms, isConfigured };
-

@@ -1,4 +1,4 @@
-const { Review, Product, User } = require('../models');
+const { Review, Product, User, Order, OrderItem } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -24,6 +24,20 @@ exports.createReview = catchAsync(async (req, res, next) => {
   const existing = await Review.findOne({ where: { userId, productId } });
   if (existing) {
     return next(new AppError('You have already reviewed this product', 400));
+  }
+
+  // Only users who purchased (paid order) can review
+  const purchasedItem = await OrderItem.findOne({
+    where: { productId },
+    include: [{
+      model: Order,
+      where: { userId, paymentStatus: 'paid' },
+      attributes: ['id', 'paymentStatus'],
+    }],
+  });
+
+  if (!purchasedItem) {
+    return next(new AppError('You can only review products you have purchased', 403));
   }
 
   const review = await Review.create({

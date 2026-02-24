@@ -41,6 +41,7 @@ export default function Register() {
       });
 
       localStorage.setItem('pendingVerification', formData.email);
+      localStorage.setItem('pendingVerificationType', 'email');
       toast.success(response?.message || 'Registration successful!');
       navigate('/register/verify-otp');
     } catch (error: any) {

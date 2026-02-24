@@ -8,12 +8,14 @@ import { Badge } from '../../components/ui/badge';
 import { orderAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Package, ShoppingBag, User } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Order {
   id: string;
   orderNumber: string;
   date: string;
   status: string;
+  paymentStatus: string;
   total: number;
   items: number;
 }
@@ -23,6 +25,7 @@ const mapOrder = (order: any): Order => ({
   orderNumber: order.orderNumber,
   date: order.createdAt,
   status: order.status,
+  paymentStatus: order.paymentStatus,
   total: Number(order.totalAmount),
   items: (order.OrderItems || []).length,
 });
@@ -46,6 +49,16 @@ export default function UserDashboard() {
       setOrders([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerifyPayment = async (orderId: string, orderNumber: string) => {
+    try {
+      await orderAPI.verifyPayment(orderId, orderNumber);
+      toast.success('Payment verified. Receipt sent to your email.');
+      await loadOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Payment is not yet confirmed.');
     }
   };
 
@@ -136,6 +149,7 @@ export default function UserDashboard() {
                         <TableHead>Items</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Payment</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -151,12 +165,24 @@ export default function UserDashboard() {
                               {order.status}
                             </Badge>
                           </TableCell>
+                          <TableCell className="capitalize">{order.paymentStatus}</TableCell>
                           <TableCell>
-                            <Link to={`/orders/${order.id}`}>
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            </Link>
+                            <div className="flex gap-2">
+                              <Link to={`/orders/${order.id}`}>
+                                <Button variant="outline" size="sm">
+                                  View Details
+                                </Button>
+                              </Link>
+                              {order.paymentStatus !== 'paid' && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleVerifyPayment(order.id, order.orderNumber)}
+                                >
+                                  Verify Payment
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

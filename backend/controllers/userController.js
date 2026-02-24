@@ -71,3 +71,32 @@ exports.updateUserRole = catchAsync(async (req, res, next) => {
   await user.save();
   res.json(user);
 });
+
+exports.createAdminAccount = catchAsync(async (req, res, next) => {
+  const { name, email, password, phone } = req.body;
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
+  if (existingUser) {
+    return next(new AppError('User already exists with this email', 400));
+  }
+
+  const adminUser = await User.create({
+    name,
+    email: normalizedEmail,
+    phone,
+    passwordHash: password,
+    role: 'admin',
+    isVerified: true,
+  });
+
+  res.status(201).json({
+    message: 'Admin account created successfully',
+    user: {
+      id: adminUser.id,
+      name: adminUser.name,
+      email: adminUser.email,
+      role: adminUser.role,
+    },
+  });
+});

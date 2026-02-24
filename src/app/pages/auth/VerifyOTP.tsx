@@ -16,6 +16,7 @@ export default function VerifyOTP() {
 
   // This would come from registration state/context in a real app
   const identifier = localStorage.getItem('pendingVerification') || '';
+  const pendingType = (localStorage.getItem('pendingVerificationType') as 'email' | 'phone') || 'email';
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +35,7 @@ export default function VerifyOTP() {
       updateUser(response.user);
       toast.success('Account verified successfully!');
       localStorage.removeItem('pendingVerification');
+      localStorage.removeItem('pendingVerificationType');
       navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Invalid OTP');
@@ -45,7 +47,7 @@ export default function VerifyOTP() {
   const handleResendOTP = async () => {
     setIsLoading(true);
     try {
-      await authAPI.sendOTP({ identifier });
+      await authAPI.sendOTP({ identifier, type: pendingType });
       toast.success('OTP resent successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to resend OTP');

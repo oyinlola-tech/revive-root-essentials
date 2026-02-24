@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function OTPLogin() {
   const [step, setStep] = useState<'identifier' | 'verify'>('identifier');
   const [identifier, setIdentifier] = useState('');
+  const [otpType, setOtpType] = useState<'email' | 'phone'>('email');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function OTPLogin() {
 
     try {
       // API Call: POST /auth/send-otp
-      await authAPI.sendOTP({ identifier });
+      await authAPI.sendOTP({ identifier, type: otpType });
       toast.success('OTP sent successfully!');
       setStep('verify');
     } catch (error: any) {
@@ -60,7 +61,7 @@ export default function OTPLogin() {
   const handleResendOTP = async () => {
     setIsLoading(true);
     try {
-      await authAPI.sendOTP({ identifier });
+      await authAPI.sendOTP({ identifier, type: otpType });
       toast.success('OTP resent successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to resend OTP');
@@ -76,7 +77,7 @@ export default function OTPLogin() {
           <CardTitle className="text-2xl text-center">Sign in with OTP</CardTitle>
           <CardDescription className="text-center">
             {step === 'identifier'
-              ? 'Enter your email'
+              ? 'Choose where to receive your OTP'
               : 'Enter the 6-digit code we sent you'}
           </CardDescription>
         </CardHeader>
@@ -84,15 +85,40 @@ export default function OTPLogin() {
           {step === 'identifier' ? (
             <form onSubmit={handleSendOTP} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="identifier">Email</Label>
+                <Label>OTP Delivery Method</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={otpType === 'email' ? 'default' : 'outline'}
+                    onClick={() => setOtpType('email')}
+                  >
+                    Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={otpType === 'phone' ? 'default' : 'outline'}
+                    onClick={() => setOtpType('phone')}
+                  >
+                    SMS
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="identifier">{otpType === 'email' ? 'Email' : 'Phone Number'}</Label>
                 <Input
                   id="identifier"
-                  type="email"
-                  placeholder="your@email.com"
+                  type={otpType === 'email' ? 'email' : 'tel'}
+                  placeholder={otpType === 'email' ? 'your@email.com' : '+15551234567'}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  {otpType === 'email'
+                    ? 'Use the email address linked to your account.'
+                    : 'Use international format, e.g. +15551234567.'}
+                </p>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -103,7 +129,7 @@ export default function OTPLogin() {
             <form onSubmit={handleVerifyOTP} className="space-y-6">
               <div className="space-y-2">
                 <Label className="text-center block">
-                  OTP sent to {identifier}
+                  OTP sent to {identifier} via {otpType === 'email' ? 'email' : 'SMS'}
                 </Label>
                 <div className="flex justify-center">
                   <InputOTP maxLength={6} value={otp} onChange={setOtp}>

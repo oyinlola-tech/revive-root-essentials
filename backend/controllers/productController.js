@@ -100,3 +100,18 @@ exports.getBestsellers = catchAsync(async (req, res, next) => {
   });
   res.json(products);
 });
+
+exports.uploadProductImage = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(new AppError('Image file is required', 400));
+  }
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+  res.status(201).json({
+    message: 'Image uploaded successfully',
+    imageUrl,
+    filename: req.file.filename,
+  });
+});
