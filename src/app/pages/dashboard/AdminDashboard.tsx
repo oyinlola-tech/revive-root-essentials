@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { analyticsAPI } from '../../services/api';
 import { Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
+import { ProductManagement } from '../../components/ProductManagement';
+import { SEO } from '../../components/SEO';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -23,15 +25,20 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setStats({
-        totalProducts: 56,
-        totalOrders: 892,
-        totalRevenue: 45678,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
       });
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="Admin Dashboard"
+        description="Manage products, orders, and analytics for Revive Roots Essentials."
+        canonicalPath="/dashboard"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl mb-2">Admin Dashboard</h1>
@@ -89,18 +96,7 @@ export default function AdminDashboard() {
           </TabsList>
 
           <TabsContent value="products">
-            <Card>
-              <CardHeader>
-                <CardTitle>Product Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  Product management interface for admins.
-                  <br />
-                  API Endpoints: GET/POST/PUT/DELETE /products
-                </div>
-              </CardContent>
-            </Card>
+            <ProductManagement />
           </TabsContent>
 
           <TabsContent value="orders">

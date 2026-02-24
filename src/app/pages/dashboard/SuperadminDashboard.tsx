@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -8,6 +10,8 @@ import { userAPI, analyticsAPI, orderAPI } from '../../services/api';
 import { UserRole } from '../../contexts/AuthContext';
 import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProductManagement } from '../../components/ProductManagement';
+import { SEO } from '../../components/SEO';
 
 interface DashboardStats {
   totalUsers: number;
@@ -42,6 +46,8 @@ export default function SuperadminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -111,8 +117,33 @@ export default function SuperadminDashboard() {
     }
   };
 
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingAdmin(true);
+    try {
+      await userAPI.createAdminAccount({
+        name: adminForm.name,
+        email: adminForm.email,
+        password: adminForm.password,
+        phone: adminForm.phone || undefined,
+      });
+      toast.success('Admin account created successfully');
+      setAdminForm({ name: '', email: '', password: '', phone: '' });
+      await loadDashboardData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create admin account');
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="Superadmin Dashboard"
+        description="Manage users, admin access, products, orders, and platform analytics."
+        canonicalPath="/dashboard"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl mb-2">Superadmin Dashboard</h1>
@@ -179,6 +210,7 @@ export default function SuperadminDashboard() {
         <Tabs defaultValue="users" className="space-y-6">
           <TabsList>
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="admin-access">Create Admin</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -238,19 +270,60 @@ export default function SuperadminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="products">
+          <TabsContent value="admin-access">
             <Card>
               <CardHeader>
-                <CardTitle>Product Management</CardTitle>
+                <CardTitle>Create Admin Login</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  Product management interface will be displayed here.
-                  <br />
-                  API Endpoints: GET/POST/PUT/DELETE /products
-                </div>
+                <form onSubmit={handleCreateAdmin} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={adminForm.name}
+                      onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={adminForm.email}
+                      onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Password</Label>
+                    <Input
+                      type="password"
+                      value={adminForm.password}
+                      onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone (optional)</Label>
+                    <Input
+                      type="tel"
+                      value={adminForm.phone}
+                      onChange={(e) => setAdminForm({ ...adminForm, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Button type="submit" disabled={creatingAdmin}>
+                      {creatingAdmin ? 'Creating...' : 'Create Admin Account'}
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <ProductManagement />
           </TabsContent>
 
           <TabsContent value="orders">

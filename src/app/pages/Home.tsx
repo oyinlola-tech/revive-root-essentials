@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { productAPI } from '../services/api';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { ArrowRight } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
@@ -44,7 +45,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen page-section">
+      <SEO
+        title="Natural Skincare Essentials"
+        description="Shop clean, natural skincare products crafted for calm, healthy, radiant skin."
+        canonicalPath="/"
+        keywords="natural skincare, clean beauty, face serum, gentle cleanser, revive roots essentials"
+      />
       {/* Hero Section */}
       <section className="relative h-[600px] bg-[#f5f1ed] flex items-center">
         <div className="container mx-auto px-4">

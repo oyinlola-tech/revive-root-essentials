@@ -5,6 +5,7 @@ import { Card } from '../components/ui/card';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
+import { SEO } from '../components/SEO';
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, total } = useCart();
@@ -30,7 +31,12 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white page-section">
+        <SEO
+          title="Your Cart"
+          description="Review products in your shopping cart and continue checkout securely."
+          canonicalPath="/cart"
+        />
         <div className="container mx-auto px-4 py-20">
           <div className="text-center">
             <ShoppingBag className="h-24 w-24 mx-auto text-muted-foreground mb-4" />
@@ -48,7 +54,12 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white page-section">
+      <SEO
+        title="Your Cart"
+        description="Review products in your shopping cart and continue checkout securely."
+        canonicalPath="/cart"
+      />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl mb-8">Shopping Cart</h1>
 

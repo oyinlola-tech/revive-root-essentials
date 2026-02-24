@@ -9,6 +9,9 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import OTPLogin from './pages/auth/OTPLogin';
@@ -149,12 +152,7 @@ export const router = createBrowserRouter([
     path: '/about',
     element: (
       <Layout>
-        <div className="min-h-screen bg-white">
-          <div className="container mx-auto px-4 py-20">
-            <h1 className="text-4xl mb-4">About Us</h1>
-            <p className="text-muted-foreground">Learn more about Revive Roots Essentials.</p>
-          </div>
-        </div>
+        <About />
       </Layout>
     ),
   },
@@ -162,12 +160,7 @@ export const router = createBrowserRouter([
     path: '/contact',
     element: (
       <Layout>
-        <div className="min-h-screen bg-white">
-          <div className="container mx-auto px-4 py-20">
-            <h1 className="text-4xl mb-4">Contact Us</h1>
-            <p className="text-muted-foreground">Get in touch with us.</p>
-          </div>
-        </div>
+        <Contact />
       </Layout>
     ),
   },
@@ -175,13 +168,7 @@ export const router = createBrowserRouter([
     path: '*',
     element: (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl mb-4">404 - Page Not Found</h1>
-            <p className="text-muted-foreground mb-8">The page you're looking for doesn't exist.</p>
-            <a href="/" className="text-primary hover:underline">Go back home</a>
-          </div>
-        </div>
+        <NotFound />
       </Layout>
     ),
   },

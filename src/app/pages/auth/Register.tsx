@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { toast } from 'sonner';
+import { SEO } from '../../components/SEO';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -53,6 +54,11 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f5f1ed] to-white px-4 py-8">
+      <SEO
+        title="Create Account"
+        description="Create your Revive Roots Essentials account for faster checkout and order tracking."
+        canonicalPath="/register"
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Create Account</CardTitle>

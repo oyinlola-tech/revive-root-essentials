@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { Star, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
@@ -17,6 +18,9 @@ interface Product {
   description: string;
   image: string;
   category: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
   ingredients?: string[];
   howToUse?: string;
 }
@@ -37,6 +41,9 @@ const mapProduct = (product: any): Product => ({
   description: product.description || '',
   image: product.imageUrl || product.image || '',
   category: product.Category?.name || product.category || 'Uncategorized',
+  metaTitle: product.metaTitle,
+  metaDescription: product.metaDescription,
+  metaKeywords: product.metaKeywords,
   ingredients: product.ingredients || [],
   howToUse: product.howToUse || '',
 });
@@ -133,7 +140,37 @@ export default function ProductDetail() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white page-section">
+      <SEO
+        title={product.metaTitle || product.name}
+        description={product.metaDescription || product.description || `${product.name} by Revive Roots Essentials`}
+        image={product.image}
+        type="product"
+        canonicalPath={`/product/${product.id}`}
+        keywords={product.metaKeywords || `${product.name}, natural skincare, ${product.category}`}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          image: product.image ? [product.image] : undefined,
+          description: product.metaDescription || product.description,
+          sku: product.id,
+          brand: { '@type': 'Brand', name: 'Revive Roots Essentials' },
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'USD',
+            price: product.price,
+            availability: 'https://schema.org/InStock',
+          },
+          aggregateRating: reviews.length
+            ? {
+                '@type': 'AggregateRating',
+                ratingValue: averageRating.toFixed(1),
+                reviewCount: reviews.length,
+              }
+            : undefined,
+        }}
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="grid md:grid-cols-2 gap-12">
           {/* Product Image */}

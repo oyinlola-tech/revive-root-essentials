@@ -9,6 +9,7 @@ import { orderAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Package, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { SEO } from '../../components/SEO';
 
 interface Order {
   id: string;
@@ -77,6 +78,11 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="My Account"
+        description="Track your skincare orders, account details, and purchase history."
+        canonicalPath="/profile"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl mb-2">My Account</h1>

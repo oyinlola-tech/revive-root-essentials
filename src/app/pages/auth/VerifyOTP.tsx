@@ -7,6 +7,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '../../components/ui/input
 import { authAPI } from '../../services/api';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
+import { SEO } from '../../components/SEO';
 
 export default function VerifyOTP() {
   const [otp, setOtp] = useState('');
@@ -58,6 +59,11 @@ export default function VerifyOTP() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f5f1ed] to-white px-4">
+      <SEO
+        title="Verify Account"
+        description="Verify your account with one-time password to complete signup."
+        canonicalPath="/register/verify-otp"
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Verify Your Account</CardTitle>

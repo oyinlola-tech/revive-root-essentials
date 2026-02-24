@@ -3,6 +3,35 @@ const { Op, fn } = require('sequelize');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 
+const slugify = (value = '') =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 180);
+
+const buildSeoPayload = (payload) => {
+  const name = payload.name || '';
+  const description = payload.description || '';
+  const slugBase = payload.slug || slugify(name);
+  const appName = process.env.APP_NAME || '';
+  const categoryKeyword = payload.categoryName || payload.category || '';
+  const derivedKeywords = [name, categoryKeyword, slugBase?.replace(/-/g, ' ')]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    ...payload,
+    slug: slugBase || undefined,
+    metaTitle: payload.metaTitle || (appName ? `${name} | ${appName}` : name),
+    metaDescription: payload.metaDescription || description.slice(0, 155),
+    metaKeywords: payload.metaKeywords || derivedKeywords || undefined,
+  };
+};
+
 exports.getAllProducts = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 12;
@@ -61,7 +90,11 @@ exports.getProductById = catchAsync(async (req, res, next) => {
 });
 
 exports.createProduct = catchAsync(async (req, res, next) => {
-  const product = await Product.create(req.body);
+  if (!req.body.imageUrl) {
+    return next(new AppError('Product image is required for SEO-ready product creation', 400));
+  }
+
+  const product = await Product.create(buildSeoPayload(req.body));
   res.status(201).json(product);
 });
 
@@ -70,7 +103,7 @@ exports.updateProduct = catchAsync(async (req, res, next) => {
   if (!product) {
     return next(new AppError('Product not found', 404));
   }
-  await product.update(req.body);
+  await product.update(buildSeoPayload({ ...product.toJSON(), ...req.body }));
   res.json(product);
 });
 

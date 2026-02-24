@@ -126,6 +126,10 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 8% 10%, rgba(244, 225, 206, 0.55), transparent 28%),
+      radial-gradient(circle at 92% 88%, rgba(223, 236, 219, 0.5), transparent 32%);
+    background-attachment: fixed;
   }
 
   /**
@@ -177,5 +181,24 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+@layer components {
+  .page-section {
+    @apply relative;
+  }
+
+  .page-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.9) 80%);
+    pointer-events: none;
+  }
+
+  .page-section > * {
+    position: relative;
+    z-index: 1;
   }
 }

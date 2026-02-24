@@ -19,6 +19,10 @@ type Product = {
   imageUrl?: string;
   description?: string;
   isFeatured?: boolean;
+  slug?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
 };
 
 type Category = { id: string; name: string };
@@ -31,6 +35,10 @@ const initialForm = {
   categoryId: '',
   imageUrl: '',
   isFeatured: false,
+  slug: '',
+  metaTitle: '',
+  metaDescription: '',
+  metaKeywords: '',
 };
 
 export function ProductManagement() {
@@ -76,6 +84,12 @@ export function ProductManagement() {
         imageUrl = uploaded.imageUrl;
       }
 
+      if (!editingId && !imageUrl) {
+        toast.error('Product image is required to create an SEO-ready product');
+        setIsLoading(false);
+        return;
+      }
+
       const payload = {
         name: form.name,
         description: form.description,
@@ -84,6 +98,10 @@ export function ProductManagement() {
         categoryId: form.categoryId || undefined,
         imageUrl: imageUrl || undefined,
         isFeatured: form.isFeatured,
+        slug: form.slug || undefined,
+        metaTitle: form.metaTitle || undefined,
+        metaDescription: form.metaDescription || undefined,
+        metaKeywords: form.metaKeywords || undefined,
       };
 
       if (editingId) {
@@ -113,6 +131,10 @@ export function ProductManagement() {
       categoryId: product.categoryId || product.Category?.id || '',
       imageUrl: product.imageUrl || '',
       isFeatured: Boolean(product.isFeatured),
+      slug: product.slug || '',
+      metaTitle: product.metaTitle || '',
+      metaDescription: product.metaDescription || '',
+      metaKeywords: product.metaKeywords || '',
     });
     setImageFile(null);
   };
@@ -168,13 +190,46 @@ export function ProductManagement() {
               <Label>Description</Label>
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
+            <div className="space-y-2">
+              <Label>SEO Slug</Label>
+              <Input
+                placeholder="gentle-ph-cleanser"
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Meta Title</Label>
+              <Input
+                placeholder="SEO title for search engines"
+                value={form.metaTitle}
+                onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Meta Description</Label>
+              <Textarea
+                placeholder="SEO description shown in search snippets"
+                value={form.metaDescription}
+                onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Meta Keywords</Label>
+              <Input
+                placeholder="natural skincare, clean beauty, face serum"
+                value={form.metaKeywords}
+                onChange={(e) => setForm({ ...form, metaKeywords: e.target.value })}
+              />
+            </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Image</Label>
-              <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+              <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} required={!editingId && !form.imageUrl} />
               <Input
                 placeholder="Or paste image URL"
                 value={form.imageUrl}
                 onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                required={!editingId && !imageFile}
               />
             </div>
             <div className="md:col-span-2 flex gap-2">
@@ -230,4 +285,3 @@ export function ProductManagement() {
     </div>
   );
 }
-

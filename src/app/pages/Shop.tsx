@@ -9,6 +9,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { productAPI, categoryAPI } from '../services/api';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Search } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 interface Product {
   id: string;
@@ -92,7 +93,13 @@ export default function Shop() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white page-section">
+      <SEO
+        title="Shop Natural Skincare Products"
+        description="Browse all Revive Roots Essentials products including cleansers, serums, moisturizers, and masks."
+        canonicalPath="/shop"
+        keywords="shop skincare, skincare products, natural face care, organic skincare"
+      />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">

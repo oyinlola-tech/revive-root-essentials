@@ -27,6 +27,26 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       field: 'image_url',
     },
+    slug: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
+    metaTitle: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'meta_title',
+    },
+    metaDescription: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'meta_description',
+    },
+    metaKeywords: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'meta_keywords',
+    },
     ingredients: {
       type: DataTypes.JSON, // store as JSON array
       allowNull: true,
