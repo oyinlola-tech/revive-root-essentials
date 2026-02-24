@@ -12,11 +12,11 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     code: {
-      type: DataTypes.STRING(6),
+      type: DataTypes.STRING(128),
       allowNull: false,
     },
     type: {
-      type: DataTypes.ENUM('email'),
+      type: DataTypes.ENUM('email', 'phone'),
       allowNull: false,
     },
     expiresAt: {

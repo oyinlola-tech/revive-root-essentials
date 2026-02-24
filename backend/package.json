@@ -1,0 +1,8 @@
+{
+  "name": "revive-roots-backend",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -4,7 +4,7 @@
  * Uses VITE_API_URL for backend URL, e.g. http://localhost:3000/api
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:3000/api';
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '/api';
 
 const toQueryString = (params?: Record<string, string | number | undefined>) => {
   if (!params) return '';

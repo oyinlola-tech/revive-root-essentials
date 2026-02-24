@@ -12,7 +12,16 @@ exports.loginValidation = [
 ];
 
 exports.sendOtpValidation = [
-  body('identifier').isEmail().withMessage('Please provide a valid email'),
+  body('type').isIn(['email', 'phone']).withMessage('Type must be email or phone'),
+  body('identifier').custom((value, { req }) => {
+    if (req.body.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || '')) {
+      throw new Error('Please provide a valid email');
+    }
+    if (req.body.type === 'phone' && !/^\+?[1-9]\d{7,14}$/.test(value || '')) {
+      throw new Error('Please provide a valid phone number in international format');
+    }
+    return true;
+  }),
 ];
 
 exports.verifyOtpValidation = [

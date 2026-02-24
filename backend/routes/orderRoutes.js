@@ -11,11 +11,14 @@ router.use(protect);
 // User routes
 router.get('/', orderController.getUserOrders);
 router.post('/', validate(createOrderValidation), orderController.createOrder);
-router.get('/:id', orderController.getOrderById);
-router.delete('/:id', orderController.cancelOrder); // user can cancel their own pending order
+router.post('/:id/verify-payment', orderController.verifyPayment);
 
 // Admin routes
 router.get('/all', restrictTo('admin', 'superadmin'), orderController.getAllOrders);
 router.put('/:id/status', restrictTo('admin', 'superadmin'), orderController.updateOrderStatus);
+router.post('/:id/refund', restrictTo('admin', 'superadmin'), orderController.refundOrder);
+
+router.get('/:id', orderController.getOrderById);
+router.delete('/:id', orderController.cancelOrder); // user can cancel their own pending order
 
 module.exports = router;

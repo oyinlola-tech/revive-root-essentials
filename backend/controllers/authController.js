@@ -5,8 +5,13 @@ const { User, Otp } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const generateOtp = require('../utils/generateOtp');
-const { sendEmail } = require('../utils/emailService');
+const notificationService = require('../services/notificationService');
 const { jwtSecret, jwtExpiresIn, jwtRefreshSecret, jwtRefreshExpiresIn } = require('../config/auth');
+
+const normalizeIdentifier = (identifier, type) => {
+  if (type === 'email') return String(identifier || '').toLowerCase().trim();
+  return String(identifier || '').trim();
+};
 
 const signToken = (id) => {
   return jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
@@ -46,11 +51,13 @@ exports.register = catchAsync(async (req, res, next) => {
     expiresAt,
   });
 
-  await sendEmail(
-    normalizedEmail,
-    'Verify your account',
-    `<p>Your OTP code is: <strong>${otpCode}</strong>. It expires in 5 minutes.</p>`
-  );
+  await notificationService.sendOtpNotification({
+    channel: 'email',
+    recipient: normalizedEmail,
+    name,
+    code: otpCode,
+    expiresMinutes: 5,
+  });
 
   res.status(201).json({
     message: 'Registration successful. OTP sent to your email.',
@@ -59,18 +66,19 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 exports.sendOtp = catchAsync(async (req, res, next) => {
-  const { identifier } = req.body;
-  const normalizedIdentifier = identifier.toLowerCase().trim();
+  const { identifier, type = 'email' } = req.body;
+  const normalizedIdentifier = normalizeIdentifier(identifier, type);
 
-  const user = await User.findOne({ where: { email: normalizedIdentifier } });
+  const userWhere = type === 'email' ? { email: normalizedIdentifier } : { phone: normalizedIdentifier };
+  const user = await User.findOne({ where: userWhere });
   if (!user) {
-    return next(new AppError('No account found with this email', 404));
+    return next(new AppError(`No account found with this ${type}`, 404));
   }
 
   const recentOtp = await Otp.findOne({
     where: {
       identifier: normalizedIdentifier,
-      type: 'email',
+      type,
       createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) },
     },
   });
@@ -83,36 +91,39 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
   const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  await Otp.destroy({ where: { identifier: normalizedIdentifier, type: 'email' } });
+  await Otp.destroy({ where: { identifier: normalizedIdentifier, type } });
   await Otp.create({
     identifier: normalizedIdentifier,
-    type: 'email',
+    type,
     code: otpHash,
     userId: user.id,
     expiresAt,
   });
 
-  await sendEmail(
-    normalizedIdentifier,
-    'Your OTP Code',
-    `<p>Your OTP code is: <strong>${otpCode}</strong>. It expires in 5 minutes.</p>`
-  );
+  await notificationService.sendOtpNotification({
+    channel: type,
+    recipient: normalizedIdentifier,
+    name: user.name,
+    code: otpCode,
+    expiresMinutes: 5,
+  });
 
   res.json({
-    message: 'OTP sent successfully to your email',
+    message: `OTP sent successfully to your ${type}`,
     expiresIn: 300,
   });
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
   const { identifier, otp } = req.body;
-  const normalizedIdentifier = identifier.toLowerCase().trim();
+  const normalizedIdentifier = String(identifier || '').trim();
   const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
 
   const otpRecord = await Otp.findOne({
     where: {
-      identifier: normalizedIdentifier,
-      type: 'email',
+      identifier: {
+        [Op.in]: [normalizedIdentifier, normalizedIdentifier.toLowerCase()],
+      },
       code: otpHash,
       expiresAt: { [Op.gt]: new Date() },
     },
@@ -122,11 +133,16 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
     return next(new AppError('Invalid or expired OTP', 400));
   }
 
-  const user = await User.findOne({ where: { email: normalizedIdentifier } });
+  const user = await User.findOne({
+    where: otpRecord.type === 'phone'
+      ? { phone: otpRecord.identifier }
+      : { email: otpRecord.identifier.toLowerCase() },
+  });
   if (!user) {
-    return next(new AppError('No account found with this email', 404));
+    return next(new AppError('No account found for this OTP request', 404));
   }
 
+  const wasUnverified = !user.isVerified;
   user.isVerified = true;
   await user.save();
 
@@ -145,6 +161,10 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
       role: user.role,
     },
   });
+
+  if (wasUnverified) {
+    notificationService.sendWelcomeEmail(user).catch(() => {});
+  }
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -173,6 +193,12 @@ exports.login = catchAsync(async (req, res, next) => {
       role: user.role,
     },
   });
+
+  notificationService.sendLoginAlert(user, {
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+    time: new Date().toLocaleString(),
+  }).catch(() => {});
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
@@ -220,11 +246,13 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     expiresAt,
   });
 
-  await sendEmail(
-    normalizedEmail,
-    'Password reset OTP',
-    `<p>Your password reset OTP is: <strong>${otpCode}</strong>. It expires in 5 minutes.</p>`
-  );
+  await notificationService.sendOtpNotification({
+    channel: 'email',
+    recipient: normalizedEmail,
+    name: user.name,
+    code: otpCode,
+    expiresMinutes: 5,
+  });
 
   res.json({ message: 'If an account exists, a reset OTP has been sent.' });
 });

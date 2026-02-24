@@ -1,8 +1,15 @@
-const { Order, OrderItem, Product } = require('../models');
+const { Order, OrderItem, Product, User } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
 const paymentService = require('../services/paymentService');
+const notificationService = require('../services/notificationService');
+
+const mapOrderItems = (orderItems = []) => orderItems.map((item) => ({
+  name: item.Product?.name || 'Product',
+  quantity: item.quantity,
+  price: item.price,
+}));
 
 exports.getUserOrders = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
@@ -43,6 +50,9 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   // Validate items (could be from cart or directly provided)
   // For simplicity, we assume items array is provided directly
   const order = await orderService.createOrder(userId, { paymentMethod, shippingAddress }, items);
+  const fullOrder = await Order.findByPk(order.id, {
+    include: [{ model: OrderItem, include: [Product] }],
+  });
 
   // Initiate payment with Squad
   const paymentResponse = await paymentService.initiateTransaction({
@@ -52,6 +62,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     reference: order.orderNumber,
     callbackUrl: `${process.env.FRONTEND_URL}/order-confirmation`,
   });
+
+  await notificationService.sendOrderPlacedEmail(req.user, fullOrder, mapOrderItems(fullOrder.OrderItems));
 
   res.status(201).json({
     orderId: order.id,
@@ -68,8 +80,14 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   if (!order) {
     return next(new AppError('Order not found', 404));
   }
+
+  const user = await User.findByPk(order.userId);
   order.status = status;
   await order.save();
+
+  if (user?.email) {
+    notificationService.sendOrderStatusEmail(user, order, req.body.note).catch(() => {});
+  }
   res.json(order);
 });
 
@@ -85,4 +103,66 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   order.status = 'cancelled';
   await order.save();
   res.json(order);
+});
+
+exports.verifyPayment = catchAsync(async (req, res, next) => {
+  const order = await Order.findByPk(req.params.id, {
+    include: [{ model: OrderItem, include: [Product] }],
+  });
+  if (!order) {
+    return next(new AppError('Order not found', 404));
+  }
+
+  if (req.user.role === 'user' && order.userId !== req.user.id) {
+    return next(new AppError('You do not have permission to verify this order', 403));
+  }
+
+  const reference = req.body.reference || order.orderNumber;
+  const paymentData = await paymentService.verifyTransaction(reference);
+  const txn = paymentData?.data || paymentData;
+
+  const succeeded = String(txn?.transaction_status || txn?.status || '').toLowerCase();
+  if (!['success', 'successful', 'paid', 'completed'].includes(succeeded)) {
+    return next(new AppError('Payment has not been confirmed yet', 400));
+  }
+
+  order.paymentStatus = 'paid';
+  order.status = order.status === 'pending' ? 'processing' : order.status;
+  order.squadTransactionRef = txn?.transaction_ref || txn?.reference || reference;
+  await order.save();
+
+  const user = await User.findByPk(order.userId);
+  if (user) {
+    await notificationService.sendReceiptEmail(user, order, mapOrderItems(order.OrderItems));
+  }
+
+  res.json({
+    message: 'Payment verified successfully',
+    order,
+  });
+});
+
+exports.refundOrder = catchAsync(async (req, res, next) => {
+  const order = await Order.findByPk(req.params.id);
+  if (!order) {
+    return next(new AppError('Order not found', 404));
+  }
+
+  if (order.paymentStatus !== 'paid') {
+    return next(new AppError('Only paid orders can be refunded', 400));
+  }
+
+  order.paymentStatus = 'refunded';
+  order.status = 'cancelled';
+  await order.save();
+
+  const user = await User.findByPk(order.userId);
+  if (user) {
+    await notificationService.sendRefundEmail(user, order, req.body.reason);
+  }
+
+  res.json({
+    message: 'Order refunded successfully',
+    order,
+  });
 });

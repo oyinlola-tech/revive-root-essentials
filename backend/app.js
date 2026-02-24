@@ -22,7 +22,7 @@ const newsletterRoutes = require('./routes/newsletterRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
 });
 
 // 404 handler
-app.use('*', (req, res, next) => {
+app.use((req, res, next) => {
   res.status(404).json({ error: true, message: 'Route not found' });
 });
 
