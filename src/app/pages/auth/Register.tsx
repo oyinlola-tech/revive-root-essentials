@@ -139,6 +139,32 @@ export default function Register() {
     }
   };
 
+  const handleGoogleRedirectSignUp = () => {
+    if (!formData.acceptedTerms) {
+      toast.error('You must accept the Terms and Conditions to continue');
+      return;
+    }
+
+    redirectToGoogleOAuth({
+      acceptedTerms: formData.acceptedTerms,
+      acceptedMarketing: formData.acceptedMarketing,
+      acceptedNewsletter: formData.acceptedNewsletter,
+    });
+  };
+
+  const handleAppleRedirectSignUp = async () => {
+    if (!formData.acceptedTerms) {
+      toast.error('You must accept the Terms and Conditions to continue');
+      return;
+    }
+
+    await redirectToAppleOAuth({
+      acceptedTerms: formData.acceptedTerms,
+      acceptedMarketing: formData.acceptedMarketing,
+      acceptedNewsletter: formData.acceptedNewsletter,
+    });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f5f1ed] to-white px-4 py-8">
       <SEO
@@ -274,7 +300,23 @@ export default function Register() {
 
           <div className="mt-4 flex flex-col gap-3">
             <OAuthButton provider="google" type="button" onClick={handleGoogleSignUp} disabled={isLoading} />
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary self-start"
+              onClick={handleGoogleRedirectSignUp}
+              disabled={isLoading}
+            >
+              Use redirect sign-in with Google
+            </button>
             <OAuthButton provider="apple" type="button" onClick={handleAppleSignUp} disabled={isLoading} />
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary self-start"
+              onClick={() => void handleAppleRedirectSignUp()}
+              disabled={isLoading}
+            >
+              Use redirect sign-in with Apple
+            </button>
           </div>
         </CardContent>
       </Card>
