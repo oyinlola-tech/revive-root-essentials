@@ -12,6 +12,9 @@ import Cart from './pages/Cart';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import TermsAndConditions from './pages/TermsAndConditions';
+import FAQ from './pages/FAQ';
+import NewsletterUnsubscribe from './pages/NewsletterUnsubscribe';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import OTPLogin from './pages/auth/OTPLogin';
@@ -161,6 +164,30 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <Contact />
+      </Layout>
+    ),
+  },
+  {
+    path: '/terms-and-conditions',
+    element: (
+      <Layout>
+        <TermsAndConditions />
+      </Layout>
+    ),
+  },
+  {
+    path: '/faq',
+    element: (
+      <Layout>
+        <FAQ />
+      </Layout>
+    ),
+  },
+  {
+    path: '/newsletter/unsubscribe',
+    element: (
+      <Layout>
+        <NewsletterUnsubscribe />
       </Layout>
     ),
   },

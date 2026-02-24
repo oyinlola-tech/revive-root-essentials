@@ -1,13 +1,15 @@
 const { Order, OrderItem, Product, CartItem, sequelize } = require('../models');
 const { generateOrderNumber } = require('../utils/orderUtils'); // we'll create below
 const AppError = require('../utils/AppError');
+const shippingService = require('./shippingService');
+const currencyService = require('./currencyService');
 
 class OrderService {
-  async createOrder(userId, orderData, items) {
+  async createOrder(userId, orderData, items, pricingContext = { useUsd: false }) {
     const transaction = await sequelize.transaction();
     try {
       // Calculate total and verify stock
-      let total = 0;
+      let subtotal = 0;
       const orderItems = [];
 
       for (const item of items) {
@@ -15,13 +17,17 @@ class OrderService {
         if (!product) throw new AppError(`Product ${item.productId} not found`, 404);
         if (product.stock < item.quantity) throw new AppError(`Insufficient stock for ${product.name}`, 400);
 
-        const itemTotal = product.price * item.quantity;
-        total += itemTotal;
+        const basePrice = Number(product.price);
+        const unitPrice = pricingContext.useUsd
+          ? currencyService.convertNgnToUsdWithBuffer(basePrice, pricingContext.rate)
+          : basePrice;
+        const itemTotal = unitPrice * item.quantity;
+        subtotal += itemTotal;
 
         orderItems.push({
           productId: product.id,
           quantity: item.quantity,
-          price: product.price,
+          price: unitPrice,
         });
 
         // Reduce stock
@@ -29,13 +35,17 @@ class OrderService {
         await product.save({ transaction });
       }
 
+      const shippingQuote = await shippingService.getShippingFee(orderData.shippingAddress, pricingContext);
+      const total = subtotal + Number(shippingQuote.fee || 0);
+
       // Create order
       const orderNumber = generateOrderNumber();
       const order = await Order.create({
         orderNumber,
         userId,
         totalAmount: total,
-        currency: 'USD', // or derive from items? For simplicity we assume USD
+        shippingFee: shippingQuote.fee,
+        currency: pricingContext.useUsd ? 'USD' : 'NGN',
         paymentMethod: orderData.paymentMethod,
         shippingAddress: orderData.shippingAddress,
         status: 'pending',

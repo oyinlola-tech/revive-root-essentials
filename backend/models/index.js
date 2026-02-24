@@ -9,6 +9,8 @@ const OrderItem = require('./OrderItem')(sequelize);
 const Review = require('./Review')(sequelize);
 const Contact = require('./Contact')(sequelize);
 const Newsletter = require('./Newsletter')(sequelize);
+const ShippingFee = require('./ShippingFee')(sequelize);
+const NewsletterCampaignLog = require('./NewsletterCampaignLog')(sequelize);
 
 // Associations
 // User ↔ Otp
@@ -59,4 +61,6 @@ module.exports = {
   Review,
   Contact,
   Newsletter,
+  NewsletterCampaignLog,
+  ShippingFee,
 };

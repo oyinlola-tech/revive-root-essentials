@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
-import { orderAPI } from '../../services/api';
+import { orderAPI, userAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Package, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -32,7 +32,7 @@ const mapOrder = (order: any): Order => ({
 });
 
 export default function UserDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,6 +73,19 @@ export default function UserDashboard() {
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm('This will permanently delete your account. Do you want to continue?');
+    if (!confirmed) return;
+
+    try {
+      await userAPI.deleteMyAccount();
+      await logout();
+      toast.success('Your account has been deleted successfully.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete account.');
     }
   };
 
@@ -223,6 +236,9 @@ export default function UserDashboard() {
                     <p className="text-muted-foreground capitalize">{user?.role}</p>
                   </div>
                   <Button variant="outline">Edit Profile</Button>
+                  <Button variant="destructive" onClick={handleDeleteAccount}>
+                    Delete Account
+                  </Button>
                 </div>
               </CardContent>
             </Card>

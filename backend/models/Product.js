@@ -21,7 +21,7 @@ module.exports = (sequelize) => {
     },
     currency: {
       type: DataTypes.STRING(3),
-      defaultValue: 'USD',
+      defaultValue: 'NGN',
     },
     imageUrl: {
       type: DataTypes.TEXT,

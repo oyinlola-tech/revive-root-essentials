@@ -27,9 +27,15 @@ module.exports = (sequelize) => {
       allowNull: false,
       field: 'total_amount',
     },
+    shippingFee: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'shipping_fee',
+    },
     currency: {
       type: DataTypes.STRING(3),
-      defaultValue: 'USD',
+      defaultValue: 'NGN',
     },
     status: {
       type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),

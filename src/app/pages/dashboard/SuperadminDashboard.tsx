@@ -6,7 +6,7 @@ import { Label } from '../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { userAPI, analyticsAPI, orderAPI } from '../../services/api';
+import { userAPI, analyticsAPI, orderAPI, newsletterAPI } from '../../services/api';
 import { UserRole } from '../../contexts/AuthContext';
 import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,6 +48,7 @@ export default function SuperadminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -137,6 +138,22 @@ export default function SuperadminDashboard() {
     }
   };
 
+  const handleSendNewsletterNow = async () => {
+    setSendingNewsletter(true);
+    try {
+      const result = await newsletterAPI.sendNow();
+      if (result?.sent) {
+        toast.success(`Newsletter sent to ${result.recipientCount} recipients`);
+      } else {
+        toast.error(result?.reason || 'Newsletter was not sent');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send newsletter');
+    } finally {
+      setSendingNewsletter(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SEO
@@ -213,6 +230,7 @@ export default function SuperadminDashboard() {
             <TabsTrigger value="admin-access">Create Admin</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -362,6 +380,23 @@ export default function SuperadminDashboard() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="newsletter">
+            <Card>
+              <CardHeader>
+                <CardTitle>Email Marketing Newsletter</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Trigger the luxury weekly newsletter campaign manually before the scheduled weekly send.
+                  The campaign includes the latest 15 products with image, price in NGN, product links, and unsubscribe option.
+                </p>
+                <Button onClick={handleSendNewsletterNow} disabled={sendingNewsletter}>
+                  {sendingNewsletter ? 'Sending campaign...' : 'Send Newsletter Now'}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

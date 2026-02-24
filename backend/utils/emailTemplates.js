@@ -171,3 +171,80 @@ exports.refundTemplate = ({ name, orderNumber, amount, reason, processedAt }) =>
   ctaLabel: 'Contact Support',
   ctaUrl: `${process.env.FRONTEND_URL || ''}/contact`,
 });
+
+const formatNaira = (amount) => `₦${Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeUrl }) => {
+  const intro = recipientName ? `Dear ${recipientName},` : 'Dear Valued Client,';
+  const rows = products.map((product) => `
+    <tr>
+      <td style="padding:20px;border-bottom:1px solid #f4f1ed;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+          <tr>
+            <td width="120" valign="top" style="padding-right:16px;">
+              <img src="${product.imageUrl || ''}" alt="${product.name}" width="120" style="display:block;width:120px;height:120px;object-fit:cover;border:0;" />
+            </td>
+            <td valign="top">
+              <h3 style="margin:0 0 8px 0;color:#030213;font-size:18px;line-height:1.4;">${product.name}</h3>
+              <p style="margin:0 0 10px 0;color:#030213;font-size:15px;line-height:1.6;">
+                ${product.description || 'Premium skincare crafted for visible results and lasting confidence.'}
+              </p>
+              <p style="margin:0 0 14px 0;color:#030213;font-size:16px;font-weight:700;">${formatNaira(product.price)}</p>
+              <a href="${product.url}" style="display:inline-block;padding:10px 18px;background:#030213;color:#f4f1ed;text-decoration:none;font-weight:700;font-size:13px;">View Product</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${APP_NAME} Weekly Edit</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f1ed;font-family:Georgia,'Times New Roman',serif;color:#030213;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f4f1ed;padding:28px 0;">
+      <tr>
+        <td align="center">
+          <table width="680" cellpadding="0" cellspacing="0" role="presentation" style="max-width:680px;background:#f4f1ed;border:1px solid #f4f1ed;">
+            <tr>
+              <td style="background:#030213;padding:28px 34px;text-align:center;">
+                <p style="margin:0;color:#f4f1ed;font-size:12px;letter-spacing:3px;text-transform:uppercase;">Weekly Luxury Edit</p>
+                <h1 style="margin:10px 0 0 0;color:#f4f1ed;font-size:30px;line-height:1.2;">Revive Roots Essentials</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 34px 20px 34px;">
+                <p style="margin:0 0 14px 0;font-size:18px;line-height:1.7;">${intro}</p>
+                <p style="margin:0 0 14px 0;font-size:16px;line-height:1.8;">
+                  Welcome to this week's private skincare selection. We have curated the 15 latest releases to help you build a high-performance routine with confidence.
+                </p>
+                <p style="margin:0;font-size:16px;line-height:1.8;">
+                  Every product below is selected for quality, consistency, and premium care standards. Prices are listed in Nigerian Naira.
+                </p>
+              </td>
+            </tr>
+            ${rows}
+            <tr>
+              <td style="padding:28px 34px;background:#f4f1ed;">
+                <p style="margin:0 0 12px 0;font-size:14px;line-height:1.8;color:#030213;">
+                  Need guidance for your skin goals? Our team can help you choose the right combination of cleanser, treatment, and moisturizer for better long-term outcomes.
+                </p>
+                <p style="margin:0;font-size:12px;line-height:1.8;color:#030213;">
+                  You are receiving this because you opted in to marketing/newsletter emails.
+                  <a href="${unsubscribeUrl}" style="color:#030213;text-decoration:underline;">Unsubscribe</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `;
+};

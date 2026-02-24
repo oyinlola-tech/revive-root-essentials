@@ -26,6 +26,12 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserById = catchAsync(async (req, res, next) => {
+  const isOwner = req.user?.id === req.params.id;
+  const isPrivileged = ['admin', 'superadmin'].includes(req.user?.role);
+  if (!isOwner && !isPrivileged) {
+    return next(new AppError('You can only access your own account', 403));
+  }
+
   const user = await User.findByPk(req.params.id);
   if (!user) {
     return next(new AppError('User not found', 404));
@@ -34,14 +40,33 @@ exports.getUserById = catchAsync(async (req, res, next) => {
 });
 
 exports.updateUser = catchAsync(async (req, res, next) => {
+  const isOwner = req.user?.id === req.params.id;
+  const isPrivileged = ['admin', 'superadmin'].includes(req.user?.role);
+  if (!isOwner && !isPrivileged) {
+    return next(new AppError('You can only update your own account', 403));
+  }
+
   const user = await User.findByPk(req.params.id);
   if (!user) {
     return next(new AppError('User not found', 404));
   }
 
-  const { name, phone } = req.body;
+  const {
+    name,
+    phone,
+    acceptedMarketing,
+    acceptedNewsletter,
+  } = req.body;
+
   if (name) user.name = name;
   if (phone) user.phone = phone;
+  if (typeof acceptedMarketing === 'boolean') {
+    user.acceptedMarketing = acceptedMarketing;
+  }
+  if (typeof acceptedNewsletter === 'boolean') {
+    user.acceptedNewsletter = acceptedNewsletter;
+    user.newsletterUnsubscribedAt = acceptedNewsletter ? null : new Date();
+  }
 
   await user.save();
   res.json(user);
@@ -88,6 +113,11 @@ exports.createAdminAccount = catchAsync(async (req, res, next) => {
     passwordHash: password,
     role: 'admin',
     isVerified: true,
+    acceptedTerms: true,
+    termsAcceptedAt: new Date(),
+    acceptedMarketing: false,
+    acceptedNewsletter: false,
+    newsletterUnsubscribedAt: new Date(),
   });
 
   res.status(201).json({
@@ -99,4 +129,14 @@ exports.createAdminAccount = catchAsync(async (req, res, next) => {
       role: adminUser.role,
     },
   });
+});
+
+exports.deleteMyAccount = catchAsync(async (req, res, next) => {
+  const user = await User.findByPk(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  await user.destroy();
+  res.status(204).json(null);
 });

@@ -14,13 +14,17 @@ export default function Register() {
     email: '',
     password: '',
     confirmPassword: '',
+    acceptedTerms: false,
+    acceptedMarketing: false,
+    acceptedNewsletter: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, type, value, checked } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,6 +32,11 @@ export default function Register() {
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    if (!formData.acceptedTerms) {
+      toast.error('You must accept the Terms and Conditions to continue');
       return;
     }
 
@@ -39,6 +48,9 @@ export default function Register() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        acceptedTerms: formData.acceptedTerms,
+        acceptedMarketing: formData.acceptedMarketing,
+        acceptedNewsletter: formData.acceptedNewsletter,
       });
 
       localStorage.setItem('pendingVerification', formData.email);
@@ -120,6 +132,57 @@ export default function Register() {
                 required
                 minLength={8}
               />
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="acceptedTerms"
+                  checked={formData.acceptedTerms}
+                  onChange={handleChange}
+                  required
+                  className="mt-1"
+                />
+                <span>
+                  I have read and accept the{' '}
+                  <Link to="/terms-and-conditions" className="underline underline-offset-4 hover:text-primary" target="_blank" rel="noreferrer">
+                    Terms and Conditions
+                  </Link>{' '}
+                  and understand how my data is processed.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  name="acceptedMarketing"
+                  checked={formData.acceptedMarketing}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
+                <span>I want to receive marketing offers and promotional updates by email.</span>
+              </label>
+
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <input
+                  type="checkbox"
+                  name="acceptedNewsletter"
+                  checked={formData.acceptedNewsletter}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
+                <span>
+                  I want to receive the weekly newsletter featuring newly launched products. You can unsubscribe any time.
+                </span>
+              </label>
+
+              <p className="text-xs text-muted-foreground">
+                Need more details before consenting? Read the{' '}
+                <Link to="/faq" className="underline underline-offset-4 hover:text-primary" target="_blank" rel="noreferrer">
+                  FAQ
+                </Link>.
+              </p>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>

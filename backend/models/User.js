@@ -38,6 +38,39 @@ module.exports = (sequelize) => {
       defaultValue: false,
       field: 'is_verified',
     },
+    acceptedTerms: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'accepted_terms',
+    },
+    termsAcceptedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'terms_accepted_at',
+    },
+    acceptedMarketing: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'accepted_marketing',
+    },
+    acceptedNewsletter: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'accepted_newsletter',
+    },
+    newsletterUnsubscribedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'newsletter_unsubscribed_at',
+    },
+    currentSessionId: {
+      type: DataTypes.STRING(128),
+      allowNull: true,
+      field: 'current_session_id',
+    },
   }, {
     tableName: 'users',
     underscored: true,

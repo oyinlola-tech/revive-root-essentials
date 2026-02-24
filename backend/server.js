@@ -1,5 +1,6 @@
 const app = require('./app');
 const { sequelize } = require('./models');
+const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 
 const PORT = process.env.PORT || 3000;
 const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS'];
@@ -19,6 +20,7 @@ sequelize
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      startNewsletterScheduler();
     });
   })
   .catch((err) => {

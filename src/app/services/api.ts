@@ -63,7 +63,15 @@ async function apiUpload(endpoint: string, formData: FormData) {
 
 export const authAPI = {
   // POST /auth/register - Register new user
-  register: (data: { email: string; password: string; name: string; phone?: string }) =>
+  register: (data: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    acceptedTerms: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) =>
     apiCall('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -134,6 +142,12 @@ export const userAPI = {
   // DELETE /users/:id - Delete user (Superadmin only)
   deleteUser: (id: string) =>
     apiCall(`/users/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // DELETE /users/me/account - Delete current authenticated account
+  deleteMyAccount: () =>
+    apiCall('/users/me/account', {
       method: 'DELETE',
     }),
 
@@ -386,4 +400,13 @@ export const newsletterAPI = {
 
   // GET /newsletter/subscribers - Get all subscribers (Admin/Superadmin only)
   getSubscribers: () => apiCall('/newsletter/subscribers'),
+
+  // GET /newsletter/unsubscribe?token=... - Unsubscribe via email token
+  unsubscribe: (token: string) => apiCall(`/newsletter/unsubscribe?token=${encodeURIComponent(token)}`),
+
+  // POST /newsletter/send-now - Trigger newsletter campaign (Superadmin only)
+  sendNow: () =>
+    apiCall('/newsletter/send-now', {
+      method: 'POST',
+    }),
 };

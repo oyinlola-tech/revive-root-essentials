@@ -9,6 +9,8 @@ export interface User {
   name: string;
   phone?: string;
   role: UserRole;
+  acceptedMarketing?: boolean;
+  acceptedNewsletter?: boolean;
   avatar?: string;
 }
 
@@ -17,7 +19,15 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; name: string; phone?: string }) => Promise<any>;
+  register: (data: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    acceptedTerms: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => Promise<any>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
 }
@@ -53,7 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
-  const register = async (data: { email: string; password: string; name: string; phone?: string }) => {
+  const register = async (data: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    acceptedTerms: boolean;
+    acceptedMarketing?: boolean;
+    acceptedNewsletter?: boolean;
+  }) => {
     const response = await authAPI.register(data);
     if (response?.token && response?.user) {
       localStorage.setItem('authToken', response.token);

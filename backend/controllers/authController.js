@@ -22,7 +22,15 @@ const signRefreshToken = (id) => {
 };
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { name, email, phone, password } = req.body;
+  const {
+    name,
+    email,
+    phone,
+    password,
+    acceptedTerms,
+    acceptedMarketing = false,
+    acceptedNewsletter = false,
+  } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
 
   const existingUser = await User.findOne({ where: { email: normalizedEmail } });
@@ -36,6 +44,11 @@ exports.register = catchAsync(async (req, res, next) => {
     phone,
     passwordHash: password,
     isVerified: false,
+    acceptedTerms: Boolean(acceptedTerms),
+    termsAcceptedAt: acceptedTerms ? new Date() : null,
+    acceptedMarketing: Boolean(acceptedMarketing),
+    acceptedNewsletter: Boolean(acceptedNewsletter),
+    newsletterUnsubscribedAt: acceptedNewsletter ? null : new Date(),
   });
 
   const otpCode = generateOtp();

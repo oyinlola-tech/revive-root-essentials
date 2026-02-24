@@ -4,6 +4,17 @@ exports.registerValidation = [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('acceptedTerms')
+    .custom((value) => value === true || value === 'true')
+    .withMessage('You must accept the Terms and Conditions to create an account'),
+  body('acceptedMarketing')
+    .optional()
+    .isBoolean()
+    .withMessage('acceptedMarketing must be true or false'),
+  body('acceptedNewsletter')
+    .optional()
+    .isBoolean()
+    .withMessage('acceptedNewsletter must be true or false'),
 ];
 
 exports.loginValidation = [

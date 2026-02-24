@@ -11,6 +11,7 @@ router.get('/', protect, restrictTo('admin', 'superadmin'), userController.getAl
 router.post('/admin-account', protect, restrictTo('superadmin'), validate(createAdminValidation), userController.createAdminAccount);
 router.put('/:id/role', protect, restrictTo('superadmin'), userController.updateUserRole);
 router.delete('/:id', protect, restrictTo('superadmin'), userController.deleteUser);
+router.delete('/me/account', protect, userController.deleteMyAccount);
 
 // Authenticated users can access their own data
 router.get('/:id', protect, userController.getUserById);
