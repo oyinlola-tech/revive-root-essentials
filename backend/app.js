@@ -29,10 +29,13 @@ if (process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', 1);
 }
 
-const allowedOrigins = (process.env.CORS_ORIGIN || '')
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowedOrigins = configuredOrigins.length > 0
+  ? configuredOrigins
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -71,7 +74,7 @@ app.use(compression());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
   setHeaders: (res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -92,6 +95,12 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/shipping-fees', require('./routes/shippingRoutes'));
+app.use((error, req, res, next) => {
+  if (error && error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: true, message: 'Invalid JSON payload' });
+  }
+  return next(error);
+});
 
 // Health check
 app.get('/health', (req, res) => {

@@ -1,12 +1,32 @@
 const { body } = require('express-validator');
 
-exports.createProductValidation = [
-  body('name').notEmpty().withMessage('Product name is required'),
-  body('price').isNumeric().withMessage('Price must be a number').custom(val => val > 0),
-  body('imageUrl').notEmpty().withMessage('Product image is required for SEO optimization'),
-  body('categoryId').optional().isUUID().withMessage('Invalid category ID'),
-  body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
-  body('metaTitle').optional().isLength({ max: 255 }).withMessage('Meta title must be less than 255 characters'),
-  body('metaDescription').optional().isLength({ max: 500 }).withMessage('Meta description is too long'),
-  body('metaKeywords').optional().isLength({ max: 255 }).withMessage('Meta keywords must be less than 255 characters'),
+const baseProductValidation = [
+  body('name').optional().trim().notEmpty().withMessage('Product name is required'),
+  body('description').optional().trim().isLength({ max: 5000 }).withMessage('Description is too long'),
+  body('price')
+    .optional()
+    .isFloat({ gt: 0 })
+    .withMessage('Price must be greater than 0'),
+  body('imageUrl').optional().trim().isURL({ protocols: ['http', 'https'], require_protocol: true }).withMessage('Product image must be a valid URL'),
+  body('categoryId').optional({ nullable: true, checkFalsy: true }).isUUID().withMessage('Invalid category ID'),
+  body('stock').optional().isInt({ min: 0, max: 100000 }).withMessage('Stock must be a non-negative integer'),
+  body('metaTitle').optional().trim().isLength({ max: 255 }).withMessage('Meta title must be less than 255 characters'),
+  body('metaDescription').optional().trim().isLength({ max: 500 }).withMessage('Meta description is too long'),
+  body('metaKeywords').optional().trim().isLength({ max: 255 }).withMessage('Meta keywords must be less than 255 characters'),
+  body('isFeatured').optional().isBoolean().withMessage('isFeatured must be true or false'),
 ];
+
+exports.createProductValidation = [
+  body('name').trim().notEmpty().withMessage('Product name is required'),
+  body('price').isFloat({ gt: 0 }).withMessage('Price must be greater than 0'),
+  body('imageUrl')
+    .trim()
+    .notEmpty()
+    .withMessage('Product image is required for SEO optimization')
+    .bail()
+    .isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Product image must be a valid URL'),
+  ...baseProductValidation,
+];
+
+exports.updateProductValidation = baseProductValidation;

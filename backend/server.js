@@ -3,8 +3,9 @@ const { sequelize } = require('./models');
 const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS'];
+let server;
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 if (missingEnvVars.length > 0) {
@@ -21,11 +22,26 @@ sequelize
   })
   .then(() => seedSuperadmin())
   .then(() => {
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       startNewsletterScheduler();
     });
   })
   .catch((err) => {
     console.error('Unable to connect to the database:', err);
+    process.exit(1);
   });
+
+process.on('unhandledRejection', (error) => {
+  console.error('UNHANDLED_REJECTION', error);
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT_EXCEPTION', error);
+  process.exit(1);
+});

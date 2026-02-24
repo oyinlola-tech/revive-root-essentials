@@ -1,5 +1,5 @@
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 
 const mode = process.argv[2] || 'dev';
 const processes = [];
