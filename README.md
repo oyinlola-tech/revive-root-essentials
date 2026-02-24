@@ -1,231 +1,360 @@
-# Revive Roots Essentials - E-commerce Frontend
+# Revive Roots Essentials
 
-A complete e-commerce frontend application for skincare products with role-based authentication and OTP support.
+Revive Roots Essentials is a full-stack, production-oriented e-commerce application built for premium skincare and wellness operations. It combines a React + Vite frontend and a Node.js + Express + MySQL backend with role-based access control, OTP-capable authentication flows, product and order management, contact/newsletter capture, and analytics endpoints.
 
-## Features
+This project is commercial software. It is not free software, not open-source software, and not licensed for public reuse without written permission and a paid license agreement from the owner.
 
-### Authentication
-- Email/Password login
-- OTP-based authentication (Email & Phone)
-- User registration with OTP verification
-- Protected routes
-- JWT token management
+Owner and Author: Oluwayemi Oyinlola Michael  
+Portfolio: https://oyinlola.site
 
-### User Roles
-- **User**: Browse products, manage cart, place orders, view profile
-- **Admin**: Manage products, view/update orders, access analytics
-- **Superadmin**: Full access including user management and role assignment
+## Table of Contents
 
-### E-commerce Features
-- Product catalog with filtering and search
-- Product detail pages with reviews
-- Shopping cart management
-- Order management
-- User dashboard
-- Admin/Superadmin dashboards
+1. Product Overview
+2. Core Capabilities
+3. Architecture
+4. Technology Stack
+5. Repository Layout
+6. Local Development Setup
+7. Environment Variables
+8. Running Frontend and Backend
+9. Authentication and Authorization Model
+10. API Surface Overview
+11. Data and Domain Model Overview
+12. Security Controls in the Current Build
+13. Deployment Guidance
+14. Operations and Maintenance
+15. Troubleshooting
+16. Commercial Licensing and Usage Terms
+17. Support and Contact
+18. Disclaimer
 
-## Project Structure
+## 1. Product Overview
 
-```
-/src
-  /app
-    /components
-      /ui              # Reusable UI components
-      Header.tsx       # Main navigation header
-      Footer.tsx       # Site footer
-    /contexts
-      AuthContext.tsx  # Authentication state management
-      CartContext.tsx  # Shopping cart state management
-    /pages
-      /auth
-        Login.tsx           # Email/password login
-        Register.tsx        # User registration
-        OTPLogin.tsx        # OTP-based login
-        VerifyOTP.tsx       # OTP verification
-      /dashboard
-        SuperadminDashboard.tsx  # Superadmin panel
-        AdminDashboard.tsx       # Admin panel
-        UserDashboard.tsx        # User profile/orders
-      Home.tsx          # Homepage
-      Shop.tsx          # Product listing
-      ProductDetail.tsx # Single product page
-      Cart.tsx          # Shopping cart
-    /services
-      api.ts           # All API endpoint definitions
-    routes.tsx         # Route configuration
-    App.tsx           # Main app component
-```
+Revive Roots Essentials is designed for teams that need a flexible storefront plus administrative operations in one codebase. The platform supports:
 
-## API Integration
+- Public storefront browsing and product discovery.
+- Registered customer account and cart workflows.
+- OTP and credential-based authentication paths.
+- Back-office roles for product, order, and user operations.
+- Business analytics and customer engagement endpoints.
 
-All API endpoints are defined in `/src/app/services/api.ts`. The application is ready to connect to your Node.js backend.
+The implementation is split into:
 
-### Backend URL Configuration
-Set your backend URL in an environment variable:
-```
-REACT_APP_API_URL=http://localhost:3000/api
-```
+- Frontend app (`/src`) served by Vite.
+- Backend API (`/backend`) served by Express.
+- MySQL persistence via Sequelize model definitions.
 
-### API Service Usage Example
-```typescript
-import { productAPI } from './services/api';
+## 2. Core Capabilities
 
-// Get all products
-const products = await productAPI.getAllProducts({ page: 1, limit: 12 });
+- Account registration/login with verification flow support.
+- Role-based access (`user`, `admin`, `superadmin` patterns).
+- Product catalog CRUD and product listing retrieval.
+- Category management endpoints.
+- Cart and order lifecycle endpoints.
+- Product reviews.
+- Contact and newsletter subscription handling.
+- Basic analytics endpoints for administrative insight.
+- WhatsApp quick-contact integration in frontend config.
 
-// Add to cart
-await cartAPI.addToCart({ productId: '123', quantity: 1 });
-```
+## 3. Architecture
 
-## Authentication Flow
+The system follows a decoupled SPA + REST API architecture:
 
-### Email/Password Login
-1. User enters email and password
-2. Frontend calls `POST /auth/login`
-3. Backend returns JWT token and user data
-4. Token is stored in localStorage
-5. User is redirected to homepage
+- Frontend: React SPA with component-driven views, route-level pages, context providers for app state, and API service abstraction.
+- Backend: Express REST service with layered routing/controller/model responsibilities.
+- Storage: MySQL database through Sequelize models.
+- Integrations: SMTP, Twilio, and Squad payment configuration via environment variables.
 
-### OTP Login
-1. User enters email or phone number
-2. Frontend calls `POST /auth/send-otp`
-3. Backend sends OTP to user
-4. User enters 6-digit OTP
-5. Frontend calls `POST /auth/verify-otp`
-6. Backend validates OTP and returns JWT token
-7. User is logged in
+## 4. Technology Stack
 
-### Registration with OTP
-1. User fills registration form
-2. Frontend calls `POST /auth/register`
-3. Backend creates account and sends OTP
-4. User verifies OTP
-5. Account is activated
+Frontend:
 
-## Role-Based Access
+- React 18
+- Vite 6
+- React Router
+- MUI + Radix UI primitives
+- Axios
 
-### Protected Routes
-Routes are protected using the `ProtectedRoute` component:
-```typescript
-<ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-  <AdminDashboard />
-</ProtectedRoute>
-```
+Backend:
 
-### Dashboard Routing
-The `/dashboard` route automatically redirects based on user role:
-- Superadmin → Superadmin Dashboard
-- Admin → Admin Dashboard
-- User → User Dashboard
+- Node.js + Express 5
+- Sequelize ORM
+- MySQL (`mysql2`)
+- JWT authentication
+- `helmet`, `cors`, `compression`, `cookie-parser`
+- `express-validator`
 
-## API Endpoints Summary
+Developer Tooling:
 
-### Authentication
-- `POST /auth/register` - Register user
-- `POST /auth/login` - Login
-- `POST /auth/send-otp` - Send OTP
-- `POST /auth/verify-otp` - Verify OTP
-- `GET /auth/me` - Get current user
-- `POST /auth/logout` - Logout
+- npm
+- nodemon (declared in dependencies/dev tooling)
+- Jest and Supertest packages present for test extension
 
-### Products
-- `GET /products` - Get all products (with filters)
-- `GET /products/:id` - Get product details
-- `POST /products` - Create product (Admin/Superadmin)
-- `PUT /products/:id` - Update product (Admin/Superadmin)
-- `DELETE /products/:id` - Delete product (Admin/Superadmin)
+## 5. Repository Layout
 
-### Cart
-- `GET /cart` - Get user's cart
-- `POST /cart` - Add to cart
-- `PUT /cart/:itemId` - Update quantity
-- `DELETE /cart/:itemId` - Remove item
-
-### Orders
-- `GET /orders` - Get user's orders
-- `GET /orders/all` - Get all orders (Admin/Superadmin)
-- `POST /orders` - Create order
-- `PUT /orders/:id/status` - Update order status (Admin/Superadmin)
-
-### User Management (Superadmin)
-- `GET /users` - Get all users
-- `PUT /users/:id/role` - Update user role
-- `DELETE /users/:id` - Delete user
-
-### Analytics (Admin/Superadmin)
-- `GET /analytics/dashboard` - Dashboard stats
-- `GET /analytics/sales` - Sales data
-- `GET /analytics/products` - Product analytics
-
-See `/API_DOCUMENTATION.md` for complete API documentation.
-
-## Component Usage
-
-### useAuth Hook
-```typescript
-import { useAuth } from './contexts/AuthContext';
-
-function MyComponent() {
-  const { user, isAuthenticated, login, logout } = useAuth();
-  
-  return <div>Welcome {user?.name}</div>;
-}
+```text
+.
+|-- src/                        # Frontend application source
+|   |-- app/
+|   |   |-- components/
+|   |   |-- contexts/
+|   |   |-- pages/
+|   |   |-- services/
+|   |   |-- routes.tsx
+|   |   `-- App.tsx
+|-- backend/                    # Backend API service
+|   |-- config/
+|   |-- controllers/
+|   |-- middlewares/
+|   |-- models/
+|   |-- routes/
+|   |-- app.js
+|   `-- server.js
+|-- .env.example                # Frontend env template
+|-- backend/.env.example        # Backend env template
+|-- package.json                # Frontend package configuration
+`-- README.md
 ```
 
-### useCart Hook
-```typescript
-import { useCart } from './contexts/CartContext';
+## 6. Local Development Setup
 
-function MyComponent() {
-  const { items, itemCount, total, addToCart } = useCart();
-  
-  return <div>Cart has {itemCount} items</div>;
-}
-```
+Prerequisites:
 
-## Development
+- Node.js 18+ (recommended LTS)
+- npm 9+
+- MySQL 8+
+
+Install dependencies:
 
 ```bash
-# Install dependencies
 npm install
+cd backend
+npm install
+```
 
-# Start development server
+Create environment files:
+
+```bash
+# From project root
+cp .env.example .env
+
+# In backend folder
+cd backend
+cp .env.example .env
+```
+
+Update the new `.env` files with actual values before startup.
+
+## 7. Environment Variables
+
+Frontend (`/.env`):
+
+- `VITE_API_URL` (example: `http://localhost:3000/api`)
+- `VITE_SITE_NAME`
+- `VITE_SITE_URL`
+- `VITE_WHATSAPP_NUMBER`
+- `VITE_WHATSAPP_MESSAGE`
+
+Backend (`/backend/.env`):
+
+Core:
+
+- `NODE_ENV`
+- `PORT`
+- `APP_NAME`
+- `SUPPORT_EMAIL`
+
+Database:
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+
+Auth:
+
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `JWT_REFRESH_SECRET`
+- `JWT_REFRESH_EXPIRES_IN`
+
+Cross-origin/client:
+
+- `CORS_ORIGIN`
+- `FRONTEND_URL`
+
+Payments/integrations:
+
+- `SQUAD_PUBLIC_KEY`
+- `SQUAD_SECRET_KEY`
+- `SQUAD_MERCHANT_ID`
+- `EMAIL_HOST`
+- `EMAIL_PORT`
+- `EMAIL_USER`
+- `EMAIL_PASS`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_PHONE_NUMBER`
+
+## 8. Running Frontend and Backend
+
+Frontend (from repo root):
+
+```bash
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-## Environment Variables
+Backend (from `/backend`):
 
-Create a `.env` file:
+```bash
+npm start
 ```
-REACT_APP_API_URL=http://localhost:3000/api
-```
 
-## Notes for Backend Development
+Default local URLs:
 
-1. All API calls expect JSON responses
-2. Authentication uses JWT tokens in Authorization header
-3. Error responses should include a `message` field
-4. Pagination uses `page` and `limit` query parameters
-5. Role-based access control should validate user roles on the backend
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3000`
+- Health endpoint: `http://localhost:3000/health`
 
-## Mock Data
+## 9. Authentication and Authorization Model
 
-The frontend includes mock data for demonstration purposes. Once your backend is ready, the application will automatically use real API data.
+The platform supports multiple auth paths and role-gated operations:
 
-## UI Components
+- Credential and OTP-capable login flow patterns.
+- JWT-based authorization strategy in backend middleware.
+- Route-level guards for protected actions.
+- Role middleware for privileged endpoints.
 
-The project uses shadcn/ui components with Tailwind CSS v4. All UI components are in `/src/app/components/ui/`.
+Typical role boundaries:
 
-## Deployment Checklist
+- `user`: storefront, cart, personal profile/order interactions.
+- `admin`: operational product/order workflows and limited management.
+- `superadmin`: highest-privilege role, including user/role management patterns.
 
-- [ ] Update `REACT_APP_API_URL` to production backend URL
-- [ ] Ensure all API endpoints are implemented
-- [ ] Test OTP delivery (email/SMS)
-- [ ] Configure CORS on backend
-- [ ] Set up proper error handling
-- [ ] Implement rate limiting for OTP endpoints
-- [ ] Add email/SMS templates
-- [ ] Configure payment gateway (if needed)
+## 10. API Surface Overview
+
+Main backend route groups mounted under `/api`:
+
+- `/auth`
+- `/users`
+- `/products`
+- `/categories`
+- `/cart`
+- `/orders`
+- `/reviews`
+- `/analytics`
+- `/contact`
+- `/newsletter`
+
+Operational endpoints:
+
+- `GET /health` for service health.
+- Static uploads served at `/uploads`.
+
+For endpoint contracts, inspect route files in `/backend/routes` and corresponding controllers in `/backend/controllers`.
+
+## 11. Data and Domain Model Overview
+
+Model set currently includes:
+
+- User
+- Product
+- Category
+- Order
+- OrderItem
+- CartItem
+- Review
+- Otp
+- Contact
+- Newsletter
+
+The model index and associations live under `/backend/models`.
+
+## 12. Security Controls in the Current Build
+
+Security-relevant middleware and defaults include:
+
+- `helmet()` for secure HTTP headers.
+- CORS allowlist validation using configured origins.
+- Request body size cap (`express.json({ limit: '10kb' })`).
+- Structured request logging via `morgan`.
+- Centralized error handling middleware.
+
+Security-sensitive environment recommendations:
+
+- Use strong random JWT secrets with high entropy.
+- Rotate credentials regularly.
+- Never commit `.env` with production secrets.
+- Use HTTPS in production and terminate TLS at a trusted edge.
+
+See `SECURITY.md` for coordinated disclosure policy.
+
+## 13. Deployment Guidance
+
+Minimum production guidance:
+
+- Deploy frontend and backend as separate services.
+- Restrict backend CORS to trusted production domains only.
+- Set `NODE_ENV=production`.
+- Use managed MySQL with restricted network ACLs.
+- Store secrets in a secure secret manager, not plain files.
+- Add monitoring for uptime, logs, and error alerts.
+- Configure backups and tested restore procedures.
+
+## 14. Operations and Maintenance
+
+Recommended operational practices:
+
+- Add CI checks for linting, tests, and dependency audit.
+- Maintain migration/seed discipline for schema evolution.
+- Track API versioning strategy before external integrations scale.
+- Create role and permission change logs for admin actions.
+- Schedule regular security review and dependency updates.
+
+## 15. Troubleshooting
+
+API unreachable from frontend:
+
+- Verify `VITE_API_URL` and backend `PORT`.
+- Check backend process is running and `/health` responds `200`.
+
+CORS blocked requests:
+
+- Confirm frontend origin is included in backend `CORS_ORIGIN`.
+- Remove whitespace issues in comma-separated origins.
+
+Database connection errors:
+
+- Validate MySQL host/port/credentials and schema existence.
+
+OTP/email/SMS issues:
+
+- Check SMTP/Twilio credentials and sender permissions.
+
+## 16. Commercial Licensing and Usage Terms
+
+This software is proprietary and commercial.
+
+- No free-use grant is provided.
+- No open-source license is granted.
+- Copying, redistribution, sublicensing, resale, reverse engineering, or derivative commercialization is prohibited without explicit written permission and a paid license.
+- Production use requires an executed commercial agreement with the owner.
+
+See `LIENCE.md` for full legal terms used in this repository.
+
+## 17. Support and Contact
+
+Owner: Oluwayemi Oyinlola Michael  
+Portfolio: https://oyinlola.site
+
+For commercial licensing, custom feature work, deployment support, or maintenance engagements, contact through the portfolio channel and include:
+
+- Company or project name
+- Intended deployment scope
+- Required timeline
+- Expected user volume
+
+## 18. Disclaimer
+
+This repository is provided to authorized users for evaluation, integration, and licensed deployment under written agreement only. All rights remain reserved by the owner unless explicitly granted in a signed contract.
