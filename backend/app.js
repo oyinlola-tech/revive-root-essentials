@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('./middlewares/rateLimitMiddleware');
 
 dotenv.config();
 
@@ -37,17 +37,13 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: true, message: 'Too many requests. Please try again shortly.' },
+  message: 'Too many requests. Please try again shortly.',
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: true, message: 'Too many authentication attempts. Try again later.' },
+  message: 'Too many authentication attempts. Try again later.',
 });
 
 // Middlewares

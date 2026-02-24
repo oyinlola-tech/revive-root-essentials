@@ -5,12 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
-    "dev:frontend": "vite",
-    "dev:backend": "nodemon backend/server.js",
-    "start": "concurrently \"npm:start:backend\" \"npm:start:frontend\"",
-    "start:backend": "node backend/server.js",
-    "start:frontend": "vite --host"
+    "dev": "node scripts/run-both.js dev",
+    "start": "node scripts/run-both.js start"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -50,14 +46,12 @@
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
     "compression": "^1.8.1",
-    "concurrently": "^9.2.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "date-fns": "3.6.0",
     "dotenv": "^17.3.1",
     "embla-carousel-react": "8.6.0",
     "express": "^5.2.1",
-    "express-rate-limit": "^8.1.0",
     "express-validator": "^7.3.1",
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
