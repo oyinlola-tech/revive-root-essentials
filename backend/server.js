@@ -1,5 +1,6 @@
 const app = require('./app');
 const { sequelize } = require('./models');
+const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 
 const PORT = process.env.PORT || 3000;
@@ -12,11 +13,13 @@ if (missingEnvVars.length > 0) {
 }
 
 sequelize
-  .authenticate()
+  .ensureDatabase()
+  .then(() => sequelize.authenticate())
   .then(() => {
     console.log('Database connected...');
-    return sequelize.sync({ alter: process.env.NODE_ENV === 'development' }); // Be careful with alter in production
+    return sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
   })
+  .then(() => seedSuperadmin())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
