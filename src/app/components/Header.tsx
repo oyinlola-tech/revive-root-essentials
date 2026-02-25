@@ -2,7 +2,15 @@ import { Link } from 'react-router';
 import { ShoppingCart, User, Menu, Search, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { Button } from './ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
+  const { currencyOverride, supportedCurrencies, setCurrencyOverride, clearCurrencyOverride } = useCurrency();
 
   const handleLogout = async () => {
     try {
@@ -48,6 +57,43 @@ export function Header() {
 
         {/* Right Side Icons */}
         <div className="flex items-center space-x-4">
+          <div className="hidden lg:flex items-center gap-2">
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">Currency</span>
+            <Select
+              value={currencyOverride || 'AUTO'}
+              onValueChange={(value) => {
+                if (value === 'AUTO') {
+                  clearCurrencyOverride();
+                } else {
+                  setCurrencyOverride(value);
+                }
+                window.location.reload();
+              }}
+            >
+              <SelectTrigger size="sm" className="min-w-[140px]">
+                <SelectValue placeholder="Auto (IP)" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="AUTO">Auto (IP)</SelectItem>
+                {supportedCurrencies.map((currency) => (
+                  <SelectItem key={currency} value={currency}>
+                    {currency}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                clearCurrencyOverride();
+                window.location.reload();
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+
           <Button variant="ghost" size="icon" className="hidden md:flex">
             <Search className="h-5 w-5" />
           </Button>
@@ -118,6 +164,42 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px]">
               <nav className="flex flex-col space-y-4 mt-8">
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Currency</span>
+                  <Select
+                    value={currencyOverride || 'AUTO'}
+                    onValueChange={(value) => {
+                      if (value === 'AUTO') {
+                        clearCurrencyOverride();
+                      } else {
+                        setCurrencyOverride(value);
+                      }
+                      window.location.reload();
+                    }}
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue placeholder="Auto (IP)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AUTO">Auto (IP)</SelectItem>
+                      {supportedCurrencies.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      clearCurrencyOverride();
+                      window.location.reload();
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <Link to="/shop" className="text-lg hover:opacity-70 transition-opacity">
                   Shop
                 </Link>

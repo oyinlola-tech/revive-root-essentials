@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { cartAPI } from '../services/api';
 import { useAuth } from './AuthContext';
+import { useCurrency } from './CurrencyContext';
 
 export interface CartItem {
   id: string;
   productId: string;
   name: string;
   price: number;
+  currency?: string;
   quantity: number;
   image: string;
 }
@@ -15,6 +17,7 @@ interface CartContextType {
   items: CartItem[];
   itemCount: number;
   total: number;
+  currency: string;
   addToCart: (productId: string, quantity: number) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -26,7 +29,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [currency, setCurrency] = useState('NGN');
   const { isAuthenticated } = useAuth();
+  const { currencyOverride } = useCurrency();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -34,12 +39,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       setItems([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currencyOverride]);
 
   const refreshCart = async () => {
     try {
       const cartData = await cartAPI.getCart();
       setItems(cartData.items || []);
+      setCurrency(cartData.currency || 'NGN');
     } catch (error) {
       console.error('Failed to fetch cart:', error);
     }
@@ -74,6 +80,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         items,
         itemCount,
         total,
+        currency,
         addToCart,
         updateQuantity,
         removeFromCart,

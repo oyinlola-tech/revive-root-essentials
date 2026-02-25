@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Package, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
+import { formatMoney } from '../../utils/formatMoney';
 
 interface Order {
   id: string;
@@ -18,6 +19,7 @@ interface Order {
   status: string;
   paymentStatus: string;
   total: number;
+  currency?: string;
   items: number;
 }
 
@@ -28,6 +30,7 @@ const mapOrder = (order: any): Order => ({
   status: order.status,
   paymentStatus: order.paymentStatus,
   total: Number(order.totalAmount),
+  currency: order.currency || 'NGN',
   items: (order.OrderItems || []).length,
 });
 
@@ -178,7 +181,7 @@ export default function UserDashboard() {
                           <TableCell className="font-medium">{order.orderNumber}</TableCell>
                           <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                           <TableCell>{order.items} items</TableCell>
-                          <TableCell>${order.total.toFixed(2)}</TableCell>
+                          <TableCell>{formatMoney(order.total, order.currency)}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(order.status)}>
                               {order.status}

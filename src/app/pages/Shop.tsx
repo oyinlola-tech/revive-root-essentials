@@ -10,12 +10,14 @@ import { productAPI, categoryAPI } from '../services/api';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Search } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { formatMoney } from '../utils/formatMoney';
 
 interface Product {
   id: string;
   slug?: string;
   name: string;
   price: number;
+  currency?: string;
   image: string;
   category: string;
   isFeatured?: boolean;
@@ -27,6 +29,7 @@ const mapProduct = (product: any): Product => ({
   slug: product.slug,
   name: product.name,
   price: Number(product.price),
+  currency: product.currency || 'NGN',
   image: product.imageUrl || product.image || '',
   category: product.Category?.name || product.category || 'Uncategorized',
   isFeatured: Boolean(product.isFeatured),
@@ -250,7 +253,7 @@ export default function Shop() {
                         {product.isFeatured && (
                           <p className="text-[11px] font-semibold tracking-wide text-[#7a5b48] mb-1">Featured</p>
                         )}
-                        <p className="font-semibold">${product.price}</p>
+                        <p className="font-semibold">{formatMoney(product.price, product.currency)}</p>
                       </CardContent>
                     </Card>
                   </Link>

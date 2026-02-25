@@ -10,6 +10,7 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { Star, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { formatMoney } from '../utils/formatMoney';
 
 interface Product {
   id: string;
@@ -204,7 +205,7 @@ export default function ProductDetail() {
                   ({reviews.length} reviews)
                 </span>
               </div>
-              <p className="text-3xl font-semibold">${product.price}</p>
+              <p className="text-3xl font-semibold">{formatMoney(product.price, product.currency)}</p>
             </div>
 
             <p className="text-muted-foreground">{product.description}</p>

@@ -12,6 +12,7 @@ import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from 'lucide-rea
 import { toast } from 'sonner';
 import { ProductManagement } from '../../components/ProductManagement';
 import { SEO } from '../../components/SEO';
+import { formatMoney } from '../../utils/formatMoney';
 
 interface DashboardStats {
   totalUsers: number;
@@ -366,7 +367,7 @@ export default function SuperadminDashboard() {
                         <TableCell className="font-medium">{order.orderNumber}</TableCell>
                         <TableCell className="capitalize">{order.status}</TableCell>
                         <TableCell className="capitalize">{order.paymentStatus}</TableCell>
-                        <TableCell>${Number(order.totalAmount).toFixed(2)}</TableCell>
+                        <TableCell>{formatMoney(Number(order.totalAmount), order.currency || 'NGN')}</TableCell>
                         <TableCell>
                           {order.paymentStatus === 'paid' ? (
                             <Button variant="outline" size="sm" onClick={() => handleRefund(order.id)}>

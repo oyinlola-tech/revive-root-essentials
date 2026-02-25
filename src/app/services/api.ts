@@ -1,10 +1,5 @@
-/**
- * API Service Layer
- * All backend API endpoints are defined here
- * Uses VITE_API_URL for backend URL, e.g. http://localhost:3000/api
- */
-
 const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '/api';
+const CURRENCY_STORAGE_KEY = 'currencyOverride';
 
 const toQueryString = (params?: Record<string, string | number | undefined>) => {
   if (!params) return '';
@@ -17,10 +12,12 @@ const toQueryString = (params?: Record<string, string | number | undefined>) => 
 // Helper function for API calls
 async function apiCall(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('authToken');
+  const currencyOverride = localStorage.getItem(CURRENCY_STORAGE_KEY);
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
+    ...(currencyOverride && { 'X-Currency': currencyOverride }),
     ...options.headers,
   };
 
@@ -43,10 +40,12 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
 
 async function apiUpload(endpoint: string, formData: FormData) {
   const token = localStorage.getItem('authToken');
+  const currencyOverride = localStorage.getItem(CURRENCY_STORAGE_KEY);
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'POST',
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(currencyOverride && { 'X-Currency': currencyOverride }),
     },
     body: formData,
   });
@@ -323,11 +322,16 @@ export const orderAPI = {
   getOrderById: (id: string) => apiCall(`/orders/${id}`),
 
   // POST /orders - Create order
-  createOrder: (data: any) =>
-    apiCall('/orders', {
+  createOrder: (data: any) => {
+    const currencyOverride = localStorage.getItem(CURRENCY_STORAGE_KEY);
+    const payload = currencyOverride && !data?.currency
+      ? { ...data, currency: currencyOverride }
+      : data;
+    return apiCall('/orders', {
       method: 'POST',
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(payload),
+    });
+  },
 
   // PUT /orders/:id/status - Update order status (Admin/Superadmin only)
   updateOrderStatus: (id: string, status: string) =>

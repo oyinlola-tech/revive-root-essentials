@@ -89,7 +89,9 @@ const isSupportedChargeCurrency = (currency) => SUPPORTED_CHARGE_CURRENCIES.has(
 const getPricingContext = async (req, requestedCurrency = '') => {
   const forcedCountry = String(req.headers['x-country-code'] || '').toUpperCase();
   const countryCode = forcedCountry || await getCountryFromIp(req.ip);
-  const normalizedCurrency = String(requestedCurrency || '').trim().toUpperCase();
+  const headerCurrency = String(req.headers['x-currency'] || '').trim();
+  const queryCurrency = String(req.query?.currency || '').trim();
+  const normalizedCurrency = String(requestedCurrency || headerCurrency || queryCurrency || '').trim().toUpperCase();
 
   if (normalizedCurrency) {
     if (!isSupportedChargeCurrency(normalizedCurrency)) {

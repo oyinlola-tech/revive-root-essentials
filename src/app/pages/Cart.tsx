@@ -6,9 +6,10 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '../components/SEO';
+import { formatMoney } from '../utils/formatMoney';
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, total } = useCart();
+  const { items, updateQuantity, removeFromCart, total, currency } = useCart();
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     try {
@@ -81,7 +82,7 @@ export default function Cart() {
                   {/* Product Info */}
                   <div className="flex-1">
                     <h3 className="font-medium mb-2">{item.name}</h3>
-                    <p className="text-muted-foreground mb-4">${item.price}</p>
+                    <p className="text-muted-foreground mb-4">{formatMoney(item.price, item.currency || currency)}</p>
 
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-4">
@@ -118,7 +119,7 @@ export default function Cart() {
 
                   {/* Item Total */}
                   <div className="text-right">
-                    <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-semibold">{formatMoney(item.price * item.quantity, item.currency || currency)}</p>
                   </div>
                 </div>
               </Card>
@@ -133,7 +134,7 @@ export default function Cart() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatMoney(total, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
@@ -141,7 +142,7 @@ export default function Cart() {
                 </div>
                 <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatMoney(total, currency)}</span>
                 </div>
               </div>
 

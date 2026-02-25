@@ -1,6 +1,7 @@
 const { CartItem, Product } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const currencyService = require('../services/currencyService');
 
 exports.getCart = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
@@ -9,18 +10,26 @@ exports.getCart = catchAsync(async (req, res, next) => {
     include: [{ model: Product, attributes: ['id', 'name', 'price', 'imageUrl'] }],
   });
 
+  const pricingContext = await currencyService.getPricingContext(req);
+  const targetCurrency = pricingContext.currency || 'NGN';
+  const conversionRate = pricingContext.rate || 1;
+  const useConversion = targetCurrency !== 'NGN';
+
   const items = cartItems.map(item => ({
     id: item.id,
     productId: item.productId,
     name: item.Product.name,
-    price: item.Product.price,
+    price: useConversion
+      ? currencyService.convertNgnToCurrencyWithBuffer(Number(item.Product.price), conversionRate)
+      : Number(item.Product.price),
     quantity: item.quantity,
     image: item.Product.imageUrl,
+    currency: targetCurrency,
   }));
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  res.json({ items, total });
+  res.json({ items, total, currency: targetCurrency });
 });
 
 exports.addToCart = catchAsync(async (req, res, next) => {

@@ -6,12 +6,14 @@ import { productAPI } from '../services/api';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { ArrowRight } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { formatMoney } from '../utils/formatMoney';
 
 interface Product {
   id: string;
   slug?: string;
   name: string;
   price: number;
+  currency?: string;
   image: string;
   category: string;
 }
@@ -21,6 +23,7 @@ const mapProduct = (product: any): Product => ({
   slug: product.slug,
   name: product.name,
   price: Number(product.price),
+  currency: product.currency || 'NGN',
   image: product.imageUrl || product.image || '',
   category: product.Category?.name || product.category || 'Uncategorized',
 });
@@ -120,7 +123,7 @@ export default function Home() {
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
                       <h3 className="font-medium mb-2">{product.name}</h3>
-                      <p className="font-semibold">${product.price}</p>
+                      <p className="font-semibold">{formatMoney(product.price, product.currency)}</p>
                     </CardContent>
                   </Card>
                 </Link>
