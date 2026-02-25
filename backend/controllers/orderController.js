@@ -63,9 +63,13 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError(`Conversion rate unavailable for ${pricingContext.currency}`, 502));
   }
 
-  // Validate items (could be from cart or directly provided)
-  // For simplicity, we assume items array is provided directly
-  const order = await orderService.createOrder(userId, { paymentMethod: normalizedPaymentMethod, shippingAddress }, items, pricingContext);
+  // Charge in the selected/display currency so the user pays the exact shown amount.
+  const order = await orderService.createOrder(
+    userId,
+    { paymentMethod: normalizedPaymentMethod, shippingAddress },
+    items,
+    pricingContext,
+  );
   const fullOrder = await Order.findByPk(order.id, {
     include: [{ model: OrderItem, include: [Product] }],
   });
@@ -151,11 +155,14 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
   }
 
   const transactionId = req.body.transactionId || req.body.transaction_id || req.query.transactionId || req.query.transaction_id;
-  if (!transactionId) {
-    return next(new AppError('transactionId is required to verify payment', 400));
+  const reference = req.body.reference || order.orderNumber;
+  if (!transactionId && !reference) {
+    return next(new AppError('transactionId or reference is required to verify payment', 400));
   }
 
-  const paymentData = await paymentService.verifyTransaction(transactionId);
+  const paymentData = transactionId
+    ? await paymentService.verifyTransaction(transactionId)
+    : await paymentService.verifyTransactionByReference(reference);
   const txn = paymentData?.data || paymentData;
 
   const succeeded = String(txn?.transaction_status || txn?.status || '').toLowerCase();
@@ -178,7 +185,7 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
 
   order.paymentStatus = 'paid';
   order.status = order.status === 'pending' ? 'processing' : order.status;
-  order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || transactionId;
+  order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || transactionId || reference;
   await order.save();
 
   const user = await User.findByPk(order.userId);

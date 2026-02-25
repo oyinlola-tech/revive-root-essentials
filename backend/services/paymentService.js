@@ -60,6 +60,24 @@ class PaymentService {
     }
   }
 
+  // Verify transaction by reference (tx_ref)
+  async verifyTransactionByReference(txRef) {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/transactions/verify_by_reference`,
+        {
+          params: { tx_ref: txRef },
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(`Flutterwave verification by reference failed: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
   // Handle webhook (to be called by Flutterwave)
   handleWebhook(payload, signature) {
     // Verify signature using your secret key (if provided by Flutterwave)

@@ -75,13 +75,15 @@ const getNgnToCurrencyRate = async (currency) => {
 };
 
 const convertNgnToUsdWithBuffer = (ngnValue, rate) => {
-  const converted = Number(ngnValue) * rate;
-  return Number((converted + 1).toFixed(2));
+  return convertNgnToCurrencyWithBuffer(ngnValue, rate);
 };
 
 const convertNgnToCurrencyWithBuffer = (ngnValue, rate) => {
-  const converted = Number(ngnValue) * rate;
-  return Number((converted + 1).toFixed(2));
+  const base = Number(ngnValue);
+  if (!rate || Number.isNaN(base)) return 0;
+  const addNgnBuffer = rate !== 1 ? 1000 : 0;
+  const converted = (base + addNgnBuffer) * rate;
+  return Number(converted.toFixed(2));
 };
 
 const isSupportedChargeCurrency = (currency) => SUPPORTED_CHARGE_CURRENCIES.has(currency);
