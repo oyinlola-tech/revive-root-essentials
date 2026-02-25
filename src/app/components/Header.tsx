@@ -71,10 +71,10 @@ export function Header() {
               }}
             >
               <SelectTrigger size="sm" className="min-w-[140px]">
-                <SelectValue placeholder="Auto (IP)" />
+                <SelectValue placeholder="Auto" />
               </SelectTrigger>
               <SelectContent align="end">
-                <SelectItem value="AUTO">Auto (IP)</SelectItem>
+                <SelectItem value="AUTO">Auto</SelectItem>
                 {supportedCurrencies.map((currency) => (
                   <SelectItem key={currency} value={currency}>
                     {currency}
@@ -178,10 +178,10 @@ export function Header() {
                     }}
                   >
                     <SelectTrigger size="sm">
-                      <SelectValue placeholder="Auto (IP)" />
+                      <SelectValue placeholder="Auto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="AUTO">Auto (IP)</SelectItem>
+                      <SelectItem value="AUTO">Auto</SelectItem>
                       {supportedCurrencies.map((currency) => (
                         <SelectItem key={currency} value={currency}>
                           {currency}

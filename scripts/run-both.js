@@ -5,7 +5,10 @@ const mode = process.argv[2] || 'dev';
 const processes = [];
 
 const run = (command, args, name) => {
-  const child = spawn(command, args, { stdio: 'inherit', shell: true });
+  const isWindows = process.platform === 'win32';
+  const child = isWindows
+    ? spawn('cmd', ['/c', command, ...args], { stdio: 'inherit' })
+    : spawn(command, args, { stdio: 'inherit' });
   processes.push(child);
   child.on('exit', (code) => {
     if (code !== 0) {

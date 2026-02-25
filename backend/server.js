@@ -18,7 +18,8 @@ sequelize
   .then(() => sequelize.authenticate())
   .then(() => {
     console.log('Database connected...');
-    return sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    // Create tables if they don't exist. Do not alter existing schema.
+    return sequelize.sync();
   })
   .then(() => seedSuperadmin())
   .then(() => {
