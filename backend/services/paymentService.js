@@ -6,21 +6,29 @@ class PaymentService {
     this.baseURL = config.baseUrl;
     this.secretKey = config.secretKey;
     this.publicKey = config.publicKey;
-    this.merchantId = config.merchantId;
   }
 
   // Initialize a transaction (charge)
-  async initiateTransaction({ amount, email, currency, reference, callbackUrl }) {
+  async initiateTransaction({ amount, email, currency, reference, callbackUrl, paymentMethod }) {
     try {
+      const paymentOptionMap = {
+        card: 'card',
+        ussd: 'ussd',
+        transfer: 'banktransfer',
+      };
+      const paymentOptions = paymentOptionMap[paymentMethod] || undefined;
+
       const response = await axios.post(
-        `${this.baseURL}/transaction/initiate`,
+        `${this.baseURL}/payments`,
         {
-          amount,
-          email,
+          tx_ref: reference,
+          amount: Number(amount),
           currency: currency || 'NGN',
-          reference,
-          callback_url: callbackUrl,
-          merchant_id: this.merchantId,
+          redirect_url: callbackUrl,
+          customer: {
+            email,
+          },
+          payment_options: paymentOptions,
         },
         {
           headers: {
@@ -31,15 +39,15 @@ class PaymentService {
       );
       return response.data;
     } catch (error) {
-      throw new Error(`Squad payment initiation failed: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Flutterwave payment initiation failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   // Verify transaction
-  async verifyTransaction(reference) {
+  async verifyTransaction(transactionId) {
     try {
       const response = await axios.get(
-        `${this.baseURL}/transaction/verify/${reference}`,
+        `${this.baseURL}/transactions/${transactionId}/verify`,
         {
           headers: {
             Authorization: `Bearer ${this.secretKey}`,
@@ -48,13 +56,13 @@ class PaymentService {
       );
       return response.data;
     } catch (error) {
-      throw new Error(`Squad verification failed: ${error.response?.data?.message || error.message}`);
+      throw new Error(`Flutterwave verification failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
-  // Handle webhook (to be called by Squad)
+  // Handle webhook (to be called by Flutterwave)
   handleWebhook(payload, signature) {
-    // Verify signature using your secret key (if provided by Squad)
+    // Verify signature using your secret key (if provided by Flutterwave)
     // Then update order status based on payload
     return payload;
   }

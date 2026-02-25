@@ -65,21 +65,24 @@ const buildSeoPayload = (payload) => {
 };
 
 const applyPricingContext = (product, pricingContext) => {
-  if (!product || !pricingContext.useUsd) {
+  if (!product) return;
+
+  const targetCurrency = pricingContext.currency || 'NGN';
+  if (targetCurrency === 'NGN' || !pricingContext.rate) {
     if (product?.setDataValue) product.setDataValue('currency', 'NGN');
-    else if (product) product.currency = 'NGN';
+    else product.currency = 'NGN';
     return;
   }
 
   const basePrice = Number(product.price);
-  const usdPrice = currencyService.convertNgnToUsdWithBuffer(basePrice, pricingContext.rate);
+  const convertedPrice = currencyService.convertNgnToCurrencyWithBuffer(basePrice, pricingContext.rate);
 
   if (product.setDataValue) {
-    product.setDataValue('price', usdPrice);
-    product.setDataValue('currency', 'USD');
+    product.setDataValue('price', convertedPrice);
+    product.setDataValue('currency', targetCurrency);
   } else {
-    product.price = usdPrice;
-    product.currency = 'USD';
+    product.price = convertedPrice;
+    product.currency = targetCurrency;
   }
 };
 

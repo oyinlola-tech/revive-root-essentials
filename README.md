@@ -63,7 +63,7 @@ The system follows a decoupled SPA + REST API architecture:
 - Frontend: React SPA with component-driven views, route-level pages, context providers for app state, and API service abstraction.
 - Backend: Express REST service with layered routing/controller/model responsibilities.
 - Storage: MySQL database through Sequelize models.
-- Integrations: SMTP, Twilio, and Squad payment configuration via environment variables.
+- Integrations: SMTP, Twilio, and Flutterwave payment configuration via environment variables.
 
 ## 4. Technology Stack
 
@@ -186,9 +186,9 @@ Cross-origin/client:
 
 Payments/integrations:
 
-- `SQUAD_PUBLIC_KEY`
-- `SQUAD_SECRET_KEY`
-- `SQUAD_MERCHANT_ID`
+- `FLW_PUBLIC_KEY`
+- `FLW_SECRET_KEY`
+- `FLW_BASE_URL`
 - `EMAIL_HOST`
 - `EMAIL_PORT`
 - `EMAIL_USER`

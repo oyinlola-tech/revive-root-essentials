@@ -3,6 +3,27 @@ const axios = require('axios');
 const COUNTRY_CACHE_MS = 10 * 60 * 1000;
 const RATE_CACHE_MS = 30 * 60 * 1000;
 
+const SUPPORTED_CHARGE_CURRENCIES = new Set([
+  'GBP',
+  'CAD',
+  'XAF',
+  'COP',
+  'EGP',
+  'EUR',
+  'GHS',
+  'KES',
+  'IRN',
+  'NGN',
+  'RWF',
+  'SLL',
+  'ZAR',
+  'TZS',
+  'UGX',
+  'USD',
+  'XOF',
+  'ZMW',
+]);
+
 let rateCache = { value: null, expiresAt: 0 };
 const countryCache = new Map();
 
@@ -30,17 +51,27 @@ const getCountryFromIp = async (ip) => {
   }
 };
 
-const getNgnToUsdRate = async () => {
+const getNgnRates = async () => {
   if (rateCache.value && rateCache.expiresAt > Date.now()) return rateCache.value;
   try {
     const { data } = await axios.get('https://open.er-api.com/v6/latest/NGN', { timeout: 4000 });
-    const rate = Number(data?.rates?.USD);
-    if (!rate || Number.isNaN(rate)) throw new Error('Invalid conversion rate');
-    rateCache = { value: rate, expiresAt: Date.now() + RATE_CACHE_MS };
-    return rate;
+    const rates = data?.rates || null;
+    if (!rates || typeof rates !== 'object') throw new Error('Invalid conversion rates');
+    rateCache = { value: rates, expiresAt: Date.now() + RATE_CACHE_MS };
+    return rates;
   } catch (error) {
-    return 0.00067;
+    return null;
   }
+};
+
+const getNgnToCurrencyRate = async (currency) => {
+  const normalized = String(currency || '').trim().toUpperCase();
+  if (!normalized) return null;
+  if (normalized === 'NGN') return 1;
+  const rates = await getNgnRates();
+  const rate = Number(rates?.[normalized]);
+  if (!rate || Number.isNaN(rate)) return null;
+  return rate;
 };
 
 const convertNgnToUsdWithBuffer = (ngnValue, rate) => {
@@ -48,22 +79,47 @@ const convertNgnToUsdWithBuffer = (ngnValue, rate) => {
   return Number((converted + 1).toFixed(2));
 };
 
-const getPricingContext = async (req) => {
+const convertNgnToCurrencyWithBuffer = (ngnValue, rate) => {
+  const converted = Number(ngnValue) * rate;
+  return Number((converted + 1).toFixed(2));
+};
+
+const isSupportedChargeCurrency = (currency) => SUPPORTED_CHARGE_CURRENCIES.has(currency);
+
+const getPricingContext = async (req, requestedCurrency = '') => {
   const forcedCountry = String(req.headers['x-country-code'] || '').toUpperCase();
   const countryCode = forcedCountry || await getCountryFromIp(req.ip);
+  const normalizedCurrency = String(requestedCurrency || '').trim().toUpperCase();
+
+  if (normalizedCurrency) {
+    if (!isSupportedChargeCurrency(normalizedCurrency)) {
+      return { countryCode: countryCode || 'NG', currency: 'NGN', rate: null, invalidCurrency: normalizedCurrency };
+    }
+
+    if (normalizedCurrency === 'NGN') {
+      return { countryCode: countryCode || 'NG', currency: 'NGN', rate: 1, invalidCurrency: null };
+    }
+
+    const rate = await getNgnToCurrencyRate(normalizedCurrency);
+    return { countryCode, currency: normalizedCurrency, rate, invalidCurrency: null };
+  }
+
   const useUsd = Boolean(countryCode && countryCode !== 'NG');
 
   if (!useUsd) {
-    return { countryCode: countryCode || 'NG', useUsd: false, rate: null, currency: 'NGN' };
+    return { countryCode: countryCode || 'NG', currency: 'NGN', rate: 1, invalidCurrency: null };
   }
 
-  const rate = await getNgnToUsdRate();
-  return { countryCode, useUsd: true, rate, currency: 'USD' };
+  const rate = await getNgnToCurrencyRate('USD');
+  return { countryCode, currency: 'USD', rate, invalidCurrency: null };
 };
 
 module.exports = {
   getPricingContext,
-  getNgnToUsdRate,
+  getNgnToUsdRate: async () => getNgnToCurrencyRate('USD'),
+  getNgnToCurrencyRate,
   convertNgnToUsdWithBuffer,
+  convertNgnToCurrencyWithBuffer,
+  isSupportedChargeCurrency,
+  SUPPORTED_CHARGE_CURRENCIES,
 };
-

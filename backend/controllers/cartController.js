@@ -25,11 +25,16 @@ exports.getCart = catchAsync(async (req, res, next) => {
 
 exports.addToCart = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
-  const { productId, quantity = 1 } = req.body;
+  const { productId } = req.body;
+  const quantity = Number(req.body.quantity || 1);
 
   const product = await Product.findByPk(productId);
   if (!product) {
     return next(new AppError('Product not found', 404));
+  }
+
+  if (quantity > product.stock) {
+    return next(new AppError('Requested quantity exceeds available stock', 400));
   }
 
   const [cartItem, created] = await CartItem.findOrCreate({
@@ -38,7 +43,11 @@ exports.addToCart = catchAsync(async (req, res, next) => {
   });
 
   if (!created) {
-    cartItem.quantity += quantity;
+    const updatedQuantity = cartItem.quantity + quantity;
+    if (updatedQuantity > product.stock) {
+      return next(new AppError('Requested quantity exceeds available stock', 400));
+    }
+    cartItem.quantity = updatedQuantity;
     await cartItem.save();
   }
 
@@ -58,7 +67,16 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
     return next(new AppError('Cart item not found', 404));
   }
 
-  cartItem.quantity = quantity;
+  const parsedQuantity = Number(quantity);
+  const product = await Product.findByPk(cartItem.productId);
+  if (!product) {
+    return next(new AppError('Associated product not found', 404));
+  }
+  if (parsedQuantity > product.stock) {
+    return next(new AppError('Requested quantity exceeds available stock', 400));
+  }
+
+  cartItem.quantity = parsedQuantity;
   await cartItem.save();
 
   res.json(cartItem);

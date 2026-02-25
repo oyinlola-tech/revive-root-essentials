@@ -5,12 +5,15 @@ const shippingService = require('./shippingService');
 const currencyService = require('./currencyService');
 
 class OrderService {
-  async createOrder(userId, orderData, items, pricingContext = { useUsd: false }) {
+  async createOrder(userId, orderData, items, pricingContext = { currency: 'NGN', rate: 1 }) {
     const transaction = await sequelize.transaction();
     try {
       // Calculate total and verify stock
       let subtotal = 0;
       const orderItems = [];
+      const targetCurrency = pricingContext.currency || 'NGN';
+      const conversionRate = pricingContext.rate || 1;
+      const useConversion = targetCurrency !== 'NGN';
 
       for (const item of items) {
         const product = await Product.findByPk(item.productId, { transaction });
@@ -18,8 +21,8 @@ class OrderService {
         if (product.stock < item.quantity) throw new AppError(`Insufficient stock for ${product.name}`, 400);
 
         const basePrice = Number(product.price);
-        const unitPrice = pricingContext.useUsd
-          ? currencyService.convertNgnToUsdWithBuffer(basePrice, pricingContext.rate)
+        const unitPrice = useConversion
+          ? currencyService.convertNgnToCurrencyWithBuffer(basePrice, conversionRate)
           : basePrice;
         const itemTotal = unitPrice * item.quantity;
         subtotal += itemTotal;
@@ -45,7 +48,7 @@ class OrderService {
         userId,
         totalAmount: total,
         shippingFee: shippingQuote.fee,
-        currency: pricingContext.useUsd ? 'USD' : 'NGN',
+        currency: targetCurrency,
         paymentMethod: orderData.paymentMethod,
         shippingAddress: orderData.shippingAddress,
         status: 'pending',
@@ -70,8 +73,6 @@ class OrderService {
       throw error;
     }
   }
-
-  // other methods: updateStatus, cancelOrder, etc.
 }
 
 module.exports = new OrderService();

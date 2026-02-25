@@ -154,7 +154,7 @@ exports.register = catchAsync(async (req, res, next) => {
     acceptedMarketing = false,
     acceptedNewsletter = false,
   } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = String(email || '').toLowerCase().trim();
 
   const existingUser = await User.findOne({ where: { email: normalizedEmail } });
   if (existingUser) {
@@ -254,6 +254,9 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
 exports.verifyOtp = catchAsync(async (req, res, next) => {
   const { identifier, otp } = req.body;
   const normalizedIdentifier = String(identifier || '').trim();
+  if (!/^\d{6}$/.test(String(otp || ''))) {
+    return next(new AppError('Invalid OTP format', 400));
+  }
   const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
 
   const otpRecord = await Otp.findOne({
@@ -307,7 +310,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = String(email || '').toLowerCase().trim();
 
   const user = await User.scope('withPassword').findOne({ where: { email: normalizedEmail } });
   if (!user) {
@@ -456,7 +459,10 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = String(email || '').toLowerCase().trim();
+  if (!normalizedEmail) {
+    return next(new AppError('Email is required', 400));
+  }
   const user = await User.findOne({ where: { email: normalizedEmail } });
   if (!user) {
     return res.json({ message: 'If an account exists, a reset OTP has been sent.' });

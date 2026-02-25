@@ -5,7 +5,7 @@ const currencyService = require('./currencyService');
 const normalize = (value) => String(value || '').trim().toLowerCase();
 
 class ShippingService {
-  async getShippingFee(shippingAddress, pricingContext = { useUsd: false }) {
+  async getShippingFee(shippingAddress, pricingContext = { currency: 'NGN', rate: 1 }) {
     const country = normalize(shippingAddress?.country);
     const state = normalize(shippingAddress?.state);
     const city = normalize(shippingAddress?.city);
@@ -28,12 +28,10 @@ class ShippingService {
 
     const baseFee = Number(bestRule?.fee || 0);
     let fee = baseFee;
-    let currency = 'NGN';
-
-    if (pricingContext.useUsd) {
-      const rate = pricingContext.rate || await currencyService.getNgnToUsdRate();
+    const currency = pricingContext.currency || 'NGN';
+    if (currency !== 'NGN') {
+      const rate = pricingContext.rate || await currencyService.getNgnToCurrencyRate(currency);
       fee = Number((baseFee * rate).toFixed(2));
-      currency = 'USD';
     }
 
     return {
@@ -45,4 +43,3 @@ class ShippingService {
 }
 
 module.exports = new ShippingService();
-
