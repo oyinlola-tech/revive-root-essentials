@@ -36,21 +36,21 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#e8ddd2] bg-[#fffaf6]/95 backdrop-blur supports-[backdrop-filter]:bg-[#fffaf6]/80">
-      <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+      <div className="container mx-auto px-4 flex h-[72px] items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
-          <span className="font-serif text-2xl">Revive Roots Essentials</span>
+          <span className="font-serif text-2xl tracking-tight">Revive Roots Essentials</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/shop" className="text-sm hover:opacity-70 transition-opacity">
+          <Link to="/shop" className="text-sm font-medium hover:text-[#7a5b48] transition-colors">
             Shop
           </Link>
-          <Link to="/about" className="text-sm hover:opacity-70 transition-opacity">
+          <Link to="/about" className="text-sm font-medium hover:text-[#7a5b48] transition-colors">
             About
           </Link>
-          <Link to="/contact" className="text-sm hover:opacity-70 transition-opacity">
+          <Link to="/contact" className="text-sm font-medium hover:text-[#7a5b48] transition-colors">
             Contact
           </Link>
         </nav>
@@ -154,6 +154,12 @@ export function Header() {
               </Button>
             </Link>
           )}
+
+          <Link to="/shop" className="hidden lg:inline-flex">
+            <Button size="sm" className="bg-[#3b2e27] hover:bg-[#2d231e]">
+              Shop Products
+            </Button>
+          </Link>
 
           {/* Mobile Menu */}
           <Sheet>

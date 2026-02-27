@@ -77,6 +77,7 @@ export default function OTPLogin() {
         title="OTP Login"
         description="Sign in securely with one-time password verification."
         canonicalPath="/login/otp"
+        noIndex
       />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

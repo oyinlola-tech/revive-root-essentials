@@ -171,6 +171,7 @@ export default function Register() {
         title="Create Account"
         description="Create your Revive Roots Essentials account for faster checkout and order tracking."
         canonicalPath="/register"
+        noIndex
       />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

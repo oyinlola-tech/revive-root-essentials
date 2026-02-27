@@ -9,6 +9,7 @@ export default function NotFound() {
         title="Page Not Found"
         description="The page you are looking for could not be found."
         canonicalPath="/404"
+        noIndex
       />
       <div className="text-center px-4">
         <h1 className="text-5xl mb-4">404</h1>
@@ -20,4 +21,3 @@ export default function NotFound() {
     </div>
   );
 }
-

@@ -37,6 +37,7 @@ export default function Cart() {
           title="Your Cart"
           description="Review products in your shopping cart and continue checkout securely."
           canonicalPath="/cart"
+          noIndex
         />
         <div className="container mx-auto px-4 py-20">
           <div className="text-center">
@@ -60,6 +61,7 @@ export default function Cart() {
         title="Your Cart"
         description="Review products in your shopping cart and continue checkout securely."
         canonicalPath="/cart"
+        noIndex
       />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl mb-8">Shopping Cart</h1>

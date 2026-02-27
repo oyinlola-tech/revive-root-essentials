@@ -63,6 +63,7 @@ export default function VerifyOTP() {
         title="Verify Account"
         description="Verify your account with one-time password to complete signup."
         canonicalPath="/register/verify-otp"
+        noIndex
       />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

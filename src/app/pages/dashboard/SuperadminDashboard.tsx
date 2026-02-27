@@ -161,6 +161,7 @@ export default function SuperadminDashboard() {
         title="Superadmin Dashboard"
         description="Manage users, admin access, products, orders, and platform analytics."
         canonicalPath="/dashboard"
+        noIndex
       />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

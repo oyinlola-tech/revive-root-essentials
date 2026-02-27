@@ -83,6 +83,7 @@ export default function Login() {
         title="Login"
         description="Sign in to your Revive Roots Essentials account to manage orders and saved products."
         canonicalPath="/login"
+        noIndex
       />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">

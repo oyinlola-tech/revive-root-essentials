@@ -61,8 +61,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:opacity-100">
-                  Blog
+                <Link to="/shop?search=soap" className="hover:opacity-100">
+                  Soaps
                 </Link>
               </li>
               <li>
@@ -111,19 +111,19 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm opacity-60">© 2026 Revive Roots Essentials. All rights reserved.</p>
+          <p className="text-sm opacity-60">Copyright 2026 Revive Roots Essentials. All rights reserved.</p>
           
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="opacity-60 hover:opacity-100">
+            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
               <Facebook className="h-5 w-5" />
             </a>
-            <a href="#" className="opacity-60 hover:opacity-100">
+            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
               <Instagram className="h-5 w-5" />
             </a>
-            <a href="#" className="opacity-60 hover:opacity-100">
+            <a href="https://x.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
               <Twitter className="h-5 w-5" />
             </a>
-            <a href="#" className="opacity-60 hover:opacity-100">
+            <a href="mailto:info@reviveroots.com" className="opacity-60 hover:opacity-100">
               <Mail className="h-5 w-5" />
             </a>
           </div>
@@ -132,3 +132,4 @@ export function Footer() {
     </footer>
   );
 }
+

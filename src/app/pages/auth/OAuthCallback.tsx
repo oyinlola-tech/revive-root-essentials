@@ -59,6 +59,7 @@ export default function OAuthCallback() {
         title="Authenticating"
         description="Completing social sign-in."
         canonicalPath="/auth/oauth-callback"
+        noIndex
       />
       <div className="text-center">
         <h1 className="text-2xl mb-2">Completing sign in...</h1>

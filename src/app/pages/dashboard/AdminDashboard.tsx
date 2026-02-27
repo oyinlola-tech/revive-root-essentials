@@ -38,6 +38,7 @@ export default function AdminDashboard() {
         title="Admin Dashboard"
         description="Manage products, orders, and analytics for Revive Roots Essentials."
         canonicalPath="/dashboard"
+        noIndex
       />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

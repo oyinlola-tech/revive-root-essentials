@@ -130,6 +130,8 @@
       radial-gradient(circle at 8% 10%, rgba(244, 225, 206, 0.55), transparent 28%),
       radial-gradient(circle at 92% 88%, rgba(223, 236, 219, 0.5), transparent 32%);
     background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   /**
@@ -144,13 +146,15 @@
   h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
   }
 
   h2 {
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
   }
 
   h3 {
@@ -193,7 +197,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.9) 80%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.67) 0%, rgba(255, 255, 255, 0.9) 80%);
     pointer-events: none;
   }
 

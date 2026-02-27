@@ -127,10 +127,15 @@ export default function Shop() {
       />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 rounded-2xl border border-[#eadfd6] bg-[#fbf6f1] p-6 md:p-8">
           <h1 className="text-4xl mb-4">Shop Revive Roots for Calm, Confident Skin</h1>
+          <p className="text-muted-foreground mb-4">
+            Discover our complete collection of natural skincare essentials, from daily cleansers and
+            balancing serums to deeply hydrating moisturizers and treatment-focused care.
+          </p>
           <p className="text-muted-foreground">
-            Discover our complete collection of natural skincare essentials
+            Use filters to refine by category, price range, and sorting preference so you can find products
+            that fit both your skin goals and your routine pace.
           </p>
         </div>
 
@@ -215,6 +220,19 @@ export default function Shop() {
                 </Button>
               </CardContent>
             </Card>
+
+            <Card className="border-[#eadfd6] bg-[#fbf6f1]">
+              <CardContent className="p-4">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#7a5b48]">
+                  Shopping Tips
+                </h2>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>Start with one treatment product and build slowly to monitor tolerance.</li>
+                  <li>Prioritize hydration support when introducing active ingredients.</li>
+                  <li>Use search to find ingredients or specific concerns quickly.</li>
+                </ul>
+              </CardContent>
+            </Card>
           </aside>
 
           {/* Products Grid */}
@@ -262,6 +280,18 @@ export default function Shop() {
             )}
           </div>
         </div>
+
+        <section className="mt-14 rounded-2xl border border-[#eadfd6] bg-[#f8f2ec] p-6 md:p-8">
+          <h2 className="text-2xl mb-4">Need Help Choosing Products?</h2>
+          <p className="text-muted-foreground mb-3">
+            If you are unsure where to begin, focus on a simple structure: cleanser, treatment, moisturizer.
+            This core routine helps reduce product conflict and makes it easier to track results over time.
+          </p>
+          <p className="text-muted-foreground">
+            For personalized product guidance, visit our contact page and share your skin goals, sensitivity
+            concerns, and what you currently use. Our team can suggest a practical starting set.
+          </p>
+        </section>
       </div>
     </div>
   );

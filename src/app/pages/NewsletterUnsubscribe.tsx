@@ -33,6 +33,7 @@ export default function NewsletterUnsubscribe() {
         title="Newsletter Unsubscribe"
         description="Manage your newsletter subscription preferences."
         canonicalPath="/newsletter/unsubscribe"
+        noIndex
       />
       <div className="max-w-xl w-full border border-border rounded-lg bg-card p-8 text-center space-y-4">
         <h1 className="text-3xl">Newsletter Preferences</h1>
