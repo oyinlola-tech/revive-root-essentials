@@ -5,32 +5,44 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
 
-export function Login() {
+export function Signup() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - navigate to OTP
+    // Mock signup - navigate to OTP
     navigate("/auth/otp");
   };
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`Login with ${provider}`);
+  const handleSocialSignup = (provider: string) => {
+    console.log(`Sign up with ${provider}`);
     navigate("/");
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-        <p className="opacity-70">Sign in to your account to continue</p>
+        <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+        <p className="opacity-70">Join the Revive Roots Essential family</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="name">Full Name</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+            className="bg-input-background"
+          />
+        </div>
         <div>
           <Label htmlFor="email">Email</Label>
           <Input
@@ -53,8 +65,21 @@ export function Login() {
             className="bg-input-background"
           />
         </div>
+        <div>
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) =>
+              setFormData({ ...formData, confirmPassword: e.target.value })
+            }
+            required
+            className="bg-input-background"
+          />
+        </div>
         <Button type="submit" className="w-full">
-          Sign In
+          Create Account
         </Button>
       </form>
 
@@ -68,7 +93,7 @@ export function Login() {
       <div className="grid grid-cols-2 gap-4">
         <Button
           variant="outline"
-          onClick={() => handleSocialLogin("Google")}
+          onClick={() => handleSocialSignup("Google")}
           className="gap-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -93,7 +118,7 @@ export function Login() {
         </Button>
         <Button
           variant="outline"
-          onClick={() => handleSocialLogin("Apple")}
+          onClick={() => handleSocialSignup("Apple")}
           className="gap-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -104,9 +129,9 @@ export function Login() {
       </div>
 
       <p className="text-center text-sm">
-        Don't have an account?{" "}
-        <Link to="/auth/signup" className="font-semibold hover:opacity-70">
-          Sign Up
+        Already have an account?{" "}
+        <Link to="/auth/login" className="font-semibold hover:opacity-70">
+          Sign In
         </Link>
       </p>
     </div>

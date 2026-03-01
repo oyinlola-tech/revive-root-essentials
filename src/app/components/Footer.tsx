@@ -1,135 +1,127 @@
-import { Link } from 'react-router';
-import { Facebook, Instagram, Twitter, Mail } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { useState } from 'react';
-import { newsletterAPI } from '../services/api';
-import { toast } from 'sonner';
+import { Link } from "react-router";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { BRAND_LOGO_SRC, BRAND_NAME } from "../constants/branding";
+import { useState } from "react";
+import { subscribeToNewsletter } from "../services/api";
 
 export function Footer() {
-  const [email, setEmail] = useState('');
-  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [email, setEmail] = useState("");
+  const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "success" | "error">("idle");
 
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubscribing(true);
-    
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!email.trim()) return;
+
+    setNewsletterState("loading");
     try {
-      await newsletterAPI.subscribe(email);
-      toast.success('Successfully subscribed to newsletter!');
-      setEmail('');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to subscribe');
-    } finally {
-      setIsSubscribing(false);
+      await subscribeToNewsletter(email);
+      setNewsletterState("success");
+      setEmail("");
+    } catch {
+      setNewsletterState("error");
     }
   };
 
   return (
-    <footer className="bg-gradient-to-br from-[#342721] via-[#3f2f29] to-[#2e231e] text-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* About */}
-          <div>
-            <h3 className="text-lg mb-4">About Us</h3>
-            <ul className="space-y-2 text-sm opacity-80">
-              <li>
-                <Link to="/about" className="hover:opacity-100">
-                  Our Story
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:opacity-100">
-                  Contact Info
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms-and-conditions" className="hover:opacity-100">
-                  Terms & Conditions
-                </Link>
-              </li>
-            </ul>
+    <footer className="bg-primary text-primary-foreground">
+      <div className="container mx-auto px-4 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/30 bg-white p-1 shadow-sm">
+                <img
+                  src={BRAND_LOGO_SRC}
+                  alt={BRAND_NAME}
+                  className="h-full w-full rounded-full object-contain"
+                />
+              </span>
+              <span className="font-bold text-base">
+                Revive Roots
+                <br />
+                Essential
+              </span>
+            </div>
+            <p className="text-sm opacity-90">
+              Natural hair and skincare solutions for healthy, radiant beauty.
+            </p>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h3 className="text-lg mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-sm opacity-80">
+            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Quick Links</h3>
+            <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/shop" className="hover:opacity-100">
+                <Link to="/" className="hover:opacity-70 transition-opacity">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/shop" className="hover:opacity-70 transition-opacity">
                   Shop
                 </Link>
               </li>
               <li>
-                <Link to="/shop?search=soap" className="hover:opacity-100">
-                  Soaps
+                <Link to="/about" className="hover:opacity-70 transition-opacity">
+                  About
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:opacity-100">
-                  FAQ
+                <Link to="/contact" className="hover:opacity-70 transition-opacity">
+                  Contact
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Contact */}
           <div>
-            <h3 className="text-lg mb-4">Contact Info</h3>
-            <div className="space-y-2 text-sm opacity-80">
-              <p>Email: info@reviveroots.com</p>
-              <p>Phone: +1 (555) 123-4567</p>
-              <p>Address: 123 Main St, City, State 12345</p>
-            </div>
+            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Contact Info</h3>
+            <ul className="space-y-2 text-sm">
+              <li className="opacity-90">support@reviverootsessential.com</li>
+              <li className="opacity-90">+1 (555) 123-4567</li>
+              <li className="opacity-90">
+                123 Beauty Street
+                <br />
+                New York, NY 10001
+              </li>
+            </ul>
           </div>
 
-          {/* Newsletter */}
           <div>
-            <h3 className="text-lg mb-4">Join the Newsletter</h3>
-            <p className="text-sm opacity-80 mb-4">
-              Get exclusive updates, skincare tips, and offers.
-            </p>
-            <form onSubmit={handleSubscribe} className="flex gap-2">
+            <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Join the Revive Roots Family</h3>
+            <p className="text-sm opacity-90 mb-4">Get exclusive updates, skincare tips, and special offers.</p>
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (newsletterState !== "idle") setNewsletterState("idle");
+                }}
+                className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
                 required
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               />
-              <Button 
-                type="submit" 
-                disabled={isSubscribing}
-                className="bg-white text-[#3a2e28] hover:bg-white/90"
+              <Button
+                type="submit"
+                disabled={newsletterState === "loading"}
+                className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               >
-                {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+                {newsletterState === "loading" ? "..." : "Subscribe"}
               </Button>
             </form>
+            {newsletterState === "success" && <p className="text-xs mt-2 opacity-90">Subscribed successfully.</p>}
+            {newsletterState === "error" && (
+              <p className="text-xs mt-2 text-red-200">Subscription failed. Please try again.</p>
+            )}
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm opacity-60">Copyright 2026 Revive Roots Essentials. All rights reserved.</p>
-          
-          <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
-              <Facebook className="h-5 w-5" />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
-              <Instagram className="h-5 w-5" />
-            </a>
-            <a href="https://x.com" target="_blank" rel="noreferrer" className="opacity-60 hover:opacity-100">
-              <Twitter className="h-5 w-5" />
-            </a>
-            <a href="mailto:info@reviveroots.com" className="opacity-60 hover:opacity-100">
-              <Mail className="h-5 w-5" />
-            </a>
-          </div>
+        <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-sm text-center opacity-80">
+          <p>
+            &copy; {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
   );
 }
-

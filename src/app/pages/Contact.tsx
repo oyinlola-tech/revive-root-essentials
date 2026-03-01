@@ -1,156 +1,221 @@
-import { FormEvent, useState } from 'react';
-import { SEO } from '../components/SEO';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import { contactAPI } from '../services/api';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import { toast } from 'sonner';
-import { sectionImages } from '../utils/imagePool';
+import { useState } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import { Mail, MapPin, Phone } from "lucide-react";
+import { submitContactMessage } from "../services/api";
 
-export default function Contact() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
+export function Contact() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
   });
+  const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setSubmitState("loading");
 
-    if (!form.name || !form.email || !form.subject || !form.message) {
-      toast.error('Please fill out all fields before submitting.');
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
-      await contactAPI.submitContactForm(form);
-      toast.success('Your message has been sent. We will get back to you shortly.');
-      setForm({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-      });
-    } catch (error: any) {
-      toast.error(error?.message || 'Unable to submit your message right now.');
-    } finally {
-      setIsSubmitting(false);
+      await submitContactMessage(formData);
+      setSubmitState("success");
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch {
+      setSubmitState("error");
     }
   };
 
   return (
-    <div className="min-h-screen page-section">
-      <SEO
-        title="Contact Revive Roots Essentials"
-        description="Reach our skincare support team for product guidance, order help, and general inquiries."
-        canonicalPath="/contact"
-      />
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-5xl mb-6 text-center">Contact Us</h1>
-          <p className="text-lg text-muted-foreground text-center mb-10">
-            We typically respond within one business day. Reach us for order support, product guidance,
-            routine questions, or wholesale discussions.
-          </p>
-          <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr] md:items-start">
-            <div className="rounded-2xl overflow-hidden border border-[#eadfd6] shadow-sm min-h-[220px] md:max-w-sm">
-              <ImageWithFallback
-                src={sectionImages.contactPanel}
-                alt="Skincare consultation"
-                className="h-full w-full object-cover"
-              />
+    <div>
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">Let&apos;s Talk About Your Hair and Skin</h1>
+              <p className="text-lg opacity-70 mb-8">
+                Have questions about our products or need guidance on what to choose? Our support
+                team is ready to help.
+              </p>
+
+              <div className="aspect-video overflow-hidden rounded-lg mb-8">
+                <img
+                  src="https://images.unsplash.com/photo-1602188521046-bd078a8924aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGhlYWx0aHklMjBoYWlyfGVufDF8fHx8MTc3MjM2NTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080"
+                  alt="Contact Revive Roots Essential"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-            <Card className="border-0 shadow-lg bg-white/85 backdrop-blur">
-              <CardHeader>
-                <CardTitle>Support Channels</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-muted-foreground">
-                <p>Email: support@reviverootsessentials.com (General support and order updates)</p>
-                <p>Phone: +1 (555) 123-4567 (Mon-Fri, 9:00 AM - 5:00 PM)</p>
-                <p>WhatsApp: +1 (555) 123-4567 (Quick product and routine help)</p>
-                <p className="pt-2 text-sm">
-                  For faster support, include your order number and the exact product names in your message.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
 
-          <div className="mt-12 grid gap-8 lg:grid-cols-2">
-            <Card className="border-[#eadfd6]">
-              <CardHeader>
-                <CardTitle>Send Us a Message</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={form.name}
-                      onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                      placeholder="Your full name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={form.email}
-                      onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      id="subject"
-                      value={form.subject}
-                      onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
-                      placeholder="How can we help?"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      value={form.message}
-                      onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
-                      placeholder="Please share details of your request..."
-                      className="min-h-32"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? 'Sending Message...' : 'Submit Message'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#eadfd6]">
-              <CardHeader>
-                <CardTitle>What We Can Help With</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-muted-foreground">
-                <p>1. Product matching based on skin type, sensitivity, and current routine.</p>
-                <p>2. Order support including tracking, delivery concerns, and replacement requests.</p>
-                <p>3. Routine sequencing: what to use first, what to combine, and what to avoid.</p>
-                <p>4. Business and partnership inquiries for retail and wholesale opportunities.</p>
-              </CardContent>
-            </Card>
+            <div className="bg-muted/30 p-8 rounded-lg">
+              <h2 className="text-2xl font-bold mb-6">Drop Us a Note</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(event) => {
+                      setFormData({ ...formData, name: event.target.value });
+                      if (submitState !== "idle") setSubmitState("idle");
+                    }}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(event) => {
+                      setFormData({ ...formData, email: event.target.value });
+                      if (submitState !== "idle") setSubmitState("idle");
+                    }}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    value={formData.subject}
+                    onChange={(event) => {
+                      setFormData({ ...formData, subject: event.target.value });
+                      if (submitState !== "idle") setSubmitState("idle");
+                    }}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    rows={6}
+                    value={formData.message}
+                    onChange={(event) => {
+                      setFormData({ ...formData, message: event.target.value });
+                      if (submitState !== "idle") setSubmitState("idle");
+                    }}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                <Button type="submit" size="lg" className="w-full" disabled={submitState === "loading"}>
+                  {submitState === "loading" ? "Sending..." : "Send Message"}
+                </Button>
+                {submitState === "success" && (
+                  <p className="text-sm text-green-700">Thank you. Your message has been sent successfully.</p>
+                )}
+                {submitState === "error" && (
+                  <p className="text-sm text-red-600">Unable to send your message right now. Please try again.</p>
+                )}
+              </form>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Talk to Us Directly</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Address</h3>
+              <p className="opacity-70">
+                123 Beauty Street
+                <br />
+                New York, NY 10001
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <Phone className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Phone</h3>
+              <p className="opacity-70">+1 (555) 123-4567</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Email</h3>
+              <p className="opacity-70">support@reviverootsessential.com</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Store Locations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="p-6 border border-border rounded-lg">
+              <h3 className="font-semibold text-lg mb-2">New York</h3>
+              <p className="opacity-70 mb-1">123 Beauty Street, Manhattan</p>
+              <p className="opacity-70">NY 10001</p>
+            </div>
+            <div className="p-6 border border-border rounded-lg">
+              <h3 className="font-semibold text-lg mb-2">Los Angeles</h3>
+              <p className="opacity-70 mb-1">45 Wellness Avenue, West Hollywood</p>
+              <p className="opacity-70">CA 90069</p>
+            </div>
+            <div className="p-6 border border-border rounded-lg">
+              <h3 className="font-semibold text-lg mb-2">Chicago</h3>
+              <p className="opacity-70 mb-1">88 Lakeview Plaza, Downtown</p>
+              <p className="opacity-70">IL 60601</p>
+            </div>
+            <div className="p-6 border border-border rounded-lg">
+              <h3 className="font-semibold text-lg mb-2">Houston</h3>
+              <p className="opacity-70 mb-1">210 Greenway Circle, Uptown</p>
+              <p className="opacity-70">TX 77056</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 md:py-24 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">Revive Roots Help Center</h2>
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="bg-primary-foreground/10 p-6 rounded-lg">
+              <h3 className="font-semibold mb-2">Are your products suitable for sensitive skin?</h3>
+              <p className="opacity-90">
+                Yes. Our formulas are designed to be gentle and are made with carefully selected
+                ingredients. We still recommend patch testing first.
+              </p>
+            </div>
+            <div className="bg-primary-foreground/10 p-6 rounded-lg">
+              <h3 className="font-semibold mb-2">Can I use your products during pregnancy?</h3>
+              <p className="opacity-90">
+                Many customers do, but we recommend checking with your healthcare professional for
+                products used during pregnancy and breastfeeding.
+              </p>
+            </div>
+            <div className="bg-primary-foreground/10 p-6 rounded-lg">
+              <h3 className="font-semibold mb-2">How soon can I expect results?</h3>
+              <p className="opacity-90">
+                Most customers notice visible improvement within 2 to 4 weeks of consistent use,
+                depending on product and skin or hair type.
+              </p>
+            </div>
+            <div className="bg-primary-foreground/10 p-6 rounded-lg">
+              <h3 className="font-semibold mb-2">Are your products cruelty-free?</h3>
+              <p className="opacity-90">Yes. We do not test on animals.</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -2,29 +2,29 @@
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --background: #e3e1bb;
+  --foreground: #052012;
+  --card: #e3e1bb;
+  --card-foreground: #052012;
+  --popover: #e3e1bb;
+  --popover-foreground: #052012;
+  --primary: #052012;
+  --primary-foreground: #e3e1bb;
+  --secondary: #c4c2a0;
+  --secondary-foreground: #052012;
+  --muted: #d0ce9f;
+  --muted-foreground: #052012;
+  --accent: #c4c2a0;
+  --accent-foreground: #052012;
   --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  --destructive-foreground: #e3e1bb;
+  --border: rgba(5, 32, 18, 0.15);
   --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --input-background: #d0ce9f;
+  --switch-background: #c4c2a0;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: #052012;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -126,12 +126,6 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 8% 10%, rgba(244, 225, 206, 0.55), transparent 28%),
-      radial-gradient(circle at 92% 88%, rgba(223, 236, 219, 0.5), transparent 32%);
-    background-attachment: fixed;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
   }
 
   /**
@@ -146,15 +140,13 @@
   h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
-    line-height: 1.18;
-    letter-spacing: -0.02em;
+    line-height: 1.5;
   }
 
   h2 {
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    line-height: 1.5;
   }
 
   h3 {
@@ -185,24 +177,5 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
-  }
-}
-
-@layer components {
-  .page-section {
-    @apply relative;
-  }
-
-  .page-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.67) 0%, rgba(255, 255, 255, 0.9) 80%);
-    pointer-events: none;
-  }
-
-  .page-section > * {
-    position: relative;
-    z-index: 1;
   }
 }

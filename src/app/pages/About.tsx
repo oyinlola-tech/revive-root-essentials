@@ -1,101 +1,176 @@
-import { SEO } from '../components/SEO';
-import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import { sectionImages } from '../utils/imagePool';
-import { Card, CardContent } from '../components/ui/card';
-import { BadgeCheck, HeartHandshake, Leaf, ShieldCheck } from 'lucide-react';
+import { teamMembers } from "../data/team";
 
-export default function About() {
+export function About() {
   return (
-    <div className="min-h-screen page-section">
-      <SEO
-        title="About Revive Roots Essentials"
-        description="Learn about our mission, ingredients philosophy, and commitment to clean skincare."
-        canonicalPath="/about"
-      />
-      <section className="bg-[#fffaf6] py-20">
+    <div>
+      {/* Hero */}
+      <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-5xl mb-6">Rooted in Nature, Designed for Skin Health</h1>
-              <p className="text-lg text-muted-foreground leading-8">
-                Revive Roots Essentials creates clean skincare with practical formulas, transparent ingredients,
-                and routines that support long-term skin resilience. We focus on products that are gentle,
-                effective, and consistent enough for daily use.
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">
+                Behind Revive Roots Essential's Calm, Confident Glow
+              </h1>
+              <p className="text-lg opacity-70 mb-6">
+                We believe in the power of nature to transform your beauty routine.
+                Our journey began with a simple mission: to create effective,
+                sustainable products that bring out your natural radiance.
+              </p>
+              <p className="text-lg opacity-70">
+                Every product we create is crafted with care, using only the finest
+                natural ingredients, backed by science, and tested for your peace
+                of mind.
               </p>
             </div>
-            <Card className="overflow-hidden border-[#eadfd6] bg-white/85 shadow-sm lg:max-w-sm">
-              <div className="aspect-[4/5]">
-                <ImageWithFallback
-                  src={sectionImages.aboutHero}
-                  alt="Botanical skincare textures"
-                  className="h-full w-full object-cover"
-                />
+            <div className="aspect-square overflow-hidden rounded-lg">
+              <img
+                src="https://images.unsplash.com/photo-1602188521046-bd078a8924aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGhlYWx0aHklMjBoYWlyfGVufDF8fHx8MTc3MjM2NTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="About Revive Roots Essential"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Story */}
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
+              From Irritated Skin to Calm Radiance
+            </h2>
+            <div className="space-y-6 text-lg opacity-70">
+              <p>
+                Revive Roots Essential was born from a personal journey of
+                struggling with sensitive skin and damaged hair. Our founder,
+                Sarah Mitchell, spent years searching for products that were both
+                effective and gentle, only to be disappointed time and again.
+              </p>
+              <p>
+                Determined to find a solution, she partnered with leading
+                biochemists and natural ingredient experts to create a line of
+                products that truly work. Today, Revive Roots Essential stands as
+                a testament to the power of combining nature's wisdom with modern
+                science.
+              </p>
+              <p>
+                We're proud to serve thousands of customers who have discovered
+                their natural beauty through our products. Our commitment to
+                quality, sustainability, and efficacy remains unwavering.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Values */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
+            Milestones on Our Skin Journey
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="relative overflow-hidden rounded-lg aspect-video">
+              <img
+                src="https://images.unsplash.com/photo-1760038548850-bfc356d88b12?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoYWlyJTIwY2FyZSUyMHByb2R1Y3RzJTIwYm90dGxlfGVufDF8fHx8MTc3MjM2NTI2NHww&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="Natural Ingredients"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+                <h3 className="text-2xl font-bold mb-2">100% Natural</h3>
+                <p>Sourced from sustainable farms around the world</p>
               </div>
-              <CardContent className="p-4 text-sm text-muted-foreground">
-                We formulate with clarity and intention so your routine stays simple, consistent, and effective.
-              </CardContent>
-            </Card>
+            </div>
+            <div className="relative overflow-hidden rounded-lg aspect-video">
+              <img
+                src="https://images.unsplash.com/photo-1768235146463-328c98e7234d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxza2luY2FyZSUyMHNlcnVtJTIwY3JlYW18ZW58MXx8fHwxNzcyMzY1MjY1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="Lab Testing"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+                <h3 className="text-2xl font-bold mb-2">Scientifically Proven</h3>
+                <p>Rigorously tested for safety and efficacy</p>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-lg aspect-video">
+              <img
+                src="https://images.unsplash.com/photo-1764599955087-7095c3540510?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwc2tpbmNhcmUlMjBqYXJ8ZW58MXx8fHwxNzcyMzY1MjY1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="Sustainable Packaging"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+                <h3 className="text-2xl font-bold mb-2">Eco-Conscious</h3>
+                <p>Recyclable packaging and carbon-neutral shipping</p>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-lg aspect-video">
+              <img
+                src="https://images.unsplash.com/photo-1765607476376-9574ea76b2ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnbG93aW5nJTIwc2tpbiUyMGJlYXV0eXxlbnwxfHx8fDE3NzIzNjUyNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+                alt="Customer Care"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
+                <h3 className="text-2xl font-bold mb-2">Customer First</h3>
+                <p>Dedicated support for your beauty journey</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-16">
+      {/* Our Team */}
+      <section className="py-16 md:py-24 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-[#eee3d8]">
-              <CardContent className="p-5">
-                <Leaf className="mb-3 h-5 w-5 text-[#7a5b48]" />
-                <h2 className="mb-2 font-semibold">Ingredient Integrity</h2>
-                <p className="text-sm text-muted-foreground">
-                  We prioritize ingredient transparency and balanced formulations.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-[#eee3d8]">
-              <CardContent className="p-5">
-                <ShieldCheck className="mb-3 h-5 w-5 text-[#7a5b48]" />
-                <h2 className="mb-2 font-semibold">Skin Barrier Respect</h2>
-                <p className="text-sm text-muted-foreground">
-                  Products are designed to support comfort and reduce avoidable irritation.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-[#eee3d8]">
-              <CardContent className="p-5">
-                <BadgeCheck className="mb-3 h-5 w-5 text-[#7a5b48]" />
-                <h2 className="mb-2 font-semibold">Consistent Quality</h2>
-                <p className="text-sm text-muted-foreground">
-                  We focus on stable product performance and practical routine fit.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-[#eee3d8]">
-              <CardContent className="p-5">
-                <HeartHandshake className="mb-3 h-5 w-5 text-[#7a5b48]" />
-                <h2 className="mb-2 font-semibold">Customer Support</h2>
-                <p className="text-sm text-muted-foreground">
-                  We guide you based on your goals, budget, and current routine.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Meet the Team Behind Revive Roots
+            </h2>
+            <p className="text-lg opacity-70 max-w-2xl mx-auto">
+              Passionate experts dedicated to bringing you the best in natural
+              beauty
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {teamMembers.map((member) => (
+              <div key={member.id} className="text-center">
+                <div className="aspect-square overflow-hidden rounded-lg mb-4">
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
+                <p className="text-sm opacity-60 mb-3">{member.role}</p>
+                <p className="text-sm opacity-70">{member.bio}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-[#f6efe8] py-20">
+      {/* CTA */}
+      <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-4xl rounded-2xl border border-[#eadfd6] bg-white p-8">
-            <h2 className="text-3xl mb-5 text-center">Our Formulation Philosophy</h2>
-            <p className="text-muted-foreground mb-4 leading-8 text-center">
-              We believe strong skincare starts with clear priorities: cleanse gently, treat with intent,
-              hydrate deeply, and protect daily. Instead of overcomplicated routines, we build products
-              that layer well and make progression easier to track.
+          <div className="bg-primary text-primary-foreground rounded-2xl p-8 md:p-16 text-center max-w-4xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Let's Talk Skin & Revive Roots
+            </h2>
+            <p className="text-lg mb-8 opacity-90">
+              Have questions about our products or want to learn more about
+              natural beauty? We'd love to hear from you.
             </p>
-            <p className="text-muted-foreground leading-8 text-center">
-              Every ingredient choice is made to balance performance and tolerance. Whether you are managing
-              dryness, texture, dullness, or sensitivity, we help you move toward healthier skin over time
-              with routines that are realistic enough to keep.
-            </p>
+            <a
+              href="/contact"
+              className="inline-block px-8 py-3 bg-primary-foreground text-primary rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors"
+            >
+              Contact Us
+            </a>
           </div>
         </div>
       </section>

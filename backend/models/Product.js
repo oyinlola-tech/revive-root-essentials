@@ -51,9 +51,17 @@ module.exports = (sequelize) => {
       type: DataTypes.JSON, // store as JSON array
       allowNull: true,
     },
+    benefits: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     howToUse: {
       type: DataTypes.TEXT,
       field: 'how_to_use',
+    },
+    size: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
     },
     stock: {
       type: DataTypes.INTEGER,
