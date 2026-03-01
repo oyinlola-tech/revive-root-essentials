@@ -8,6 +8,8 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('./middlewares/rateLimitMiddleware');
 
+// Load backend-specific env first, then allow root-level .env as fallback.
+dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 const authRoutes = require('./routes/authRoutes');

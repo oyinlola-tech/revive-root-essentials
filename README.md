@@ -156,6 +156,7 @@ mysql -u <db_user> -p < backend/sql/schema.sql
 Frontend (`/.env`):
 
 - `VITE_API_URL` (example: `http://localhost:3000/api`)
+- `VITE_BACKEND_ORIGIN` (example: `http://localhost:3000`, used by Vite proxy for `/api`)
 - `VITE_SITE_NAME`
 - `VITE_SITE_URL`
 - `VITE_WHATSAPP_NUMBER`
@@ -210,6 +211,8 @@ Frontend (from repo root):
 ```bash
 npm run dev
 ```
+
+In development, Vite proxies `/api`, `/health`, and `/uploads` to `VITE_BACKEND_ORIGIN` (defaults to `http://localhost:3000`).
 
 Backend (from `/backend`):
 

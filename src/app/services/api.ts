@@ -1,7 +1,23 @@
 import type { Product } from "../types/product";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+const configuredApiUrl = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
 const AUTH_STORAGE_KEY = "revive_roots_auth";
+const REQUEST_TIMEOUT_MS = 12000;
+const MAX_GET_RETRIES = 1;
+
+const getApiBaseUrls = () => {
+  const fromWindow = typeof window !== "undefined"
+    ? `${window.location.origin}/api`
+    : "";
+
+  const bases = [
+    configuredApiUrl,
+    fromWindow,
+    "http://localhost:3000/api",
+  ].filter(Boolean);
+
+  return Array.from(new Set(bases));
+};
 
 type ProductCategory = Product["category"];
 
@@ -227,24 +243,45 @@ const getSession = (): AuthSession | null => {
 
 const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = false): Promise<T> => {
   const session = authenticated ? getSession() : null;
-  const response = await fetch(`${API_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-      ...(init?.headers || {}),
-    },
-    ...init,
-  });
+  const baseUrls = getApiBaseUrls();
+  let lastError: Error | null = null;
+  const requestMethod = String(init?.method || "GET").toUpperCase();
+  const retryAttempts = requestMethod === "GET" ? MAX_GET_RETRIES : 0;
 
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response));
+  for (const baseUrl of baseUrls) {
+    for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(`${baseUrl}${path}`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+            ...(init?.headers || {}),
+          },
+          ...init,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(await getErrorMessage(response));
+        }
+
+        if (response.status === 204) {
+          return null as T;
+        }
+
+        return response.json() as Promise<T>;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Network request failed");
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
   }
 
-  if (response.status === 204) {
-    return null as T;
-  }
-
-  return response.json() as Promise<T>;
+  throw new Error(lastError?.message || "Unable to connect to backend");
 };
 
 const sortToApi = (sortBy?: "featured" | "price-low" | "price-high"): string | undefined => {

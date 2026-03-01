@@ -3,14 +3,20 @@ const { sequelize } = require('./models');
 const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 
-const PORT = process.env.PORT;
-const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS'];
+const PORT = Number(process.env.PORT) || 3000;
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS'];
 let server;
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 if (missingEnvVars.length > 0) {
   console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
   process.exit(1);
+}
+
+const missingOptionalVars = optionalEnvVars.filter((key) => !process.env[key]);
+if (missingOptionalVars.length > 0) {
+  console.warn(`Missing optional environment variables (email notifications may be disabled): ${missingOptionalVars.join(', ')}`);
 }
 
 sequelize

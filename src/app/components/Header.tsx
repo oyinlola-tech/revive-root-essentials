@@ -28,7 +28,7 @@ export function Header() {
                 className="h-full w-full rounded-full object-contain"
               />
             </span>
-            <span className="font-bold text-lg hidden sm:block">{BRAND_NAME}</span>
+            <span className="font-bold text-sm leading-tight sm:text-lg">{BRAND_NAME}</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -40,9 +40,6 @@ export function Header() {
             </Link>
             <Link to="/about" className="hover:opacity-70 transition-opacity">
               About
-            </Link>
-            <Link to="/wishlist" className="hover:opacity-70 transition-opacity">
-              Wishlist
             </Link>
             <Link to="/contact" className="hover:opacity-70 transition-opacity">
               Contact
@@ -93,20 +90,6 @@ export function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               About
-            </Link>
-            <Link
-              to="/wishlist"
-              className="hover:opacity-70 transition-opacity"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Wishlist
-            </Link>
-            <Link
-              to="/cart"
-              className="hover:opacity-70 transition-opacity"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Cart ({cartCount})
             </Link>
             <Link
               to="/contact"
