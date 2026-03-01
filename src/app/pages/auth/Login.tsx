@@ -20,10 +20,29 @@ export function Login() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+
+    if (!formData.email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+    if (!formData.password) {
+      setError("Password is required.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const session = await login(formData);
+      const response = await login(formData) as any;
+
+      // If admin/superadmin requires OTP
+      if (response.requiresOtp && response.identifier) {
+        navigate(`/auth/otp?identifier=${encodeURIComponent(response.identifier)}&admin=true&redirect=${encodeURIComponent(searchParams.get("redirect") || "/admin")}`);
+        return;
+      }
+
+      // Regular user login successful
+      const session = response;
       const redirect = searchParams.get("redirect");
       if (redirect && session.user.role === "user") {
         navigate(redirect);
@@ -93,6 +112,7 @@ export function Login() {
             type="email"
             value={formData.email}
             onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+            placeholder="you@example.com"
             required
             className="bg-input-background"
           />
@@ -104,6 +124,7 @@ export function Login() {
             type="password"
             value={formData.password}
             onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+            placeholder="••••••••"
             required
             className="bg-input-background"
           />

@@ -23,6 +23,31 @@ export function Signup() {
     event.preventDefault();
     setError("");
 
+    // Validation
+    if (!formData.name.trim()) {
+      setError("Full name is required.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+    if (!formData.password) {
+      setError("Password is required.");
+      return;
+    }
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError("Password must contain at least one uppercase letter.");
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError("Password must contain at least one number.");
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -104,6 +129,7 @@ export function Signup() {
             id="name"
             value={formData.name}
             onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+            placeholder="John Doe"
             required
             className="bg-input-background"
           />
@@ -115,6 +141,7 @@ export function Signup() {
             type="email"
             value={formData.email}
             onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+            placeholder="you@example.com"
             required
             className="bg-input-background"
           />
@@ -126,9 +153,11 @@ export function Signup() {
             type="password"
             value={formData.password}
             onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+            placeholder="Min 8 chars, 1 uppercase letter, 1 number"
             required
             className="bg-input-background"
           />
+          <p className="text-xs opacity-70 mt-1">At least 8 characters, 1 uppercase letter, and 1 number</p>
         </div>
         <div>
           <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -137,6 +166,7 @@ export function Signup() {
             type="password"
             value={formData.confirmPassword}
             onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
+            placeholder="••••••••"
             required
             className="bg-input-background"
           />

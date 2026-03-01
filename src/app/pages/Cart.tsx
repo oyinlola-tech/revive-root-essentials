@@ -42,6 +42,24 @@ export function Cart() {
       return;
     }
 
+    // Validate shipping address
+    if (!checkout.state.trim()) {
+      setErrorMessage("State/Province is required.");
+      return;
+    }
+    if (!checkout.city.trim()) {
+      setErrorMessage("City is required.");
+      return;
+    }
+    if (!checkout.line1.trim()) {
+      setErrorMessage("Street address is required.");
+      return;
+    }
+    if (checkout.line1.trim().length < 5) {
+      setErrorMessage("Please provide a valid street address.");
+      return;
+    }
+
     const session = getAuthSession();
     if (!session) {
       navigate("/auth/login");
@@ -54,14 +72,14 @@ export function Cart() {
       const response = await createOrder({
         items: cartItems.map((item) => ({
           productId: item.product.backendId || item.product.id,
-          quantity: item.quantity,
+          quantity: Math.max(1, item.quantity),
         })),
         shippingAddress: {
           country: checkout.country,
-          state: checkout.state,
-          city: checkout.city,
-          line1: checkout.line1,
-          postalCode: checkout.postalCode || undefined,
+          state: checkout.state.trim(),
+          city: checkout.city.trim(),
+          line1: checkout.line1.trim(),
+          postalCode: checkout.postalCode?.trim() || undefined,
         },
         paymentMethod: checkout.paymentMethod,
         currency: activeCurrency,
@@ -72,7 +90,9 @@ export function Cart() {
       setSuccessMessage(`Order ${response.orderNumber} created successfully.`);
 
       if (response.paymentUrl) {
-        window.location.href = response.paymentUrl;
+        setTimeout(() => {
+          window.location.href = response.paymentUrl;
+        }, 1500);
       }
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to complete checkout.");
@@ -181,10 +201,11 @@ export function Cart() {
                 />
               </div>
               <div>
-                <Label>State</Label>
+                <Label>State/Province</Label>
                 <Input
                   value={checkout.state}
                   onChange={(event) => setCheckout({ ...checkout, state: event.target.value })}
+                  placeholder="e.g. Lagos"
                   required
                 />
               </div>
@@ -193,22 +214,25 @@ export function Cart() {
                 <Input
                   value={checkout.city}
                   onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
+                  placeholder="e.g. Lekki"
                   required
                 />
               </div>
               <div>
-                <Label>Address Line</Label>
+                <Label>Street Address</Label>
                 <Input
                   value={checkout.line1}
                   onChange={(event) => setCheckout({ ...checkout, line1: event.target.value })}
+                  placeholder="e.g. 123 Main Street"
                   required
                 />
               </div>
               <div>
-                <Label>Postal Code</Label>
+                <Label>Postal Code (Optional)</Label>
                 <Input
                   value={checkout.postalCode}
                   onChange={(event) => setCheckout({ ...checkout, postalCode: event.target.value })}
+                  placeholder="e.g. 100001"
                 />
               </div>
               <div>

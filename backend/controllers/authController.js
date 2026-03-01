@@ -329,6 +329,36 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Please verify your email before logging in', 403));
   }
 
+  // Admin and superadmin users must use OTP for enhanced security
+  if (user.role === 'admin' || user.role === 'superadmin') {
+    const otpCode = generateOtp();
+    const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await Otp.destroy({ where: { identifier: normalizedEmail, type: 'email' } });
+    await Otp.create({
+      identifier: normalizedEmail,
+      type: 'email',
+      code: otpHash,
+      userId: user.id,
+      expiresAt,
+    });
+
+    await notificationService.sendOtpNotification({
+      channel: 'email',
+      recipient: normalizedEmail,
+      name: user.name,
+      code: otpCode,
+      expiresMinutes: 5,
+    });
+
+    return res.status(202).json({
+      message: `OTP sent to ${normalizedEmail}. Please verify to complete login.`,
+      requiresOtp: true,
+      identifier: normalizedEmail,
+    });
+  }
+
   const payload = await buildAuthPayload(user);
 
   res.json(payload);
