@@ -16,6 +16,7 @@ export function Contact() {
     message: "",
   });
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [submitMessage, setSubmitMessage] = useState("");
   useSeo({
     title: "Contact Revive Roots Essential | Hair & Skin Support",
     description:
@@ -28,13 +29,16 @@ export function Contact() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitState("loading");
+    setSubmitMessage("");
 
     try {
       await submitContactMessage(formData);
       setSubmitState("success");
+      setSubmitMessage("Thank you. Your message has been sent successfully.");
       setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch {
+    } catch (error) {
       setSubmitState("error");
+      setSubmitMessage(error instanceof Error ? error.message : "Unable to send your message right now. Please try again.");
     }
   };
 
@@ -69,8 +73,12 @@ export function Contact() {
                     value={formData.name}
                     onChange={(event) => {
                       setFormData({ ...formData, name: event.target.value });
-                      if (submitState !== "idle") setSubmitState("idle");
+                      if (submitState !== "idle") {
+                        setSubmitState("idle");
+                        setSubmitMessage("");
+                      }
                     }}
+                    maxLength={100}
                     required
                     className="bg-background"
                   />
@@ -83,7 +91,10 @@ export function Contact() {
                     value={formData.email}
                     onChange={(event) => {
                       setFormData({ ...formData, email: event.target.value });
-                      if (submitState !== "idle") setSubmitState("idle");
+                      if (submitState !== "idle") {
+                        setSubmitState("idle");
+                        setSubmitMessage("");
+                      }
                     }}
                     required
                     className="bg-background"
@@ -96,8 +107,12 @@ export function Contact() {
                     value={formData.subject}
                     onChange={(event) => {
                       setFormData({ ...formData, subject: event.target.value });
-                      if (submitState !== "idle") setSubmitState("idle");
+                      if (submitState !== "idle") {
+                        setSubmitState("idle");
+                        setSubmitMessage("");
+                      }
                     }}
+                    maxLength={150}
                     required
                     className="bg-background"
                   />
@@ -110,8 +125,12 @@ export function Contact() {
                     value={formData.message}
                     onChange={(event) => {
                       setFormData({ ...formData, message: event.target.value });
-                      if (submitState !== "idle") setSubmitState("idle");
+                      if (submitState !== "idle") {
+                        setSubmitState("idle");
+                        setSubmitMessage("");
+                      }
                     }}
+                    maxLength={5000}
                     required
                     className="bg-background"
                   />
@@ -120,10 +139,10 @@ export function Contact() {
                   {submitState === "loading" ? "Sending..." : "Send Message"}
                 </Button>
                 {submitState === "success" && (
-                  <p className="text-sm text-green-700">Thank you. Your message has been sent successfully.</p>
+                  <p className="text-sm text-green-700">{submitMessage}</p>
                 )}
                 {submitState === "error" && (
-                  <p className="text-sm text-red-600">Unable to send your message right now. Please try again.</p>
+                  <p className="text-sm text-red-600">{submitMessage}</p>
                 )}
               </form>
             </div>

@@ -7,6 +7,7 @@ import { Contact } from "./pages/Contact";
 import { Cart } from "./pages/Cart";
 import { Wishlist } from "./pages/Wishlist";
 import { Account } from "./pages/Account";
+import { NewsletterUnsubscribe } from "./pages/NewsletterUnsubscribe";
 import { Login } from "./pages/auth/Login";
 import { Signup } from "./pages/auth/Signup";
 import { OTP } from "./pages/auth/OTP";
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "wishlist", Component: Wishlist },
       { path: "account", Component: Account },
       { path: "contact", Component: Contact },
+      { path: "newsletter/unsubscribe", Component: NewsletterUnsubscribe },
     ],
   },
   {

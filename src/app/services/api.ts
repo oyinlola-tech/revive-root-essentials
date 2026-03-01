@@ -519,6 +519,11 @@ export const subscribeToNewsletter = async (email: string): Promise<void> => {
   });
 };
 
+export const unsubscribeFromNewsletter = async (token: string): Promise<{ message: string }> => {
+  const query = new URLSearchParams({ token });
+  return fetchJson<{ message: string }>(`/newsletter/unsubscribe?${query.toString()}`);
+};
+
 export const getAdminProducts = async (): Promise<AdminProduct[]> => {
   const data = await fetchJson<BackendProductListResponse>("/products?limit=100&sort=ranked", undefined, true);
   return (data.products || []).map(normalizeAdminProduct);

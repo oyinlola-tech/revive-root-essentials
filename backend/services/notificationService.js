@@ -56,6 +56,7 @@ class NotificationService {
       orderDate: new Date(order.createdAt || Date.now()).toLocaleString(),
       items,
       total: order.totalAmount,
+      currency: order.currency || 'NGN',
       shippingAddress: formatAddress(order.shippingAddress),
     });
     await sendEmail(user.email, `Order received: ${order.orderNumber}`, html);
@@ -70,6 +71,7 @@ class NotificationService {
       paymentMethod: order.paymentMethod,
       items,
       total: order.totalAmount,
+      currency: order.currency || 'NGN',
     });
     await sendEmail(user.email, `Payment receipt: ${order.orderNumber}`, html);
   }
@@ -82,6 +84,7 @@ class NotificationService {
       amount: order.totalAmount,
       reason,
       processedAt: new Date().toLocaleString(),
+      currency: order.currency || 'NGN',
     });
     await sendEmail(user.email, `Refund processed: ${order.orderNumber}`, html);
   }

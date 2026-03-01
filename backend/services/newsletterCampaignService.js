@@ -76,7 +76,7 @@ const getLatestProducts = async () => {
     description: product.description,
     price: Number(product.price),
     imageUrl: product.imageUrl,
-    url: `${FRONTEND_URL}/product/${product.slug || product.id}`,
+    url: `${FRONTEND_URL}/shop/${product.slug || product.id}`,
   }));
 };
 

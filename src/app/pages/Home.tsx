@@ -13,6 +13,7 @@ export function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
   const { addToCart } = useCommerce();
   useSeo({
     title: "Revive Roots Essential | Hair & Skincare Products in Nigeria",
@@ -51,15 +52,24 @@ export function Home() {
 
   const handleNewsletterSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newsletterEmail.trim()) return;
+    const trimmedEmail = newsletterEmail.trim();
+    if (!trimmedEmail) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setNewsletterState("error");
+      setNewsletterMessage("Please enter a valid email address.");
+      return;
+    }
 
     setNewsletterState("loading");
+    setNewsletterMessage("");
     try {
-      await subscribeToNewsletter(newsletterEmail);
+      await subscribeToNewsletter(trimmedEmail);
       setNewsletterState("success");
+      setNewsletterMessage("You are now subscribed to our newsletter.");
       setNewsletterEmail("");
-    } catch {
+    } catch (error) {
       setNewsletterState("error");
+      setNewsletterMessage(error instanceof Error ? error.message : "Unable to subscribe right now. Please try again.");
     }
   };
 
@@ -205,7 +215,10 @@ export function Home() {
                 value={newsletterEmail}
                 onChange={(event) => {
                   setNewsletterEmail(event.target.value);
-                  if (newsletterState !== "idle") setNewsletterState("idle");
+                  if (newsletterState !== "idle") {
+                    setNewsletterState("idle");
+                    setNewsletterMessage("");
+                  }
                 }}
                 className="flex-1 px-4 py-3 rounded-lg bg-primary-foreground/10 border border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
                 required
@@ -219,10 +232,10 @@ export function Home() {
               </Button>
             </form>
             {newsletterState === "success" && (
-              <p className="text-sm mt-4 opacity-90">You are now subscribed to our newsletter.</p>
+              <p className="text-sm mt-4 opacity-90">{newsletterMessage}</p>
             )}
             {newsletterState === "error" && (
-              <p className="text-sm mt-4 text-red-200">Unable to subscribe right now. Please try again.</p>
+              <p className="text-sm mt-4 text-red-200">{newsletterMessage}</p>
             )}
           </div>
         </div>
