@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Filter } from "lucide-react";
 import { getProducts } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
+import { useSeo } from "../hooks/useSeo";
 
 export function Shop() {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,13 @@ export function Shop() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
   const { addToCart } = useCommerce();
+  useSeo({
+    title: "Shop Hair & Skincare Products | Revive Roots Essential",
+    description:
+      "Browse all Revive Roots Essential products. Filter by hair care and skin care categories, search products, and shop by price.",
+    canonicalPath: "/shop",
+    keywords: "shop hair care, shop skincare, beauty ecommerce nigeria",
+  });
 
   useEffect(() => {
     const category = searchParams.get("category");

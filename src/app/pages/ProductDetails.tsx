@@ -9,6 +9,7 @@ import { getFeaturedProducts, getProductByIdentifier } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
 import { formatMoney } from "../utils/formatMoney";
 import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
+import { useSeo } from "../hooks/useSeo";
 
 export function ProductDetails() {
   const { id } = useParams();
@@ -61,6 +62,45 @@ export function ProductDetails() {
 
   const safeIngredients = useMemo(() => product?.ingredients || [], [product]);
   const safeBenefits = useMemo(() => product?.benefits || [], [product]);
+  const productImage = useMemo(
+    () => (product ? getProductImageByCategory(product) : PRODUCT_FALLBACK_IMAGES.hair),
+    [product],
+  );
+  const productJsonLd = useMemo(() => {
+    if (!product) return null;
+    return {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description: product.description,
+      image: [productImage],
+      sku: product.backendId || product.id,
+      brand: {
+        "@type": "Brand",
+        name: "Revive Roots Essential",
+      },
+      category: product.category === "hair" ? "Hair Care" : "Skin Care",
+      offers: {
+        "@type": "Offer",
+        priceCurrency: product.currency,
+        price: Number(product.price).toFixed(2),
+        availability: "https://schema.org/InStock",
+        url: typeof window !== "undefined" ? window.location.href : "",
+      },
+    };
+  }, [product, productImage]);
+
+  useSeo({
+    title: product ? `${product.name} | Revive Roots Essential` : "Product Details | Revive Roots Essential",
+    description: product?.description || "Discover premium hair and skincare products from Revive Roots Essential.",
+    image: productImage,
+    type: product ? "product" : "website",
+    canonicalPath: id ? `/shop/${id}` : "/shop",
+    keywords: product
+      ? `${product.name}, ${product.category === "hair" ? "hair care" : "skin care"}, Revive Roots Essential`
+      : "hair care product, skincare product, revive roots essential",
+    jsonLd: productJsonLd,
+  });
 
   if (isLoading) {
     return (
@@ -104,7 +144,7 @@ export function ProductDetails() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-16">
           <div className="aspect-square overflow-hidden rounded-lg bg-muted">
             <img
-              src={getProductImageByCategory(product)}
+              src={productImage}
               alt={product.name}
               className="w-full h-full object-cover"
               onError={(event) => {

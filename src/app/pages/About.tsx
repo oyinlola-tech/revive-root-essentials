@@ -1,4 +1,14 @@
+import { useSeo } from "../hooks/useSeo";
+
 export function About() {
+  useSeo({
+    title: "About Revive Roots Essential | Natural Hair & Skin Brand",
+    description:
+      "Learn about Revive Roots Essential, our mission, and our commitment to effective natural hair and skincare products.",
+    canonicalPath: "/about",
+    keywords: "about revive roots essential, natural hair care brand, skincare brand nigeria",
+  });
+
   return (
     <div>
       {/* Hero */}

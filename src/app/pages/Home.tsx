@@ -7,12 +7,21 @@ import type { Product } from "../types/product";
 import { getFeaturedProducts, subscribeToNewsletter } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
 import { SITE_IMAGES } from "../constants/siteImages";
+import { useSeo } from "../hooks/useSeo";
 
 export function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const { addToCart } = useCommerce();
+  useSeo({
+    title: "Revive Roots Essential | Hair & Skincare Products in Nigeria",
+    description:
+      "Shop natural hair care and skincare products from Revive Roots Essential. Discover premium beauty essentials tailored for healthy hair and glowing skin.",
+    image: SITE_IMAGES.heroHairProduct,
+    canonicalPath: "/",
+    keywords: "hair care, skin care, beauty products, natural products, Nigeria, Revive Roots Essential",
+  });
 
   useEffect(() => {
     let ignore = false;
@@ -150,7 +159,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Link to="/shop?category=hair" className="group relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
-                src={SITE_IMAGES.heroHairProduct}
+                src={SITE_IMAGES.categoryHairProduct}
                 alt="Hair Care"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
@@ -165,7 +174,7 @@ export function Home() {
             </Link>
             <Link to="/shop?category=skincare" className="group relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
-                src={SITE_IMAGES.heroSkinProduct}
+                src={SITE_IMAGES.categorySkinProduct}
                 alt="Skin Care"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />

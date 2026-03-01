@@ -6,6 +6,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { submitContactMessage } from "../services/api";
 import { SITE_IMAGES } from "../constants/siteImages";
+import { useSeo } from "../hooks/useSeo";
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,14 @@ export function Contact() {
     message: "",
   });
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  useSeo({
+    title: "Contact Revive Roots Essential | Hair & Skin Support",
+    description:
+      "Contact Revive Roots Essential for product guidance, skincare and hair care support, and order help in Nigeria.",
+    image: SITE_IMAGES.contactHairProduct,
+    canonicalPath: "/contact",
+    keywords: "contact hair care support, skincare support, Lagos Nigeria beauty store",
+  });
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
