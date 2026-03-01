@@ -1,10 +1,12 @@
 import { Link } from "react-router";
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useState } from "react";
 import { BRAND_LOGO_SRC, BRAND_NAME } from "../constants/branding";
+import { useCommerce } from "../contexts/CommerceContext";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { cartCount, wishlistCount } = useCommerce();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -39,6 +41,9 @@ export function Header() {
             <Link to="/about" className="hover:opacity-70 transition-opacity">
               About
             </Link>
+            <Link to="/wishlist" className="hover:opacity-70 transition-opacity">
+              Wishlist
+            </Link>
             <Link to="/contact" className="hover:opacity-70 transition-opacity">
               Contact
             </Link>
@@ -48,12 +53,25 @@ export function Header() {
             <button className="p-2" aria-label="Search">
               <Search className="h-5 w-5" />
             </button>
+            <Link to="/wishlist" className="p-2 relative" aria-label="Wishlist">
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
             <Link to="/auth/login" className="p-2">
               <User className="h-5 w-5" />
             </Link>
-            <button className="p-2" aria-label="Shopping bag">
+            <Link to="/cart" className="p-2 relative" aria-label="Shopping bag">
               <ShoppingBag className="h-5 w-5" />
-            </button>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
 
@@ -75,6 +93,20 @@ export function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               About
+            </Link>
+            <Link
+              to="/wishlist"
+              className="hover:opacity-70 transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Wishlist
+            </Link>
+            <Link
+              to="/cart"
+              className="hover:opacity-70 transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Cart ({cartCount})
             </Link>
             <Link
               to="/contact"

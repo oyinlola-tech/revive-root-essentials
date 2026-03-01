@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import type { Product } from "../types/product";
 import { Button } from "./ui/button";
-import { ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
+import { useCommerce } from "../contexts/CommerceContext";
 
 interface ProductCardProps {
   product: Product;
@@ -9,11 +10,24 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const { toggleWishlist, isWishlisted } = useCommerce();
+  const liked = isWishlisted(product.id);
+
   return (
     <Link
       to={`/shop/${product.id}`}
-      className="group block bg-card rounded-lg overflow-hidden border border-border hover:shadow-lg transition-all"
+      className="group relative block bg-card rounded-lg overflow-hidden border border-border hover:shadow-lg transition-all"
     >
+      <button
+        onClick={(event) => {
+          event.preventDefault();
+          toggleWishlist(product);
+        }}
+        className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2 border border-border"
+        aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+      >
+        <Heart className={`h-4 w-4 ${liked ? "fill-current text-primary" : ""}`} />
+      </button>
       <div className="aspect-square overflow-hidden bg-muted">
         <img
           src={product.image}

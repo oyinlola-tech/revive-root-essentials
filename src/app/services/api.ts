@@ -148,6 +148,19 @@ export interface DashboardStats {
   revenue: number;
 }
 
+export interface CreateOrderPayload {
+  items: Array<{ productId: string; quantity: number }>;
+  shippingAddress: {
+    country: string;
+    state: string;
+    city: string;
+    line1: string;
+    postalCode?: string;
+  };
+  paymentMethod: "card" | "ussd" | "transfer";
+  currency?: string;
+}
+
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
@@ -162,6 +175,7 @@ const normalizeProduct = (product: BackendProduct): Product => {
   const categoryName = product.Category?.name || product.category?.name || "";
   return {
     id: product.slug || product.id,
+    backendId: product.id,
     name: product.name,
     category: inferCategory(categoryName || product.name),
     price: Number(product.price || 0),
@@ -297,14 +311,33 @@ export const logout = async () => {
 
 export const getMe = () => fetchJson<BackendUser>("/auth/me", undefined, true);
 
+export const createOrder = async (payload: CreateOrderPayload) => {
+  return fetchJson<{
+    orderId: string;
+    orderNumber: string;
+    total: number;
+    status: string;
+    paymentUrl: string | null;
+  }>("/orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
 export const getProducts = async (params?: {
   category?: ProductCategory;
   sortBy?: "featured" | "price-low" | "price-high";
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }): Promise<Product[]> => {
   const query = new URLSearchParams();
   query.set("limit", "50");
   const sort = sortToApi(params?.sortBy);
   if (sort) query.set("sort", sort);
+  if (params?.search?.trim()) query.set("search", params.search.trim());
+  if (typeof params?.minPrice === "number" && params.minPrice >= 0) query.set("minPrice", String(params.minPrice));
+  if (typeof params?.maxPrice === "number" && params.maxPrice >= 0) query.set("maxPrice", String(params.maxPrice));
   if (params?.category === "hair") query.set("category", "hair,Hair Care,Hair");
   if (params?.category === "skincare") query.set("category", "skincare,Skin Care,Skincare");
 

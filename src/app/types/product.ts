@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  backendId: string;
   name: string;
   category: "hair" | "skincare";
   price: number;

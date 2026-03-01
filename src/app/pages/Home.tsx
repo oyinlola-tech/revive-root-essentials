@@ -3,16 +3,15 @@ import { Button } from "../components/ui/button";
 import { ProductCard } from "../components/ProductCard";
 import { ArrowRight, FlaskConical, Leaf, Recycle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { CheckoutModal } from "../components/CheckoutModal";
 import type { Product } from "../types/product";
 import { getFeaturedProducts, subscribeToNewsletter } from "../services/api";
+import { useCommerce } from "../contexts/CommerceContext";
 
 export function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [cartItems, setCartItems] = useState<Array<{ product: Product; quantity: number }>>([]);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterState, setNewsletterState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const { addToCart } = useCommerce();
 
   useEffect(() => {
     let ignore = false;
@@ -37,17 +36,7 @@ export function Home() {
   }, []);
 
   const handleAddToCart = (product: Product) => {
-    const existing = cartItems.find((item) => item.product.id === product.id);
-    if (existing) {
-      setCartItems(
-        cartItems.map((item) =>
-          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-        ),
-      );
-    } else {
-      setCartItems([...cartItems, { product, quantity: 1 }]);
-    }
-    setCheckoutOpen(true);
+    addToCart(product, 1);
   };
 
   const handleNewsletterSubmit = async (event: React.FormEvent) => {
@@ -144,6 +133,11 @@ export function Home() {
               <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
             ))}
           </div>
+          {featuredProducts.length === 0 && (
+            <div className="text-center py-12 border border-dashed border-border rounded-lg">
+              <p className="text-lg opacity-70">No featured products available right now.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -224,16 +218,6 @@ export function Home() {
         </div>
       </section>
 
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        items={cartItems}
-        onCheckout={() => {
-          alert("Order placed successfully!");
-          setCheckoutOpen(false);
-          setCartItems([]);
-        }}
-      />
     </div>
   );
 }

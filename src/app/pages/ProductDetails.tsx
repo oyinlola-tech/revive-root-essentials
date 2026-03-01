@@ -3,10 +3,10 @@ import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
 import { ProductCard } from "../components/ProductCard";
 import { useEffect, useMemo, useState } from "react";
-import { CheckoutModal } from "../components/CheckoutModal";
 import { ArrowLeft, Check } from "lucide-react";
 import { Separator } from "../components/ui/separator";
 import { getFeaturedProducts, getProductByIdentifier } from "../services/api";
+import { useCommerce } from "../contexts/CommerceContext";
 
 export function ProductDetails() {
   const { id } = useParams();
@@ -15,8 +15,7 @@ export function ProductDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [cartItems, setCartItems] = useState<Array<{ product: Product; quantity: number }>>([]);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const { addToCart } = useCommerce();
 
   useEffect(() => {
     let ignore = false;
@@ -83,8 +82,7 @@ export function ProductDetails() {
   }
 
   const handleAddToBag = () => {
-    setCartItems([{ product, quantity }]);
-    setCheckoutOpen(true);
+    addToCart(product, quantity);
   };
 
   return (
@@ -189,8 +187,7 @@ export function ProductDetails() {
                   key={relatedProduct.id}
                   product={relatedProduct}
                   onAddToCart={(item) => {
-                    setCartItems([{ product: item, quantity: 1 }]);
-                    setCheckoutOpen(true);
+                    addToCart(item, 1);
                   }}
                 />
               ))}
@@ -198,17 +195,6 @@ export function ProductDetails() {
           </div>
         )}
       </div>
-
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        items={cartItems}
-        onCheckout={() => {
-          alert("Order placed successfully!");
-          setCheckoutOpen(false);
-          setCartItems([]);
-        }}
-      />
     </div>
   );
 }

@@ -3,19 +3,21 @@ import { useSearchParams } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
-import { CheckoutModal } from "../components/CheckoutModal";
 import { Filter } from "lucide-react";
 import { getProducts } from "../services/api";
+import { useCommerce } from "../contexts/CommerceContext";
 
 export function Shop() {
   const [searchParams] = useSearchParams();
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<"all" | "hair" | "skincare">("all");
   const [sortBy, setSortBy] = useState<"featured" | "price-low" | "price-high">("featured");
-  const [cartItems, setCartItems] = useState<Array<{ product: Product; quantity: number }>>([]);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const { addToCart } = useCommerce();
 
   useEffect(() => {
     const category = searchParams.get("category");
@@ -35,6 +37,9 @@ export function Shop() {
         const apiProducts = await getProducts({
           category: categoryFilter === "all" ? undefined : categoryFilter,
           sortBy,
+          search,
+          minPrice: minPrice ? Number(minPrice) : undefined,
+          maxPrice: maxPrice ? Number(maxPrice) : undefined,
         });
 
         if (!ignore) {
@@ -54,20 +59,10 @@ export function Shop() {
     return () => {
       ignore = true;
     };
-  }, [categoryFilter, sortBy]);
+  }, [categoryFilter, sortBy, search, minPrice, maxPrice]);
 
   const handleAddToCart = (product: Product) => {
-    const existing = cartItems.find((item) => item.product.id === product.id);
-    if (existing) {
-      setCartItems(
-        cartItems.map((item) =>
-          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-        ),
-      );
-    } else {
-      setCartItems([...cartItems, { product, quantity: 1 }]);
-    }
-    setCheckoutOpen(true);
+    addToCart(product, 1);
   };
 
   return (
@@ -80,11 +75,11 @@ export function Shop() {
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between mb-8 p-4 bg-muted/30 rounded-lg">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 mb-8 p-4 bg-muted/30 rounded-lg">
+          <div className="flex flex-wrap items-center gap-2">
             <Filter className="h-5 w-5" />
             <span className="font-semibold">Filter:</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={categoryFilter === "all" ? "default" : "outline"}
                 size="sm"
@@ -108,9 +103,29 @@ export function Shop() {
               </Button>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Sort By:</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products..."
+              className="px-3 py-2 bg-background border border-border rounded-lg"
+            />
+            <input
+              type="number"
+              min="0"
+              value={minPrice}
+              onChange={(event) => setMinPrice(event.target.value)}
+              placeholder="Min price"
+              className="px-3 py-2 bg-background border border-border rounded-lg"
+            />
+            <input
+              type="number"
+              min="0"
+              value={maxPrice}
+              onChange={(event) => setMaxPrice(event.target.value)}
+              placeholder="Max price"
+              className="px-3 py-2 bg-background border border-border rounded-lg"
+            />
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value as "featured" | "price-low" | "price-high")}
@@ -145,16 +160,6 @@ export function Shop() {
         )}
       </div>
 
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        items={cartItems}
-        onCheckout={() => {
-          alert("Order placed successfully!");
-          setCheckoutOpen(false);
-          setCartItems([]);
-        }}
-      />
     </div>
   );
 }
