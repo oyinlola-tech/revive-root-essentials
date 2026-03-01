@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { ProductCard } from "../components/ProductCard";
-import { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
 import { CheckoutModal } from "../components/CheckoutModal";
 import { Filter } from "lucide-react";

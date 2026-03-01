@@ -1,5 +1,3 @@
-import { teamMembers } from "../data/team";
-
 export function About() {
   return (
     <div>
@@ -119,37 +117,6 @@ export function About() {
                 <p>Dedicated support for your beauty journey</p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Our Team */}
-      <section className="py-16 md:py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Meet the Team Behind Revive Roots
-            </h2>
-            <p className="text-lg opacity-70 max-w-2xl mx-auto">
-              Passionate experts dedicated to bringing you the best in natural
-              beauty
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="text-center">
-                <div className="aspect-square overflow-hidden rounded-lg mb-4">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
-                <p className="text-sm opacity-60 mb-3">{member.role}</p>
-                <p className="text-sm opacity-70">{member.bio}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

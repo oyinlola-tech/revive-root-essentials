@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-import { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { X } from "lucide-react";
 import { useState } from "react";
 
