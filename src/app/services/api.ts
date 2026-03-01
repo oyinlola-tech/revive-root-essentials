@@ -1,20 +1,23 @@
 import type { Product } from "../types/product";
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+const configuredBackendOrigin = (import.meta.env.VITE_BACKEND_ORIGIN || "").trim().replace(/\/$/, "");
 const AUTH_STORAGE_KEY = "revive_roots_auth";
 const CURRENCY_STORAGE_KEY = "revive_roots_currency";
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_GET_RETRIES = 1;
 
 const getApiBaseUrls = () => {
+  const fromBackendOrigin = configuredBackendOrigin ? `${configuredBackendOrigin}/api` : "";
   const fromWindow = typeof window !== "undefined"
     ? `${window.location.origin}/api`
     : "";
 
   const bases = [
     configuredApiUrl,
-    fromWindow,
+    fromBackendOrigin,
     "http://localhost:3000/api",
+    fromWindow,
   ].filter(Boolean);
 
   return Array.from(new Set(bases));

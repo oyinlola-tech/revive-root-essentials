@@ -39,8 +39,9 @@ const resolveUniqueSlug = async (baseSlug, excludeId) => {
 const ensureProductSlug = async (product) => {
   if (product.slug) return product.slug;
   const fallbackBase = `${product.name || 'product'}-${String(product.id || '').slice(0, 8)}`;
-  const slug = await resolveUniqueSlug(fallbackBase, product.id);
-  await product.update({ slug });
+  const slug = normalizeSlug(fallbackBase) || 'product';
+  if (product.setDataValue) product.setDataValue('slug', slug);
+  else product.slug = slug;
   return slug;
 };
 
