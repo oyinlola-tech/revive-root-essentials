@@ -132,6 +132,8 @@ cd backend
 npm install
 ```
 
+For day-to-day development, run install in both root and backend whenever dependencies change.
+
 Create environment files:
 
 ```bash
@@ -213,6 +215,8 @@ npm run dev
 ```
 
 In development, Vite proxies `/api`, `/health`, and `/uploads` to `VITE_BACKEND_ORIGIN` (defaults to `http://localhost:3000`).
+
+`npm run dev` starts both frontend and backend using `scripts/run-both.js`.
 
 Backend (from `/backend`):
 

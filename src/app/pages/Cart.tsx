@@ -7,9 +7,10 @@ import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
 import { useCommerce } from "../contexts/CommerceContext";
 import { createOrder, getAuthSession } from "../services/api";
+import { formatMoney } from "../utils/formatMoney";
 
 const initialCheckout = {
-  country: "",
+  country: "Nigeria",
   state: "",
   city: "",
   line1: "",
@@ -24,6 +25,7 @@ export function Cart() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const activeCurrency = cartItems[0]?.product.currency || "NGN";
 
   const shipping = useMemo(() => (subtotal > 100 ? 0 : 10), [subtotal]);
   const tax = useMemo(() => subtotal * 0.02, [subtotal]);
@@ -61,6 +63,7 @@ export function Cart() {
           postalCode: checkout.postalCode || undefined,
         },
         paymentMethod: checkout.paymentMethod,
+        currency: activeCurrency,
       });
 
       clearCart();
@@ -112,7 +115,7 @@ export function Cart() {
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold">{item.product.name}</h3>
-                  <p className="text-sm opacity-70 mb-3">${item.product.price.toFixed(2)}</p>
+                  <p className="text-sm opacity-70 mb-3">{formatMoney(item.product.price, item.product.currency)}</p>
                   <div className="flex items-center gap-3">
                     <Button
                       size="sm"
@@ -135,7 +138,7 @@ export function Cart() {
                   </div>
                 </div>
                 <div className="font-semibold">
-                  ${(item.product.price * item.quantity).toFixed(2)}
+                  {formatMoney(item.product.price * item.quantity, item.product.currency)}
                 </div>
               </div>
             ))}
@@ -146,20 +149,20 @@ export function Cart() {
             <div className="space-y-2 text-sm mb-4">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatMoney(subtotal, activeCurrency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
+                <span>{shipping === 0 ? "FREE" : formatMoney(shipping, activeCurrency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>{formatMoney(tax, activeCurrency)}</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatMoney(total, activeCurrency)}</span>
               </div>
             </div>
 
@@ -168,7 +171,7 @@ export function Cart() {
                 <Label>Country</Label>
                 <Input
                   value={checkout.country}
-                  onChange={(event) => setCheckout({ ...checkout, country: event.target.value })}
+                  readOnly
                   required
                 />
               </div>
@@ -223,7 +226,7 @@ export function Cart() {
               {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
               {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Processing..." : `Pay $${total.toFixed(2)}`}
+                {submitting ? "Processing..." : `Pay ${formatMoney(total, activeCurrency)}`}
               </Button>
             </form>
           </div>

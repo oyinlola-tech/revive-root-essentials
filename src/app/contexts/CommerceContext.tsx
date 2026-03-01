@@ -38,6 +38,7 @@ const readStorage = <T,>(key: string, fallback: T): T => {
 const normalizeProductShape = (product: Product): Product => ({
   ...product,
   backendId: product.backendId || product.id,
+  currency: product.currency || "NGN",
 });
 
 export function CommerceProvider({ children }: { children: React.ReactNode }) {

@@ -7,6 +7,7 @@ import { ArrowLeft, Check } from "lucide-react";
 import { Separator } from "../components/ui/separator";
 import { getFeaturedProducts, getProductByIdentifier } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
+import { formatMoney } from "../utils/formatMoney";
 
 export function ProductDetails() {
   const { id } = useParams();
@@ -110,7 +111,7 @@ export function ProductDetails() {
                 {product.category === "hair" ? "Hair Care" : "Skin Care"}
               </span>
               <h1 className="text-3xl md:text-4xl font-bold mt-2 mb-4">{product.name}</h1>
-              <p className="text-2xl font-semibold">${product.price}</p>
+              <p className="text-2xl font-semibold">{formatMoney(product.price, product.currency)}</p>
             </div>
 
             <Separator />

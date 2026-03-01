@@ -3,6 +3,7 @@ import type { Product } from "../types/product";
 import { Button } from "./ui/button";
 import { Heart, ShoppingCart } from "lucide-react";
 import { useCommerce } from "../contexts/CommerceContext";
+import { formatMoney } from "../utils/formatMoney";
 
 interface ProductCardProps {
   product: Product;
@@ -45,7 +46,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           {product.name}
         </h3>
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-lg">${product.price}</span>
+          <span className="font-semibold text-lg">{formatMoney(product.price, product.currency)}</span>
           <Button
             size="sm"
             className="gap-2"

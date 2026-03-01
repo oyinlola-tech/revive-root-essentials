@@ -77,11 +77,11 @@ export function Footer() {
             <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide">Contact Info</h3>
             <ul className="space-y-2 text-sm">
               <li className="opacity-90">support@reviverootsessential.com</li>
-              <li className="opacity-90">+1 (555) 123-4567</li>
+              <li className="opacity-90">+234 803 000 0000</li>
               <li className="opacity-90">
-                123 Beauty Street
+                12 Admiralty Way, Lekki Phase 1
                 <br />
-                New York, NY 10001
+                Lagos, Nigeria
               </li>
             </ul>
           </div>

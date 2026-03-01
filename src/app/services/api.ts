@@ -2,6 +2,7 @@ import type { Product } from "../types/product";
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
 const AUTH_STORAGE_KEY = "revive_roots_auth";
+const CURRENCY_STORAGE_KEY = "revive_roots_currency";
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_GET_RETRIES = 1;
 
@@ -31,6 +32,7 @@ interface BackendProduct {
   id: string;
   slug?: string | null;
   name: string;
+  currency?: string;
   description?: string | null;
   price: number | string;
   imageUrl?: string | null;
@@ -58,6 +60,9 @@ interface BackendUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
+  acceptedMarketing?: boolean;
+  acceptedNewsletter?: boolean;
   role: "user" | "admin" | "superadmin";
 }
 
@@ -193,6 +198,7 @@ const normalizeProduct = (product: BackendProduct): Product => {
     id: product.slug || product.id,
     backendId: product.id,
     name: product.name,
+    currency: product.currency || "NGN",
     category: inferCategory(categoryName || product.name),
     price: Number(product.price || 0),
     image: product.imageUrl || "/assets/logo/revive_roots_essential.png",
@@ -258,6 +264,7 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
           headers: {
             "Content-Type": "application/json",
             ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+            "X-Currency": getPreferredCurrency(),
             ...(init?.headers || {}),
           },
           ...init,
@@ -300,6 +307,12 @@ export const clearAuthSession = () => {
 };
 
 export const getAuthSession = () => getSession();
+
+export const getPreferredCurrency = () => localStorage.getItem(CURRENCY_STORAGE_KEY) || "NGN";
+
+export const setPreferredCurrency = (currency: string) => {
+  localStorage.setItem(CURRENCY_STORAGE_KEY, String(currency || "NGN").toUpperCase());
+};
 
 export const login = async (payload: { email: string; password: string }) => {
   const data = await fetchJson<AuthResponse>("/auth/login", {
@@ -527,4 +540,31 @@ export const createAdminAccount = async (payload: { name: string; email: string;
     method: "POST",
     body: JSON.stringify(payload),
   }, true);
+};
+
+export const updateMyProfile = async (payload: {
+  name?: string;
+  phone?: string;
+  acceptedMarketing?: boolean;
+  acceptedNewsletter?: boolean;
+}) => {
+  const session = getSession();
+  if (!session) throw new Error("Authentication required");
+
+  const updatedUser = await fetchJson<BackendUser>(`/users/${session.user.id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }, true);
+
+  setAuthSession({
+    ...session,
+    user: {
+      ...session.user,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+    },
+  });
+
+  return updatedUser;
 };

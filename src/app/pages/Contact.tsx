@@ -133,9 +133,9 @@ export function Contact() {
               </div>
               <h3 className="font-semibold mb-2">Address</h3>
               <p className="opacity-70">
-                123 Beauty Street
+                12 Admiralty Way, Lekki Phase 1
                 <br />
-                New York, NY 10001
+                Lagos, Nigeria
               </p>
             </div>
             <div className="text-center">
@@ -143,7 +143,7 @@ export function Contact() {
                 <Phone className="h-8 w-8 text-primary-foreground" />
               </div>
               <h3 className="font-semibold mb-2">Phone</h3>
-              <p className="opacity-70">+1 (555) 123-4567</p>
+              <p className="opacity-70">+234 803 000 0000</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,27 +158,12 @@ export function Contact() {
 
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Store Locations</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="p-6 border border-border rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">New York</h3>
-              <p className="opacity-70 mb-1">123 Beauty Street, Manhattan</p>
-              <p className="opacity-70">NY 10001</p>
-            </div>
-            <div className="p-6 border border-border rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">Los Angeles</h3>
-              <p className="opacity-70 mb-1">45 Wellness Avenue, West Hollywood</p>
-              <p className="opacity-70">CA 90069</p>
-            </div>
-            <div className="p-6 border border-border rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">Chicago</h3>
-              <p className="opacity-70 mb-1">88 Lakeview Plaza, Downtown</p>
-              <p className="opacity-70">IL 60601</p>
-            </div>
-            <div className="p-6 border border-border rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">Houston</h3>
-              <p className="opacity-70 mb-1">210 Greenway Circle, Uptown</p>
-              <p className="opacity-70">TX 77056</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Our Store</h2>
+          <div className="max-w-3xl mx-auto">
+            <div className="p-6 border border-border rounded-lg text-center">
+              <h3 className="font-semibold text-lg mb-2">Revive Roots Essentials - Lagos</h3>
+              <p className="opacity-70 mb-1">12 Admiralty Way, Lekki Phase 1</p>
+              <p className="opacity-70">Lagos, Nigeria</p>
             </div>
           </div>
         </div>
