@@ -89,9 +89,10 @@ export function Cart() {
       setCheckout(initialCheckout);
       setSuccessMessage(`Order ${response.orderNumber} created successfully.`);
 
-      if (response.paymentUrl) {
+      const paymentUrl = response.paymentUrl;
+      if (paymentUrl) {
         setTimeout(() => {
-          window.location.href = response.paymentUrl;
+          window.location.href = paymentUrl;
         }, 1500);
       }
     } catch (error) {
