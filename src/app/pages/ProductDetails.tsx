@@ -1,9 +1,5 @@
 import { useParams, Link } from "react-router";
-import {
-  Product,
-  getFeaturedProducts as getFallbackFeaturedProducts,
-  getProductById as getFallbackProductById,
-} from "../data/products";
+import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
 import { ProductCard } from "../components/ProductCard";
 import { useEffect, useMemo, useState } from "react";
@@ -48,10 +44,9 @@ export function ProductDetails() {
       } catch {
         if (ignore) return;
 
-        const localProduct = getFallbackProductById(id) || null;
-        setProduct(localProduct);
-        setRelatedProducts(getFallbackFeaturedProducts().filter((entry) => entry.id !== id).slice(0, 3));
-        setLoadError("Unable to load live product data. Showing available local details.");
+        setProduct(null);
+        setRelatedProducts([]);
+        setLoadError("Unable to load live product data.");
       } finally {
         if (!ignore) setIsLoading(false);
       }

@@ -1,19 +1,107 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { ArrowLeft, Loader2, RefreshCcw } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { ArrowLeft, Users, Package, DollarSign, ShoppingCart } from "lucide-react";
+import {
+  createAdminAccount,
+  getAuthSession,
+  getDashboardStats,
+  getUsers,
+  logout,
+  updateUserRole,
+} from "../../services/api";
 
 export function SuperAdminDashboard() {
-  const [stats] = useState({
-    totalUsers: 1247,
-    totalProducts: 12,
-    totalRevenue: 45789,
-    totalOrders: 523,
-  });
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ users: 0, products: 0, orders: 0, revenue: 0 });
+  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; role: "user" | "admin" | "superadmin" }>>([]);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "", phone: "" });
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+
+  const loadData = async () => {
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      const [statsData, usersData] = await Promise.all([getDashboardStats(), getUsers()]);
+      setStats(statsData);
+      setUsers(usersData);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to load super admin data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const session = getAuthSession();
+    if (!session) {
+      navigate("/auth/login");
+      return;
+    }
+    if (session.user.role !== "superadmin") {
+      navigate("/admin");
+      return;
+    }
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRoleChange = async (id: string, role: "user" | "admin" | "superadmin") => {
+    setStatusMessage("");
+    setErrorMessage("");
+
+    try {
+      await updateUserRole(id, role);
+      setStatusMessage("User role updated.");
+      await loadData();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to update role.");
+    }
+  };
+
+  const handleCreateAdmin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setStatusMessage("");
+    setErrorMessage("");
+    setCreatingAdmin(true);
+
+    try {
+      await createAdminAccount({
+        name: adminForm.name,
+        email: adminForm.email,
+        password: adminForm.password,
+        phone: adminForm.phone || undefined,
+      });
+      setStatusMessage("Admin account created.");
+      setAdminForm({ name: "", email: "", password: "", phone: "" });
+      await loadData();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to create admin account.");
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth/login");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,211 +117,136 @@ export function SuperAdminDashboard() {
               </Link>
               <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm opacity-60">Logged in as Super Admin</span>
-              <Button variant="outline" size="sm" onClick={() => window.location.href = "/"}>
+            <div className="flex gap-2">
+              <Link to="/admin">
+                <Button variant="outline" size="sm">
+                  Open Admin Panel
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={loadData}>
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
             </div>
           </div>
+          {statusMessage && <p className="text-sm text-green-700 mt-3">{statusMessage}</p>}
+          {errorMessage && <p className="text-sm text-red-600 mt-3">{errorMessage}</p>}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 opacity-60" />
+            <CardHeader>
+              <CardTitle className="text-sm">Total Users</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-              <p className="text-xs opacity-60 mt-1">+12% from last month</p>
+              <p className="text-2xl font-bold">{stats.users}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-4 w-4 opacity-60" />
+            <CardHeader>
+              <CardTitle className="text-sm">Total Products</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
-              <p className="text-xs opacity-60 mt-1">6 hair, 6 skincare</p>
+              <p className="text-2xl font-bold">{stats.products}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 opacity-60" />
+            <CardHeader>
+              <CardTitle className="text-sm">Total Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalRevenue.toLocaleString()}</div>
-              <p className="text-xs opacity-60 mt-1">+8% from last month</p>
+              <p className="text-2xl font-bold">{stats.orders}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 opacity-60" />
+            <CardHeader>
+              <CardTitle className="text-sm">Revenue</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalOrders.toLocaleString()}</div>
-              <p className="text-xs opacity-60 mt-1">+15% from last month</p>
+              <p className="text-2xl font-bold">NGN {stats.revenue.toLocaleString()}</p>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="admins">Admins</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Admin Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateAdmin} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={adminForm.name}
+                  onChange={(event) => setAdminForm({ ...adminForm, name: event.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={adminForm.email}
+                  onChange={(event) => setAdminForm({ ...adminForm, email: event.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  value={adminForm.password}
+                  onChange={(event) => setAdminForm({ ...adminForm, password: event.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Phone (optional)</Label>
+                <Input
+                  value={adminForm.phone}
+                  onChange={(event) => setAdminForm({ ...adminForm, phone: event.target.value })}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Button type="submit" disabled={creatingAdmin}>
+                  {creatingAdmin ? "Creating..." : "Create Admin"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { id: 1, name: "John Doe", email: "john@example.com", role: "Customer" },
-                    { id: 2, name: "Jane Smith", email: "jane@example.com", role: "Customer" },
-                    { id: 3, name: "Bob Johnson", email: "bob@example.com", role: "Customer" },
-                  ].map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-4 border border-border rounded-lg"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{user.name}</h3>
-                        <p className="text-sm opacity-60">{user.email}</p>
-                      </div>
-                      <span className="text-sm bg-muted px-3 py-1 rounded-full">
-                        {user.role}
-                      </span>
-                    </div>
-                  ))}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Role Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {users.map((user) => (
+                <div key={user.id} className="p-4 border border-border rounded-lg flex items-center gap-3">
+                  <div className="flex-1">
+                    <p className="font-semibold">{user.name}</p>
+                    <p className="text-sm opacity-70">{user.email}</p>
+                  </div>
+                  <select
+                    value={user.role}
+                    onChange={(event) => handleRoleChange(user.id, event.target.value as "user" | "admin" | "superadmin")}
+                    className="px-3 py-2 bg-background border border-border rounded-lg"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="admins">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-6">
-                  {[
-                    { id: 1, name: "Admin User", email: "admin@reviveroots.com", role: "Admin" },
-                    {
-                      id: 2,
-                      name: "Super Admin",
-                      email: "superadmin@reviveroots.com",
-                      role: "Super Admin",
-                    },
-                  ].map((admin) => (
-                    <div
-                      key={admin.id}
-                      className="flex items-center justify-between p-4 border border-border rounded-lg"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{admin.name}</h3>
-                        <p className="text-sm opacity-60">{admin.email}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm bg-primary/10 px-3 py-1 rounded-full">
-                          {admin.role}
-                        </span>
-                        <Button size="sm" variant="outline">
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button>Add New Admin</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Site Settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-4">
-                  <div>
-                    <Label>Site Name</Label>
-                    <Input
-                      defaultValue="Revive Roots Essential"
-                      className="bg-input-background"
-                    />
-                  </div>
-                  <div>
-                    <Label>Contact Email</Label>
-                    <Input
-                      type="email"
-                      defaultValue="support@reviverootsessential.com"
-                      className="bg-input-background"
-                    />
-                  </div>
-                  <div>
-                    <Label>Phone Number</Label>
-                    <Input
-                      defaultValue="+1 (555) 123-4567"
-                      className="bg-input-background"
-                    />
-                  </div>
-                  <div>
-                    <Label>Address</Label>
-                    <Input
-                      defaultValue="123 Beauty Street, New York, NY 10001"
-                      className="bg-input-background"
-                    />
-                  </div>
-                  <Button>Save Settings</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border border-border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">Hair Care Products</span>
-                      <span className="text-sm">65% of sales</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full" style={{ width: '65%' }} />
-                    </div>
-                  </div>
-                  <div className="p-4 border border-border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold">Skin Care Products</span>
-                      <span className="text-sm">35% of sales</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full" style={{ width: '35%' }} />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

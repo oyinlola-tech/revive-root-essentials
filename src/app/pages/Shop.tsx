@@ -1,35 +1,15 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { ProductCard } from "../components/ProductCard";
-import { products as fallbackProducts, Product } from "../data/products";
+import { Product } from "../data/products";
 import { Button } from "../components/ui/button";
 import { CheckoutModal } from "../components/CheckoutModal";
 import { Filter } from "lucide-react";
 import { getProducts } from "../services/api";
 
-const applyFallbackFilters = (
-  sourceProducts: Product[],
-  categoryFilter: "all" | "hair" | "skincare",
-  sortBy: "featured" | "price-low" | "price-high",
-) => {
-  let filtered = [...sourceProducts];
-
-  if (categoryFilter !== "all") {
-    filtered = filtered.filter((product) => product.category === categoryFilter);
-  }
-
-  if (sortBy === "price-low") {
-    filtered.sort((a, b) => a.price - b.price);
-  } else if (sortBy === "price-high") {
-    filtered.sort((a, b) => b.price - a.price);
-  }
-
-  return filtered;
-};
-
 export function Shop() {
   const [searchParams] = useSearchParams();
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(fallbackProducts);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<"all" | "hair" | "skincare">("all");
   const [sortBy, setSortBy] = useState<"featured" | "price-low" | "price-high">("featured");
   const [cartItems, setCartItems] = useState<Array<{ product: Product; quantity: number }>>([]);
@@ -58,16 +38,12 @@ export function Shop() {
         });
 
         if (!ignore) {
-          setFilteredProducts(
-            apiProducts.length > 0
-              ? apiProducts
-              : applyFallbackFilters(fallbackProducts, categoryFilter, sortBy),
-          );
+          setFilteredProducts(apiProducts);
         }
       } catch {
         if (!ignore) {
-          setLoadError("Unable to reach backend. Showing local catalog.");
-          setFilteredProducts(applyFallbackFilters(fallbackProducts, categoryFilter, sortBy));
+          setLoadError("Unable to reach backend. No products loaded.");
+          setFilteredProducts([]);
         }
       } finally {
         if (!ignore) setIsLoading(false);

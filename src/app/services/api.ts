@@ -1,9 +1,14 @@
-import { Product } from "../data/products";
+import type { Product } from "../types/product";
+
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+const AUTH_STORAGE_KEY = "revive_roots_auth";
 
 type ProductCategory = Product["category"];
 
 interface BackendCategory {
-  name?: string | null;
+  id: string;
+  name: string;
+  description?: string | null;
 }
 
 interface BackendProduct {
@@ -18,12 +23,48 @@ interface BackendProduct {
   howToUse?: string | null;
   size?: string | null;
   isFeatured?: boolean;
+  stock?: number;
+  categoryId?: string | null;
   Category?: BackendCategory | null;
   category?: BackendCategory | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface BackendProductListResponse {
   products?: BackendProduct[];
+  total?: number;
+  page?: number;
+  limit?: number;
+}
+
+interface BackendUser {
+  id: string;
+  name: string;
+  email: string;
+  role: "user" | "admin" | "superadmin";
+}
+
+interface BackendOrder {
+  id: string;
+  orderNumber: string;
+  totalAmount: number | string;
+  currency: string;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  createdAt: string;
+}
+
+interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  user: BackendUser;
+}
+
+export interface AuthSession {
+  token: string;
+  refreshToken: string;
+  user: BackendUser;
 }
 
 export interface ContactPayload {
@@ -33,7 +74,79 @@ export interface ContactPayload {
   message: string;
 }
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+export interface AdminProductInput {
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  categoryId?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  howToUse?: string;
+  size?: string;
+  stock?: number;
+  isFeatured?: boolean;
+}
+
+export interface AdminProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  categoryId: string;
+  categoryName: string;
+  ingredients: string[];
+  benefits: string[];
+  howToUse: string;
+  size: string;
+  stock: number;
+  isFeatured: boolean;
+}
+
+export interface CategoryInput {
+  name: string;
+  description?: string;
+}
+
+export interface CategoryRecord {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface AdminOrder {
+  id: string;
+  orderNumber: string;
+  totalAmount: number;
+  currency: string;
+  status: BackendOrder["status"];
+  paymentStatus: BackendOrder["paymentStatus"];
+  createdAt: string;
+}
+
+export interface ContactRecord {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface DashboardStats {
+  users: number;
+  products: number;
+  orders: number;
+  revenue: number;
+}
 
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
@@ -62,6 +175,23 @@ const normalizeProduct = (product: BackendProduct): Product => {
   };
 };
 
+const normalizeAdminProduct = (product: BackendProduct): AdminProduct => ({
+  id: product.id,
+  slug: product.slug || product.id,
+  name: product.name,
+  description: product.description || "",
+  price: Number(product.price || 0),
+  imageUrl: product.imageUrl || "",
+  categoryId: product.categoryId || product.Category?.id || "",
+  categoryName: product.Category?.name || product.category?.name || "Uncategorized",
+  ingredients: toStringArray(product.ingredients),
+  benefits: toStringArray(product.benefits),
+  howToUse: product.howToUse || "",
+  size: product.size || "",
+  stock: Number(product.stock || 0),
+  isFeatured: Boolean(product.isFeatured),
+});
+
 const getErrorMessage = async (response: Response): Promise<string> => {
   try {
     const data = await response.json();
@@ -71,10 +201,22 @@ const getErrorMessage = async (response: Response): Promise<string> => {
   }
 };
 
-const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
+const getSession = (): AuthSession | null => {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthSession;
+  } catch {
+    return null;
+  }
+};
+
+const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = false): Promise<T> => {
+  const session = authenticated ? getSession() : null;
   const response = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
       ...(init?.headers || {}),
     },
     ...init,
@@ -82,6 +224,10 @@ const fetchJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
 
   if (!response.ok) {
     throw new Error(await getErrorMessage(response));
+  }
+
+  if (response.status === 204) {
+    return null as T;
   }
 
   return response.json() as Promise<T>;
@@ -93,6 +239,63 @@ const sortToApi = (sortBy?: "featured" | "price-low" | "price-high"): string | u
   if (sortBy === "featured") return "ranked";
   return undefined;
 };
+
+export const setAuthSession = (session: AuthSession) => {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+};
+
+export const clearAuthSession = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+};
+
+export const getAuthSession = () => getSession();
+
+export const login = async (payload: { email: string; password: string }) => {
+  const data = await fetchJson<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data);
+  return data;
+};
+
+export const register = async (payload: {
+  name: string;
+  email: string;
+  password: string;
+  acceptedTerms: boolean;
+}) => {
+  return fetchJson<{ message: string; verificationRequired: boolean }>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const verifyOtp = async (payload: { identifier: string; otp: string }) => {
+  const data = await fetchJson<AuthResponse>("/auth/verify-otp", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data);
+  return data;
+};
+
+export const resendOtp = async (identifier: string) => {
+  return fetchJson<{ message: string; expiresIn: number }>("/auth/send-otp", {
+    method: "POST",
+    body: JSON.stringify({ identifier, type: "email" }),
+  });
+};
+
+export const logout = async () => {
+  try {
+    await fetchJson<{ message: string }>("/auth/logout", { method: "POST" }, true);
+  } finally {
+    clearAuthSession();
+  }
+};
+
+export const getMe = () => fetchJson<BackendUser>("/auth/me", undefined, true);
 
 export const getProducts = async (params?: {
   category?: ProductCategory;
@@ -131,4 +334,127 @@ export const subscribeToNewsletter = async (email: string): Promise<void> => {
     method: "POST",
     body: JSON.stringify({ email }),
   });
+};
+
+export const getAdminProducts = async (): Promise<AdminProduct[]> => {
+  const data = await fetchJson<BackendProductListResponse>("/products?limit=100&sort=ranked", undefined, true);
+  return (data.products || []).map(normalizeAdminProduct);
+};
+
+export const createAdminProduct = async (payload: AdminProductInput): Promise<AdminProduct> => {
+  const product = await fetchJson<BackendProduct>("/products", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+  return normalizeAdminProduct(product);
+};
+
+export const updateAdminProduct = async (id: string, payload: Partial<AdminProductInput>): Promise<AdminProduct> => {
+  const product = await fetchJson<BackendProduct>(`/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }, true);
+  return normalizeAdminProduct(product);
+};
+
+export const deleteAdminProduct = async (id: string): Promise<void> => {
+  await fetchJson<void>(`/products/${id}`, { method: "DELETE" }, true);
+};
+
+export const getCategories = async (): Promise<CategoryRecord[]> => {
+  const data = await fetchJson<BackendCategory[]>("/categories", undefined, true);
+  return data.map((item) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description || "",
+  }));
+};
+
+export const createCategory = async (payload: CategoryInput): Promise<CategoryRecord> => {
+  const data = await fetchJson<BackendCategory>("/categories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description || "",
+  };
+};
+
+export const updateCategory = async (id: string, payload: CategoryInput): Promise<CategoryRecord> => {
+  const data = await fetchJson<BackendCategory>(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }, true);
+  return {
+    id: data.id,
+    name: data.name,
+    description: data.description || "",
+  };
+};
+
+export const deleteCategory = async (id: string): Promise<void> => {
+  await fetchJson<void>(`/categories/${id}`, { method: "DELETE" }, true);
+};
+
+export const getAdminOrders = async (): Promise<AdminOrder[]> => {
+  const data = await fetchJson<BackendOrder[]>("/orders/all", undefined, true);
+  return data.map((order) => ({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    totalAmount: Number(order.totalAmount || 0),
+    currency: order.currency,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    createdAt: order.createdAt,
+  }));
+};
+
+export const updateOrderStatus = async (id: string, status: AdminOrder["status"]): Promise<void> => {
+  await fetchJson(`/orders/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  }, true);
+};
+
+export const getContactSubmissions = async (): Promise<ContactRecord[]> => {
+  return fetchJson<ContactRecord[]>("/contact", undefined, true);
+};
+
+export const getNewsletterSubscribers = async (): Promise<NewsletterSubscriber[]> => {
+  return fetchJson<NewsletterSubscriber[]>("/newsletter/subscribers", undefined, true);
+};
+
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  const data = await fetchJson<{ totalUsers?: number; totalProducts?: number; totalOrders?: number; totalRevenue?: number }>(
+    "/analytics/dashboard",
+    undefined,
+    true,
+  );
+  return {
+    users: Number(data.totalUsers || 0),
+    products: Number(data.totalProducts || 0),
+    orders: Number(data.totalOrders || 0),
+    revenue: Number(data.totalRevenue || 0),
+  };
+};
+
+export const getUsers = async (): Promise<BackendUser[]> => {
+  const data = await fetchJson<{ users: BackendUser[] }>("/users?limit=100", undefined, true);
+  return data.users || [];
+};
+
+export const updateUserRole = async (id: string, role: "user" | "admin" | "superadmin") => {
+  return fetchJson(`/users/${id}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role }),
+  }, true);
+};
+
+export const createAdminAccount = async (payload: { name: string; email: string; password: string; phone?: string }) => {
+  return fetchJson("/users/admin-account", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
 };

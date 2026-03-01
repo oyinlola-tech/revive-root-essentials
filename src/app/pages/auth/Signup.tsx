@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
+import { register } from "../../services/api";
 
 export function Signup() {
   const navigate = useNavigate();
@@ -13,16 +14,36 @@ export function Signup() {
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock signup - navigate to OTP
-    navigate("/auth/otp");
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        acceptedTerms: true,
+      });
+      navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create account.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialSignup = (provider: string) => {
     console.log(`Sign up with ${provider}`);
-    navigate("/");
   };
 
   return (
@@ -38,7 +59,7 @@ export function Signup() {
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(event) => setFormData({ ...formData, name: event.target.value })}
             required
             className="bg-input-background"
           />
@@ -49,7 +70,7 @@ export function Signup() {
             id="email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(event) => setFormData({ ...formData, email: event.target.value })}
             required
             className="bg-input-background"
           />
@@ -60,7 +81,7 @@ export function Signup() {
             id="password"
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(event) => setFormData({ ...formData, password: event.target.value })}
             required
             className="bg-input-background"
           />
@@ -71,15 +92,14 @@ export function Signup() {
             id="confirmPassword"
             type="password"
             value={formData.confirmPassword}
-            onChange={(e) =>
-              setFormData({ ...formData, confirmPassword: e.target.value })
-            }
+            onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
             required
             className="bg-input-background"
           />
         </div>
-        <Button type="submit" className="w-full">
-          Create Account
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Creating account..." : "Create Account"}
         </Button>
       </form>
 
@@ -91,11 +111,7 @@ export function Signup() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Button
-          variant="outline"
-          onClick={() => handleSocialSignup("Google")}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={() => handleSocialSignup("Google")} className="gap-2">
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
               fill="currentColor"
@@ -116,11 +132,7 @@ export function Signup() {
           </svg>
           Google
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => handleSocialSignup("Apple")}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={() => handleSocialSignup("Apple")} className="gap-2">
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
           </svg>

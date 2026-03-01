@@ -1,15 +1,14 @@
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
 import { ProductCard } from "../components/ProductCard";
-import { getFeaturedProducts as getFallbackFeaturedProducts } from "../data/products";
 import { ArrowRight, FlaskConical, Leaf, Recycle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CheckoutModal } from "../components/CheckoutModal";
-import { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { getFeaturedProducts, subscribeToNewsletter } from "../services/api";
 
 export function Home() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(getFallbackFeaturedProducts());
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<Array<{ product: Product; quantity: number }>>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -21,12 +20,12 @@ export function Home() {
     const loadFeaturedProducts = async () => {
       try {
         const apiProducts = await getFeaturedProducts();
-        if (!ignore && apiProducts.length > 0) {
+        if (!ignore) {
           setFeaturedProducts(apiProducts);
         }
       } catch {
         if (!ignore) {
-          setFeaturedProducts(getFallbackFeaturedProducts());
+          setFeaturedProducts([]);
         }
       }
     };
