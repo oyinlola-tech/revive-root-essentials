@@ -56,6 +56,26 @@ interface BackendProductListResponse {
   limit?: number;
 }
 
+interface BackendCartItem {
+  id: string;
+  productId: string;
+  name: string;
+  price: number | string;
+  quantity: number;
+  image?: string | null;
+  currency?: string;
+}
+
+interface BackendCartResponse {
+  items: BackendCartItem[];
+  total: number;
+  currency: string;
+}
+
+interface BackendWishlistResponse {
+  products: BackendProduct[];
+}
+
 interface BackendUser {
   id: string;
   name: string;
@@ -300,10 +320,16 @@ const sortToApi = (sortBy?: "featured" | "price-low" | "price-high"): string | u
 
 export const setAuthSession = (session: AuthSession) => {
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revive-roots-auth-changed"));
+  }
 };
 
 export const clearAuthSession = () => {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revive-roots-auth-changed"));
+  }
 };
 
 export const getAuthSession = () => getSession();
@@ -316,6 +342,35 @@ export const setPreferredCurrency = (currency: string) => {
 
 export const login = async (payload: { email: string; password: string }) => {
   const data = await fetchJson<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data);
+  return data;
+};
+
+export const oauthGoogleLogin = async (payload: {
+  idToken: string;
+  acceptedTerms?: boolean;
+  acceptedMarketing?: boolean;
+  acceptedNewsletter?: boolean;
+}) => {
+  const data = await fetchJson<AuthResponse>("/auth/oauth/google", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data);
+  return data;
+};
+
+export const oauthAppleLogin = async (payload: {
+  idToken: string;
+  name?: string;
+  acceptedTerms?: boolean;
+  acceptedMarketing?: boolean;
+  acceptedNewsletter?: boolean;
+}) => {
+  const data = await fetchJson<AuthResponse>("/auth/oauth/apple", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -372,6 +427,48 @@ export const createOrder = async (payload: CreateOrderPayload) => {
     method: "POST",
     body: JSON.stringify(payload),
   }, true);
+};
+
+export const getMyCart = () => fetchJson<BackendCartResponse>("/cart", undefined, true);
+
+export const addItemToCart = (payload: { productId: string; quantity?: number }) => {
+  return fetchJson<{ id: string }>("/cart", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const updateCartItem = (itemId: string, quantity: number) => {
+  return fetchJson<{ id: string }>("/cart/" + encodeURIComponent(itemId), {
+    method: "PUT",
+    body: JSON.stringify({ quantity }),
+  }, true);
+};
+
+export const removeCartItem = (itemId: string) => {
+  return fetchJson<void>("/cart/" + encodeURIComponent(itemId), { method: "DELETE" }, true);
+};
+
+export const clearMyCart = () => fetchJson<void>("/cart", { method: "DELETE" }, true);
+
+export const getMyWishlist = async (): Promise<Product[]> => {
+  const data = await fetchJson<BackendWishlistResponse>("/wishlist", undefined, true);
+  return (data.products || []).map(normalizeProduct);
+};
+
+export const addToWishlist = async (productId: string): Promise<void> => {
+  await fetchJson<{ message: string }>("/wishlist", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  }, true);
+};
+
+export const removeFromWishlist = async (productId: string): Promise<void> => {
+  await fetchJson<void>(`/wishlist/${encodeURIComponent(productId)}`, { method: "DELETE" }, true);
+};
+
+export const clearMyWishlist = async (): Promise<void> => {
+  await fetchJson<void>("/wishlist", { method: "DELETE" }, true);
 };
 
 export const getProducts = async (params?: {

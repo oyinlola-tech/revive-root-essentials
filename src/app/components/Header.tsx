@@ -47,9 +47,9 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2 md:gap-4">
-            <button className="p-2" aria-label="Search">
+            <Link to="/shop" className="p-2" aria-label="Search products">
               <Search className="h-5 w-5" />
-            </button>
+            </Link>
             <Link to="/wishlist" className="p-2 relative" aria-label="Wishlist">
               <Heart className="h-5 w-5" />
               {wishlistCount > 0 && (

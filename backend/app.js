@@ -22,6 +22,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const newsletterRoutes = require('./routes/newsletterRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
 
 const errorHandler = require('./middlewares/errorMiddleware');
 
@@ -69,7 +70,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code'],
   credentials: false,
 }));
 app.use(compression());
@@ -96,6 +97,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/shipping-fees', require('./routes/shippingRoutes'));
 app.use((error, req, res, next) => {
   if (error && error.type === 'entity.parse.failed') {

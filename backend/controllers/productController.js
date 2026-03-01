@@ -120,8 +120,8 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   if (req.query.sort === 'newest') order = [['createdAt', 'DESC']];
   if (req.query.sort === 'ranked') order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
   if (req.query.search) {
-    const rawSearch = String(req.query.search).replace(/'/g, "''").toLowerCase();
-    order = [[literal(`CASE WHEN LOWER(Product.name) LIKE '${rawSearch}%' THEN 0 ELSE 1 END`), 'ASC'], ...order];
+    const rawSearch = String(req.query.search).toLowerCase();
+    order = [[literal(`CASE WHEN LOWER(name) LIKE ${Product.sequelize.escape(`${rawSearch}%`)} THEN 0 ELSE 1 END`), 'ASC'], ...order];
   }
 
   const include = [{

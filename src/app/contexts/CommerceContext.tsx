@@ -1,7 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Product } from "../types/product";
+import {
+  addItemToCart,
+  addToWishlist as addToWishlistApi,
+  clearMyCart,
+  getAuthSession,
+  getMyCart,
+  getMyWishlist,
+  removeCartItem,
+  removeFromWishlist as removeFromWishlistApi,
+  updateCartItem as updateCartItemApi,
+} from "../services/api";
 
 interface CartItem {
+  id?: string;
   product: Product;
   quantity: number;
 }
@@ -35,6 +47,12 @@ const readStorage = <T,>(key: string, fallback: T): T => {
   }
 };
 
+const inferCategory = (name: string): Product["category"] => {
+  const value = name.toLowerCase();
+  if (value.includes("hair")) return "hair";
+  return "skincare";
+};
+
 const normalizeProductShape = (product: Product): Product => ({
   ...product,
   backendId: product.backendId || product.id,
@@ -51,52 +69,157 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<Product[]>(() =>
     readStorage<Product[]>(WISHLIST_KEY, []).map((item) => normalizeProductShape(item)),
   );
+  const [authToken, setAuthToken] = useState(() => getAuthSession()?.token || "");
+
+  const isAuthenticated = Boolean(authToken);
+
+  const syncRemoteCommerce = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const [remoteCart, remoteWishlist] = await Promise.all([getMyCart(), getMyWishlist()]);
+
+      const mappedCart: CartItem[] = (remoteCart.items || []).map((item) => ({
+        id: item.id,
+        quantity: Number(item.quantity || 1),
+        product: {
+          id: item.productId,
+          backendId: item.productId,
+          name: item.name,
+          currency: item.currency || "NGN",
+          category: inferCategory(item.name),
+          price: Number(item.price || 0),
+          image: item.image || "",
+          description: "",
+          ingredients: [],
+          benefits: [],
+          howToUse: "Use as directed on product packaging.",
+          size: "Standard",
+        },
+      }));
+
+      setCartItems(mappedCart);
+      setWishlist(remoteWishlist.map((item) => normalizeProductShape(item)));
+    } catch {
+      // Keep current in-memory data if sync fails.
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+    const onAuthChanged = () => setAuthToken(getAuthSession()?.token || "");
+    window.addEventListener("revive-roots-auth-changed", onAuthChanged);
+    return () => window.removeEventListener("revive-roots-auth-changed", onAuthChanged);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
-  }, [wishlist]);
+    if (!isAuthenticated) {
+      setCartItems(readStorage<CartItem[]>(CART_KEY, []).map((item) => ({
+        ...item,
+        product: normalizeProductShape(item.product),
+      })));
+      setWishlist(readStorage<Product[]>(WISHLIST_KEY, []).map((item) => normalizeProductShape(item)));
+      return;
+    }
+    void syncRemoteCommerce();
+  }, [isAuthenticated, syncRemoteCommerce]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
+    }
+  }, [cartItems, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+    }
+  }, [wishlist, isAuthenticated]);
 
   const addToCart = (product: Product, quantity = 1) => {
+    const safeProduct = normalizeProductShape(product);
+
     setCartItems((current) => {
-      const existing = current.find((item) => item.product.id === product.id);
-      if (!existing) return [...current, { product, quantity }];
+      const existing = current.find((item) => item.product.id === safeProduct.id);
+      if (!existing) return [...current, { product: safeProduct, quantity }];
 
       return current.map((item) =>
-        item.product.id === product.id
+        item.product.id === safeProduct.id
           ? { ...item, quantity: Math.max(1, item.quantity + quantity) }
           : item,
       );
     });
+
+    if (isAuthenticated) {
+      const backendProductId = safeProduct.backendId || safeProduct.id;
+      void addItemToCart({ productId: backendProductId, quantity })
+        .then(() => syncRemoteCommerce())
+        .catch(() => syncRemoteCommerce());
+    }
   };
 
   const updateCartQuantity = (productId: string, quantity: number) => {
+    const item = cartItems.find((entry) => entry.product.id === productId);
+    if (!item) return;
+
     if (quantity <= 0) {
-      setCartItems((current) => current.filter((item) => item.product.id !== productId));
+      setCartItems((current) => current.filter((entry) => entry.product.id !== productId));
+      if (isAuthenticated && item.id) {
+        void removeCartItem(item.id)
+          .then(() => syncRemoteCommerce())
+          .catch(() => syncRemoteCommerce());
+      }
       return;
     }
+
     setCartItems((current) =>
-      current.map((item) =>
-        item.product.id === productId ? { ...item, quantity: Math.min(100, quantity) } : item,
+      current.map((entry) =>
+        entry.product.id === productId ? { ...entry, quantity: Math.min(100, quantity) } : entry,
       ),
     );
+
+    if (isAuthenticated && item.id) {
+      void updateCartItemApi(item.id, Math.min(100, quantity))
+        .then(() => syncRemoteCommerce())
+        .catch(() => syncRemoteCommerce());
+    }
   };
 
   const removeFromCart = (productId: string) => {
-    setCartItems((current) => current.filter((item) => item.product.id !== productId));
+    const item = cartItems.find((entry) => entry.product.id === productId);
+    setCartItems((current) => current.filter((entry) => entry.product.id !== productId));
+
+    if (isAuthenticated && item?.id) {
+      void removeCartItem(item.id)
+        .then(() => syncRemoteCommerce())
+        .catch(() => syncRemoteCommerce());
+    }
   };
 
-  const clearCart = () => setCartItems([]);
+  const clearCart = () => {
+    setCartItems([]);
+    if (isAuthenticated) {
+      void clearMyCart()
+        .then(() => syncRemoteCommerce())
+        .catch(() => syncRemoteCommerce());
+    }
+  };
 
   const toggleWishlist = (product: Product) => {
+    const safeProduct = normalizeProductShape(product);
+    const exists = wishlist.some((item) => item.id === safeProduct.id);
+
     setWishlist((current) => {
-      const exists = current.some((item) => item.id === product.id);
-      if (exists) return current.filter((item) => item.id !== product.id);
-      return [product, ...current];
+      if (exists) return current.filter((item) => item.id !== safeProduct.id);
+      return [safeProduct, ...current];
     });
+
+    if (isAuthenticated) {
+      const backendProductId = safeProduct.backendId || safeProduct.id;
+      const request = exists
+        ? removeFromWishlistApi(backendProductId)
+        : addToWishlistApi(backendProductId);
+      void request.then(() => syncRemoteCommerce()).catch(() => syncRemoteCommerce());
+    }
   };
 
   const isWishlisted = (productId: string) => wishlist.some((item) => item.id === productId);

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { Product } from "../types/product";
 import { getFeaturedProducts, subscribeToNewsletter } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
+import { SITE_IMAGES } from "../constants/siteImages";
 
 export function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -58,8 +59,8 @@ export function Home() {
       <section className="relative min-h-[600px] md:min-h-[700px] flex items-center">
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1602188521046-bd078a8924aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGhlYWx0aHklMjBoYWlyfGVufDF8fHx8MTc3MjM2NTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Hero"
+            src={SITE_IMAGES.heroHairProduct}
+            alt="Hair care product collection"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/60 to-primary/30" />
@@ -149,7 +150,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Link to="/shop?category=hair" className="group relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
-                src="https://images.unsplash.com/photo-1602188521046-bd078a8924aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGhlYWx0aHklMjBoYWlyfGVufDF8fHx8MTc3MjM2NTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080"
+                src={SITE_IMAGES.heroHairProduct}
                 alt="Hair Care"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
@@ -164,7 +165,7 @@ export function Home() {
             </Link>
             <Link to="/shop?category=skincare" className="group relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
-                src="https://images.unsplash.com/photo-1765607476376-9574ea76b2ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnbG93aW5nJTIwc2tpbiUyMGJlYXV0eXxlbnwxfHx8fDE3NzIzNjUyNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+                src={SITE_IMAGES.heroSkinProduct}
                 alt="Skin Care"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />

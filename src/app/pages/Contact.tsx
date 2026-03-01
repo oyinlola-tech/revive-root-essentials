@@ -5,6 +5,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { submitContactMessage } from "../services/api";
+import { SITE_IMAGES } from "../constants/siteImages";
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -42,7 +43,7 @@ export function Contact() {
 
               <div className="aspect-video overflow-hidden rounded-lg mb-8">
                 <img
-                  src="https://images.unsplash.com/photo-1602188521046-bd078a8924aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGhlYWx0aHklMjBoYWlyfGVufDF8fHx8MTc3MjM2NTI2Nnww&ixlib=rb-4.1.0&q=80&w=1080"
+                  src={SITE_IMAGES.contactHairProduct}
                   alt="Contact Revive Roots Essential"
                   className="w-full h-full object-cover"
                 />
