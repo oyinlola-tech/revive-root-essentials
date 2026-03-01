@@ -14,14 +14,22 @@ export function ForgotPassword() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
 
+    if (!email.trim()) {
+      setErrorMessage("Email is required.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const response = await requestPasswordReset(email);
+      const response = await requestPasswordReset(email.trim());
       setSuccessMessage(response.message);
-      navigate(`/auth/reset-password?email=${encodeURIComponent(email)}`);
+      setTimeout(() => {
+        navigate(`/auth/reset-password?email=${encodeURIComponent(email.trim())}`);
+      }, 1500);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to request password reset.");
     } finally {
@@ -44,6 +52,7 @@ export function ForgotPassword() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
             required
           />
         </div>

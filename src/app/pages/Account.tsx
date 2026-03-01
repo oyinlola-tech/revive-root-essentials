@@ -79,14 +79,25 @@ export function Account() {
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
 
+    // Validation
+    if (!formData.name.trim()) {
+      setErrorMessage("Full name is required.");
+      return;
+    }
+    if (formData.phone && formData.phone.length < 10) {
+      setErrorMessage("Phone number must be at least 10 digits.");
+      return;
+    }
+
+    setSaving(true);
+
     try {
       await updateMyProfile({
-        name: formData.name,
-        phone: formData.phone,
+        name: formData.name.trim(),
+        phone: formData.phone?.trim() || "",
         acceptedMarketing: formData.acceptedMarketing,
         acceptedNewsletter: formData.acceptedNewsletter,
       });
@@ -109,6 +120,27 @@ export function Account() {
     setPasswordError("");
     setPasswordSuccess("");
 
+    // Validation
+    if (!passwordForm.currentPassword) {
+      setPasswordError("Current password is required.");
+      return;
+    }
+    if (!passwordForm.newPassword) {
+      setPasswordError("New password is required.");
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters long.");
+      return;
+    }
+    if (!/[A-Z]/.test(passwordForm.newPassword)) {
+      setPasswordError("Password must contain at least one uppercase letter.");
+      return;
+    }
+    if (!/[0-9]/.test(passwordForm.newPassword)) {
+      setPasswordError("Password must contain at least one number.");
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordError("New passwords do not match.");
       return;

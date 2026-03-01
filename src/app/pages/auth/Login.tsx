@@ -33,15 +33,21 @@ export function Login() {
     setLoading(true);
 
     try {
-      const response = await login(formData) as any;
+      const response = await login({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
 
-      // If admin/superadmin requires OTP
-      if (response.requiresOtp && response.identifier) {
+      if ("requiresOtp" in response && response.requiresOtp && response.identifier) {
         navigate(`/auth/otp?identifier=${encodeURIComponent(response.identifier)}&admin=true&redirect=${encodeURIComponent(searchParams.get("redirect") || "/admin")}`);
         return;
       }
 
-      // Regular user login successful
+      if (!("token" in response)) {
+        setError("Unable to complete login. Please try again.");
+        return;
+      }
+
       const session = response;
       const redirect = searchParams.get("redirect");
       if (redirect && session.user.role === "user") {
@@ -124,7 +130,7 @@ export function Login() {
             type="password"
             value={formData.password}
             onChange={(event) => setFormData({ ...formData, password: event.target.value })}
-            placeholder="••••••••"
+            placeholder="********"
             required
             className="bg-input-background"
           />

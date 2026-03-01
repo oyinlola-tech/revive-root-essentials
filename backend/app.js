@@ -52,6 +52,24 @@ const authLimiter = rateLimit({
   message: 'Too many authentication attempts. Try again later.',
 });
 
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Too many contact submissions. Please try again later.',
+});
+
+const newsletterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: 'Too many newsletter subscriptions. Please try again later.',
+});
+
+const orderLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many orders. Please try again shortly.',
+});
+
 // Middlewares
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -92,10 +110,13 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderLimiter);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/contact', contactLimiter);
 app.use('/api/contact', contactRoutes);
+app.use('/api/newsletter', newsletterLimiter);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/shipping-fees', require('./routes/shippingRoutes'));

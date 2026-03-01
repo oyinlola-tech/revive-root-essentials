@@ -3,6 +3,12 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const BRAND_PRIMARY = '#052012';
 const BRAND_ACCENT = '#e3e1bb';
+const e = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
 
 const formatMoney = (amount, currency = 'NGN') => {
   const normalized = String(currency || 'NGN').toUpperCase();
@@ -21,10 +27,10 @@ const baseTemplate = ({ title, preheader, content, ctaLabel, ctaUrl }) => `
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${title}</title>
+    <title>${e(title)}</title>
   </head>
   <body style="margin:0;padding:0;background:${BRAND_ACCENT};font-family:Arial,Helvetica,sans-serif;color:${BRAND_PRIMARY};">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${e(preheader)}</div>
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND_ACCENT};padding:24px 0;">
       <tr>
         <td align="center">
@@ -60,7 +66,7 @@ const renderOrderItems = (items = [], currency = 'NGN') => {
   if (!items.length) return '<p style="margin:0;">No items available.</p>';
   const rows = items.map((item) => `
     <tr>
-      <td style="padding:10px 8px;border-bottom:1px solid rgba(5,32,18,0.12);">${item.name || 'Product'}</td>
+      <td style="padding:10px 8px;border-bottom:1px solid rgba(5,32,18,0.12);">${e(item.name || 'Product')}</td>
       <td style="padding:10px 8px;border-bottom:1px solid rgba(5,32,18,0.12);" align="center">${item.quantity || 1}</td>
       <td style="padding:10px 8px;border-bottom:1px solid rgba(5,32,18,0.12);" align="right">${formatMoney(item.price, currency)}</td>
     </tr>
@@ -87,7 +93,7 @@ exports.otpTemplate = ({ name, code, channel = 'email', expiresMinutes = 5 }) =>
     <h2 style="margin:0 0 10px 0;font-size:24px;">Verification Code</h2>
     <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${name || 'there'}, use the code below to continue your ${APP_NAME} ${channel} verification.</p>
     <div style="margin:12px 0 18px 0;padding:18px;border:1px dashed ${BRAND_PRIMARY};border-radius:10px;background:${BRAND_ACCENT};text-align:center;">
-      <span style="font-size:34px;font-weight:800;letter-spacing:8px;color:${BRAND_PRIMARY};">${code}</span>
+      <span style="font-size:34px;font-weight:800;letter-spacing:8px;color:${BRAND_PRIMARY};">${e(code)}</span>
     </div>
     <p style="margin:0;font-size:14px;color:#4b5a51;">This code expires in ${expiresMinutes} minutes. Do not share it with anyone.</p>
   `,
@@ -131,10 +137,10 @@ exports.orderPlacedTemplate = ({ name, orderNumber, orderDate, items, total, shi
   preheader: 'Your order has been received and is now being processed.',
   content: `
     <h2 style="margin:0 0 10px 0;font-size:24px;">Order Confirmed</h2>
-    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${name || 'there'}, we received your order <strong>${orderNumber}</strong> on ${orderDate}.</p>
+    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${e(name || 'there')}, we received your order <strong>${e(orderNumber)}</strong> on ${e(orderDate)}.</p>
     ${renderOrderItems(items, currency)}
     <p style="margin:14px 0 6px 0;font-size:15px;"><strong>Total:</strong> ${formatMoney(total, currency)}</p>
-    <p style="margin:0;font-size:14px;line-height:1.7;color:#4b5a51;"><strong>Shipping Address:</strong> ${shippingAddress || 'Not provided'}</p>
+    <p style="margin:0;font-size:14px;line-height:1.7;color:#4b5a51;"><strong>Shipping Address:</strong> ${e(shippingAddress || 'Not provided')}</p>
   `,
   ctaLabel: 'View Orders',
   ctaUrl: `${FRONTEND_URL}/account`,
@@ -145,8 +151,8 @@ exports.receiptTemplate = ({ name, orderNumber, paidAt, paymentMethod, items, to
   preheader: 'Your payment was successful.',
   content: `
     <h2 style="margin:0 0 10px 0;font-size:24px;">Payment Successful</h2>
-    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${name || 'there'}, your payment for <strong>${orderNumber}</strong> has been confirmed.</p>
-    <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#4b5a51;"><strong>Paid at:</strong> ${paidAt}<br /><strong>Method:</strong> ${paymentMethod || 'N/A'}</p>
+    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${e(name || 'there')}, your payment for <strong>${e(orderNumber)}</strong> has been confirmed.</p>
+    <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#4b5a51;"><strong>Paid at:</strong> ${e(paidAt)}<br /><strong>Method:</strong> ${e(paymentMethod || 'N/A')}</p>
     ${renderOrderItems(items, currency)}
     <p style="margin:14px 0 0 0;font-size:15px;"><strong>Amount Paid:</strong> ${formatMoney(total, currency)}</p>
   `,
@@ -159,8 +165,8 @@ exports.orderStatusTemplate = ({ name, orderNumber, status, note }) => baseTempl
   preheader: `Your order status is now ${status}.`,
   content: `
     <h2 style="margin:0 0 10px 0;font-size:24px;">Order Status Update</h2>
-    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${name || 'there'}, your order <strong>${orderNumber}</strong> is now <strong style="text-transform:uppercase;">${status}</strong>.</p>
-    <p style="margin:0;font-size:14px;line-height:1.7;color:#4b5a51;">${note || 'We will keep you updated until delivery is complete.'}</p>
+    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hi ${e(name || 'there')}, your order <strong>${e(orderNumber)}</strong> is now <strong style="text-transform:uppercase;">${e(status)}</strong>.</p>
+    <p style="margin:0;font-size:14px;line-height:1.7;color:#4b5a51;">${e(note || 'We will keep you updated until delivery is complete.')}</p>
   `,
   ctaLabel: 'View My Orders',
   ctaUrl: `${FRONTEND_URL}/account`,
@@ -171,11 +177,11 @@ exports.refundTemplate = ({ name, orderNumber, amount, reason, processedAt, curr
   preheader: 'Your refund has been completed.',
   content: `
     <h2 style="margin:0 0 10px 0;font-size:24px;">Refund Completed</h2>
-    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hello ${name || 'there'}, your refund for order <strong>${orderNumber}</strong> has been processed.</p>
+    <p style="margin:0 0 12px 0;font-size:15px;line-height:1.7;">Hello ${e(name || 'there')}, your refund for order <strong>${e(orderNumber)}</strong> has been processed.</p>
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND_ACCENT};border:1px solid rgba(5,32,18,0.12);border-radius:8px;padding:12px;font-size:14px;">
       <tr><td style="padding:6px 0;"><strong>Refund Amount:</strong> ${formatMoney(amount, currency)}</td></tr>
-      <tr><td style="padding:6px 0;"><strong>Processed At:</strong> ${processedAt}</td></tr>
-      <tr><td style="padding:6px 0;"><strong>Reason:</strong> ${reason || 'Refund processed by support team'}</td></tr>
+      <tr><td style="padding:6px 0;"><strong>Processed At:</strong> ${e(processedAt)}</td></tr>
+      <tr><td style="padding:6px 0;"><strong>Reason:</strong> ${e(reason || 'Refund processed by support team')}</td></tr>
     </table>
   `,
   ctaLabel: 'Contact Support',
@@ -183,20 +189,20 @@ exports.refundTemplate = ({ name, orderNumber, amount, reason, processedAt, curr
 });
 
 exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeUrl }) => {
-  const intro = recipientName ? `Hello ${recipientName},` : 'Hello there,';
+  const intro = recipientName ? `Hello ${e(recipientName)},` : 'Hello there,';
   const rows = products.map((product) => `
     <tr>
       <td style="padding:20px;border-bottom:1px solid rgba(5,32,18,0.12);">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
           <tr>
             <td width="120" valign="top" style="padding-right:16px;">
-              <img src="${product.imageUrl || ''}" alt="${product.name}" width="120" style="display:block;width:120px;height:120px;object-fit:cover;border:0;border-radius:8px;" />
+              <img src="${e(product.imageUrl || '')}" alt="${e(product.name)}" width="120" style="display:block;width:120px;height:120px;object-fit:cover;border:0;border-radius:8px;" />
             </td>
             <td valign="top">
-              <h3 style="margin:0 0 8px 0;color:${BRAND_PRIMARY};font-size:18px;line-height:1.4;">${product.name}</h3>
-              <p style="margin:0 0 10px 0;color:${BRAND_PRIMARY};font-size:15px;line-height:1.6;">${product.description || 'Premium hair and skin essentials designed for visible results.'}</p>
+              <h3 style="margin:0 0 8px 0;color:${BRAND_PRIMARY};font-size:18px;line-height:1.4;">${e(product.name)}</h3>
+              <p style="margin:0 0 10px 0;color:${BRAND_PRIMARY};font-size:15px;line-height:1.6;">${e(product.description || 'Premium hair and skin essentials designed for visible results.')}</p>
               <p style="margin:0 0 14px 0;color:${BRAND_PRIMARY};font-size:16px;font-weight:700;">${formatMoney(product.price, 'NGN')}</p>
-              <a href="${product.url}" style="display:inline-block;padding:10px 18px;background:${BRAND_PRIMARY};color:${BRAND_ACCENT};text-decoration:none;font-weight:700;font-size:13px;border-radius:8px;">View Product</a>
+              <a href="${e(product.url)}" style="display:inline-block;padding:10px 18px;background:${BRAND_PRIMARY};color:${BRAND_ACCENT};text-decoration:none;font-weight:700;font-size:13px;border-radius:8px;">View Product</a>
             </td>
           </tr>
         </table>
@@ -235,7 +241,7 @@ exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeU
                 <p style="margin:0 0 12px 0;font-size:14px;line-height:1.8;color:${BRAND_PRIMARY};">Need help choosing products? Our support team can guide your routine.</p>
                 <p style="margin:0;font-size:12px;line-height:1.8;color:${BRAND_PRIMARY};">
                   You are receiving this because you opted in for updates.
-                  <a href="${unsubscribeUrl}" style="color:${BRAND_PRIMARY};text-decoration:underline;">Unsubscribe</a>
+                  <a href="${e(unsubscribeUrl)}" style="color:${BRAND_PRIMARY};text-decoration:underline;">Unsubscribe</a>
                 </p>
               </td>
             </tr>

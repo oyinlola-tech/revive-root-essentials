@@ -30,6 +30,31 @@ export function ResetPassword() {
     setErrorMessage("");
     setSuccessMessage("");
 
+    // Validation
+    if (!formData.email.trim()) {
+      setErrorMessage("Email is required.");
+      return;
+    }
+    if (!formData.otp.trim() || !/^\d{6}$/.test(formData.otp)) {
+      setErrorMessage("OTP must be a 6-digit code.");
+      return;
+    }
+    if (!formData.newPassword) {
+      setErrorMessage("New password is required.");
+      return;
+    }
+    if (formData.newPassword.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long.");
+      return;
+    }
+    if (!/[A-Z]/.test(formData.newPassword)) {
+      setErrorMessage("Password must contain at least one uppercase letter.");
+      return;
+    }
+    if (!/[0-9]/.test(formData.newPassword)) {
+      setErrorMessage("Password must contain at least one number.");
+      return;
+    }
     if (formData.newPassword !== formData.confirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
@@ -38,8 +63,8 @@ export function ResetPassword() {
     setLoading(true);
     try {
       const response = await confirmPasswordReset({
-        email: formData.email,
-        otp: formData.otp,
+        email: formData.email.trim(),
+        otp: formData.otp.trim(),
         newPassword: formData.newPassword,
       });
       setSuccessMessage(response.message);
@@ -85,6 +110,7 @@ export function ResetPassword() {
               type={showPasswords.next ? "text" : "password"}
               value={formData.newPassword}
               onChange={(event) => setFormData({ ...formData, newPassword: event.target.value })}
+              placeholder="Min 8 chars, 1 uppercase, 1 number"
               required
             />
             <button

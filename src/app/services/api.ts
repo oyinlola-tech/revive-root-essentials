@@ -105,6 +105,14 @@ interface AuthResponse {
   user: BackendUser;
 }
 
+export interface AuthOtpChallenge {
+  requiresOtp: true;
+  identifier: string;
+  message: string;
+}
+
+export type LoginResponse = AuthResponse | AuthOtpChallenge;
+
 export interface AuthSession {
   token: string;
   refreshToken: string;
@@ -344,11 +352,13 @@ export const setPreferredCurrency = (currency: string) => {
 };
 
 export const login = async (payload: { email: string; password: string }) => {
-  const data = await fetchJson<AuthResponse>("/auth/login", {
+  const data = await fetchJson<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  setAuthSession(data);
+  if ("token" in data && data.token) {
+    setAuthSession(data);
+  }
   return data;
 };
 

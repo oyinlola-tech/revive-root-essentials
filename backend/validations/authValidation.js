@@ -52,3 +52,7 @@ exports.resetPasswordConfirmValidation = [
   body('otp').trim().isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
   body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
 ];
+
+exports.resetPasswordValidation = [
+  body('email').trim().normalizeEmail().isEmail().withMessage('Please provide a valid email'),
+];

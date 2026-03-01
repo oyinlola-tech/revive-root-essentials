@@ -306,6 +306,12 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   if (wasUnverified) {
     notificationService.sendWelcomeEmail(user).catch(() => {});
   }
+
+  notificationService.sendLoginAlert(user, {
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+    time: new Date().toLocaleString(),
+  }).catch(() => {});
 });
 
 exports.login = catchAsync(async (req, res, next) => {

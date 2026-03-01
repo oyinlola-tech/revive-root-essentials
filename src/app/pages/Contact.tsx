@@ -31,8 +31,35 @@ export function Contact() {
     setSubmitState("loading");
     setSubmitMessage("");
 
+    // Validation
+    if (!formData.name.trim()) {
+      setSubmitState("error");
+      setSubmitMessage("Name is required.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setSubmitState("error");
+      setSubmitMessage("Email is required.");
+      return;
+    }
+    if (!formData.subject.trim()) {
+      setSubmitState("error");
+      setSubmitMessage("Subject is required.");
+      return;
+    }
+    if (!formData.message.trim()) {
+      setSubmitState("error");
+      setSubmitMessage("Message is required.");
+      return;
+    }
+
     try {
-      await submitContactMessage(formData);
+      await submitContactMessage({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      });
       setSubmitState("success");
       setSubmitMessage("Thank you. Your message has been sent successfully.");
       setFormData({ name: "", email: "", subject: "", message: "" });
