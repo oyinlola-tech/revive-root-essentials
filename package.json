@@ -4,8 +4,11 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "dev:frontend": "vite",
+    "dev:backend": "node backend/server.js",
+    "dev": "node scripts/run-both.js",
     "build": "vite build",
-    "dev": "vite"
+    "start": "node scripts/run-both.js start"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -66,6 +69,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "nodemon": "^3.1.10",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },

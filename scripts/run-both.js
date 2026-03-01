@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import fs from 'node:fs';
 
 const mode = process.argv[2] || 'dev';
 const processes = [];
@@ -30,12 +31,17 @@ const shutdown = (code = 0) => {
 const binExt = process.platform === 'win32' ? '.cmd' : '';
 const viteBin = path.join(process.cwd(), 'node_modules', '.bin', `vite${binExt}`);
 const nodemonBin = path.join(process.cwd(), 'node_modules', '.bin', `nodemon${binExt}`);
+const hasNodemon = fs.existsSync(nodemonBin);
 
 if (mode === 'start') {
   run('node', ['backend/server.js'], 'backend');
   run(viteBin, ['--host'], 'frontend');
 } else {
-  run(nodemonBin, ['backend/server.js'], 'backend');
+  if (hasNodemon) {
+    run(nodemonBin, ['backend/server.js'], 'backend');
+  } else {
+    run('node', ['backend/server.js'], 'backend');
+  }
   run(viteBin, [], 'frontend');
 }
 
