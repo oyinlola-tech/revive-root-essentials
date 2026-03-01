@@ -105,6 +105,13 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   const categoryFilter = req.query.category
     ? req.query.category.split(',').map((name) => name.trim()).filter(Boolean)
     : null;
+  const categoryWhere = categoryFilter && categoryFilter.length > 0
+    ? {
+      [Op.or]: categoryFilter.map((name) => ({
+        name: { [Op.like]: `%${name}%` },
+      })),
+    }
+    : undefined;
 
   let order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
   if (req.query.sort === 'name') order = [['name', 'ASC']];
@@ -120,8 +127,8 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   const include = [{
     model: Category,
     attributes: ['id', 'name'],
-    ...(categoryFilter ? { where: { name: { [Op.in]: categoryFilter } } } : {}),
-    required: !!categoryFilter,
+    ...(categoryWhere ? { where: categoryWhere } : {}),
+    required: !!categoryWhere,
   }];
 
   const { rows: products, count: total } = await Product.findAndCountAll({

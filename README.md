@@ -145,6 +145,12 @@ cp .env.example .env
 
 Update the new `.env` files with actual values before startup.
 
+Optional manual schema bootstrap:
+
+```bash
+mysql -u <db_user> -p < backend/sql/schema.sql
+```
+
 ## 7. Environment Variables
 
 Frontend (`/.env`):

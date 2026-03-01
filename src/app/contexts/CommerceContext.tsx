@@ -35,9 +35,21 @@ const readStorage = <T,>(key: string, fallback: T): T => {
   }
 };
 
+const normalizeProductShape = (product: Product): Product => ({
+  ...product,
+  backendId: product.backendId || product.id,
+});
+
 export function CommerceProvider({ children }: { children: React.ReactNode }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => readStorage<CartItem[]>(CART_KEY, []));
-  const [wishlist, setWishlist] = useState<Product[]>(() => readStorage<Product[]>(WISHLIST_KEY, []));
+  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
+    readStorage<CartItem[]>(CART_KEY, []).map((item) => ({
+      ...item,
+      product: normalizeProductShape(item.product),
+    })),
+  );
+  const [wishlist, setWishlist] = useState<Product[]>(() =>
+    readStorage<Product[]>(WISHLIST_KEY, []).map((item) => normalizeProductShape(item)),
+  );
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(cartItems));

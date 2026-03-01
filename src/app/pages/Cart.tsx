@@ -50,7 +50,7 @@ export function Cart() {
     try {
       const response = await createOrder({
         items: cartItems.map((item) => ({
-          productId: item.product.backendId,
+          productId: item.product.backendId || item.product.id,
           quantity: item.quantity,
         })),
         shippingAddress: {
