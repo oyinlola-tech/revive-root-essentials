@@ -8,6 +8,7 @@ import { Separator } from "../components/ui/separator";
 import { getFeaturedProducts, getProductByIdentifier } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
 import { formatMoney } from "../utils/formatMoney";
+import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
 
 export function ProductDetails() {
   const { id } = useParams();
@@ -102,7 +103,15 @@ export function ProductDetails() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-16">
           <div className="aspect-square overflow-hidden rounded-lg bg-muted">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img
+              src={getProductImageByCategory(product)}
+              alt={product.name}
+              className="w-full h-full object-cover"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = PRODUCT_FALLBACK_IMAGES[product.category];
+              }}
+            />
           </div>
 
           <div className="space-y-6">

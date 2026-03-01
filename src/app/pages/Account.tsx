@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -15,6 +16,7 @@ import {
   updateMyProfile,
 } from "../services/api";
 import { SUPPORTED_PAYMENT_CURRENCIES } from "../constants/currencies";
+import { getPasswordStrength } from "../utils/passwordStrength";
 
 export function Account() {
   const navigate = useNavigate();
@@ -26,6 +28,11 @@ export function Account() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -39,6 +46,7 @@ export function Account() {
     acceptedNewsletter: false,
     currency: "NGN",
   });
+  const passwordStrength = getPasswordStrength(passwordForm.newPassword);
 
   useEffect(() => {
     const session = getAuthSession();
@@ -236,30 +244,68 @@ export function Account() {
           <h2 className="text-2xl font-semibold">Change Password</h2>
           <div>
             <Label>Current Password</Label>
-            <Input
-              type="password"
-              value={passwordForm.currentPassword}
-              onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}
-              required
-            />
+            <div className="relative">
+              <Input
+                type={showPasswords.current ? "text" : "password"}
+                value={passwordForm.currentPassword}
+                onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                onClick={() => setShowPasswords((current) => ({ ...current, current: !current.current }))}
+              >
+                {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <Label>New Password</Label>
-            <Input
-              type="password"
-              value={passwordForm.newPassword}
-              onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}
-              required
-            />
+            <div className="relative">
+              <Input
+                type={showPasswords.next ? "text" : "password"}
+                value={passwordForm.newPassword}
+                onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                onClick={() => setShowPasswords((current) => ({ ...current, next: !current.next }))}
+              >
+                {showPasswords.next ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {passwordForm.newPassword.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <div className="h-2 bg-muted rounded overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                  />
+                </div>
+                <p className="text-xs opacity-70">Strength: {passwordStrength.label}</p>
+              </div>
+            )}
           </div>
           <div>
             <Label>Confirm New Password</Label>
-            <Input
-              type="password"
-              value={passwordForm.confirmPassword}
-              onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}
-              required
-            />
+            <div className="relative">
+              <Input
+                type={showPasswords.confirm ? "text" : "password"}
+                value={passwordForm.confirmPassword}
+                onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                onClick={() => setShowPasswords((current) => ({ ...current, confirm: !current.confirm }))}
+              >
+                {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
           {passwordSuccess && <p className="text-sm text-green-700">{passwordSuccess}</p>}

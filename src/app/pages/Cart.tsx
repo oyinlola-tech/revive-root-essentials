@@ -8,6 +8,7 @@ import { Separator } from "../components/ui/separator";
 import { useCommerce } from "../contexts/CommerceContext";
 import { createOrder, getAuthSession } from "../services/api";
 import { formatMoney } from "../utils/formatMoney";
+import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
 
 const initialCheckout = {
   country: "Nigeria",
@@ -109,9 +110,13 @@ export function Cart() {
             {cartItems.map((item) => (
               <div key={item.product.id} className="p-4 border border-border rounded-lg flex gap-4">
                 <img
-                  src={item.product.image}
+                  src={getProductImageByCategory(item.product)}
                   alt={item.product.name}
                   className="h-24 w-24 rounded object-cover"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = PRODUCT_FALLBACK_IMAGES[item.product.category];
+                  }}
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold">{item.product.name}</h3>

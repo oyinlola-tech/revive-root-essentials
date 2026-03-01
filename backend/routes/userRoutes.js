@@ -9,9 +9,9 @@ const { updateUserValidation, createAdminValidation } = require('../validations/
 // Admin/Superadmin only
 router.get('/', protect, restrictTo('admin', 'superadmin'), userController.getAllUsers);
 router.post('/admin-account', protect, restrictTo('superadmin'), validate(createAdminValidation), userController.createAdminAccount);
+router.delete('/me/account', protect, userController.deleteMyAccount);
 router.put('/:id/role', protect, restrictTo('superadmin'), userController.updateUserRole);
 router.delete('/:id', protect, restrictTo('superadmin'), userController.deleteUser);
-router.delete('/me/account', protect, userController.deleteMyAccount);
 
 // Authenticated users can access their own data
 router.get('/:id', protect, userController.getUserById);

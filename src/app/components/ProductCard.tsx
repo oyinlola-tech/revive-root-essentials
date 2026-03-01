@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Heart, ShoppingCart } from "lucide-react";
 import { useCommerce } from "../contexts/CommerceContext";
 import { formatMoney } from "../utils/formatMoney";
+import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
 
 interface ProductCardProps {
   product: Product;
@@ -31,9 +32,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
       </button>
       <div className="aspect-square overflow-hidden bg-muted">
         <img
-          src={product.image}
+          src={getProductImageByCategory(product)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = PRODUCT_FALLBACK_IMAGES[product.category];
+          }}
         />
       </div>
       <div className="p-4">
