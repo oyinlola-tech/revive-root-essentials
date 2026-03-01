@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -8,6 +8,7 @@ import { login } from "../../services/api";
 
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,6 +23,11 @@ export function Login() {
 
     try {
       const session = await login(formData);
+      const redirect = searchParams.get("redirect");
+      if (redirect && session.user.role === "user") {
+        navigate(redirect);
+        return;
+      }
       if (session.user.role === "superadmin") {
         navigate("/super-admin");
         return;

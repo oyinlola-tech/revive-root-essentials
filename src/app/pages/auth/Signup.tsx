@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -8,6 +8,7 @@ import { register } from "../../services/api";
 
 export function Signup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -34,7 +35,9 @@ export function Signup() {
         password: formData.password,
         acceptedTerms: true,
       });
-      navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}`);
+      const redirect = searchParams.get("redirect");
+      const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
+      navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}${redirectQuery}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create account.");
     } finally {

@@ -6,6 +6,7 @@ import { ProductDetails } from "./pages/ProductDetails";
 import { Contact } from "./pages/Contact";
 import { Cart } from "./pages/Cart";
 import { Wishlist } from "./pages/Wishlist";
+import { Account } from "./pages/Account";
 import { Login } from "./pages/auth/Login";
 import { Signup } from "./pages/auth/Signup";
 import { OTP } from "./pages/auth/OTP";
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: "shop/:id", Component: ProductDetails },
       { path: "cart", Component: Cart },
       { path: "wishlist", Component: Wishlist },
+      { path: "account", Component: Account },
       { path: "contact", Component: Contact },
     ],
   },

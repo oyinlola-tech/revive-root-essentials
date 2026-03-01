@@ -58,7 +58,7 @@ export function Header() {
                 </span>
               )}
             </Link>
-            <Link to="/auth/login" className="p-2">
+            <Link to="/account" className="p-2">
               <User className="h-5 w-5" />
             </Link>
             <Link to="/cart" className="p-2 relative" aria-label="Shopping bag">

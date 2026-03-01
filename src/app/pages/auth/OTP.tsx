@@ -8,6 +8,7 @@ export function OTP() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const identifier = searchParams.get("identifier") || "";
+  const redirect = searchParams.get("redirect");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -26,6 +27,10 @@ export function OTP() {
     setLoading(true);
     try {
       const session = await verifyOtp({ identifier, otp });
+      if (redirect && session.user.role === "user") {
+        navigate(redirect);
+        return;
+      }
       if (session.user.role === "superadmin") {
         navigate("/super-admin");
         return;
