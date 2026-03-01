@@ -41,3 +41,14 @@ exports.verifyOtpValidation = [
   body('identifier').trim().notEmpty().withMessage('Identifier is required'),
   body('otp').trim().isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
+
+exports.changePasswordValidation = [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+];
+
+exports.resetPasswordConfirmValidation = [
+  body('email').trim().normalizeEmail().isEmail().withMessage('Please provide a valid email'),
+  body('otp').trim().isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+  body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+];

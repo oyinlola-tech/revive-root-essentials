@@ -77,6 +77,11 @@ export function Login() {
             required
             className="bg-input-background"
           />
+          <div className="mt-2 text-right">
+            <Link to="/auth/forgot-password" className="text-sm font-medium hover:opacity-70">
+              Forgot Password?
+            </Link>
+          </div>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button type="submit" className="w-full" disabled={loading}>

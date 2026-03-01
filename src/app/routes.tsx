@@ -10,6 +10,8 @@ import { Account } from "./pages/Account";
 import { Login } from "./pages/auth/Login";
 import { Signup } from "./pages/auth/Signup";
 import { OTP } from "./pages/auth/OTP";
+import { ForgotPassword } from "./pages/auth/ForgotPassword";
+import { ResetPassword } from "./pages/auth/ResetPassword";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { SuperAdminDashboard } from "./pages/admin/SuperAdminDashboard";
 import { NotFound } from "./pages/NotFound";
@@ -38,6 +40,8 @@ export const router = createBrowserRouter([
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "otp", Component: OTP },
+      { path: "forgot-password", Component: ForgotPassword },
+      { path: "reset-password", Component: ResetPassword },
     ],
   },
   {

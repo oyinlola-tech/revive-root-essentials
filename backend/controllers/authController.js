@@ -491,3 +491,63 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   res.json({ message: 'If an account exists, a reset OTP has been sent.' });
 });
+
+exports.resetPasswordConfirm = catchAsync(async (req, res, next) => {
+  const { email, otp, newPassword } = req.body;
+  const normalizedEmail = String(email || '').toLowerCase().trim();
+
+  if (!/^\d{6}$/.test(String(otp || ''))) {
+    return next(new AppError('Invalid OTP format', 400));
+  }
+
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  const otpRecord = await Otp.findOne({
+    where: {
+      identifier: normalizedEmail,
+      type: 'email',
+      code: otpHash,
+      expiresAt: { [Op.gt]: new Date() },
+    },
+  });
+
+  if (!otpRecord) {
+    return next(new AppError('Invalid or expired OTP', 400));
+  }
+
+  const user = await User.scope('withPassword').findOne({ where: { email: normalizedEmail } });
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  user.passwordHash = newPassword;
+  user.authProvider = 'local';
+  user.isVerified = true;
+  user.currentSessionId = null;
+  await user.save();
+  await otpRecord.destroy();
+
+  res.json({ message: 'Password reset successful. Please log in with your new password.' });
+});
+
+exports.changePassword = catchAsync(async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.scope('withPassword').findByPk(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  if (!user.passwordHash) {
+    return next(new AppError('Password change is unavailable for social-login-only accounts', 400));
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    return next(new AppError('Current password is incorrect', 401));
+  }
+
+  user.passwordHash = newPassword;
+  user.currentSessionId = null;
+  await user.save();
+
+  res.json({ message: 'Password changed successfully. Please log in again.' });
+});

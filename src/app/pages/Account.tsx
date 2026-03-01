@@ -5,6 +5,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
 import {
+  changePassword,
+  deleteMyAccount,
   getAuthSession,
   getMe,
   getPreferredCurrency,
@@ -20,6 +22,15 @@ export function Account() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -83,6 +94,49 @@ export function Account() {
   const handleLogout = async () => {
     await logout();
     navigate("/auth/login");
+  };
+
+  const handlePasswordChange = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      const response = await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordSuccess(response.message);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      await logout();
+      navigate("/auth/login");
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : "Unable to change password.");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const proceed = confirm("This will permanently delete your account. Continue?");
+    if (!proceed) return;
+
+    setDeleting(true);
+    setErrorMessage("");
+    try {
+      await deleteMyAccount();
+      navigate("/auth/signup");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to delete account.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -177,6 +231,52 @@ export function Account() {
             </Button>
           </div>
         </form>
+
+        <form onSubmit={handlePasswordChange} className="space-y-4 border border-border rounded-lg p-6 mt-6">
+          <h2 className="text-2xl font-semibold">Change Password</h2>
+          <div>
+            <Label>Current Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <Label>New Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <Label>Confirm New Password</Label>
+            <Input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}
+              required
+            />
+          </div>
+          {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+          {passwordSuccess && <p className="text-sm text-green-700">{passwordSuccess}</p>}
+          <Button type="submit" disabled={passwordSaving}>
+            {passwordSaving ? "Updating..." : "Change Password"}
+          </Button>
+        </form>
+
+        <div className="border border-red-200 rounded-lg p-6 mt-6">
+          <h2 className="text-xl font-semibold text-red-700 mb-2">Danger Zone</h2>
+          <p className="text-sm opacity-80 mb-4">
+            Deleting your account is permanent and cannot be undone.
+          </p>
+          <Button type="button" variant="outline" onClick={handleDeleteAccount} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete My Account"}
+          </Button>
+        </div>
       </div>
     </div>
   );

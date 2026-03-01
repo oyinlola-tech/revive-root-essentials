@@ -542,6 +542,32 @@ export const createAdminAccount = async (payload: { name: string; email: string;
   }, true);
 };
 
+export const requestPasswordReset = async (email: string) => {
+  return fetchJson<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+};
+
+export const confirmPasswordReset = async (payload: { email: string; otp: string; newPassword: string }) => {
+  return fetchJson<{ message: string }>("/auth/reset-password/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+export const changePassword = async (payload: { currentPassword: string; newPassword: string }) => {
+  return fetchJson<{ message: string }>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const deleteMyAccount = async () => {
+  await fetchJson<void>("/users/me/account", { method: "DELETE" }, true);
+  clearAuthSession();
+};
+
 export const updateMyProfile = async (payload: {
   name?: string;
   phone?: string;

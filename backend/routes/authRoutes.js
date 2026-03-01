@@ -8,6 +8,8 @@ const {
   loginValidation,
   sendOtpValidation,
   verifyOtpValidation,
+  changePasswordValidation,
+  resetPasswordConfirmValidation,
 } = require('../validations/authValidation');
 
 router.post('/register', validate(registerValidation), authController.register);
@@ -20,5 +22,7 @@ router.post('/logout', protect, authController.logout);
 router.get('/me', protect, authController.getMe);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/reset-password', authController.resetPassword);
+router.post('/reset-password/confirm', validate(resetPasswordConfirmValidation), authController.resetPasswordConfirm);
+router.post('/change-password', protect, validate(changePasswordValidation), authController.changePassword);
 
 module.exports = router;
