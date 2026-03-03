@@ -5,6 +5,7 @@ import { Shop } from "./pages/Shop";
 import { ProductDetails } from "./pages/ProductDetails";
 import { Contact } from "./pages/Contact";
 import { Cart } from "./pages/Cart";
+import { OrderPaymentStatus } from "./pages/OrderPaymentStatus";
 import { Wishlist } from "./pages/Wishlist";
 import { Account } from "./pages/Account";
 import { NewsletterUnsubscribe } from "./pages/NewsletterUnsubscribe";
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: "shop", Component: Shop },
       { path: "shop/:id", Component: ProductDetails },
       { path: "cart", Component: Cart },
+      { path: "orders/:id", Component: OrderPaymentStatus },
       { path: "wishlist", Component: Wishlist },
       { path: "account", Component: Account },
       { path: "contact", Component: Contact },

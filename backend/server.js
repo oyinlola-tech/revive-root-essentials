@@ -4,8 +4,16 @@ const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 
 const PORT = Number(process.env.PORT) || 3000;
-const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
-const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnvVars = [
+  'DB_HOST',
+  'DB_USER',
+  'DB_NAME',
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'FLW_PUBLIC_KEY',
+  'FLW_SECRET_KEY',
+];
+const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS', 'REDIS_URL', 'FLW_WEBHOOK_SECRET_HASH'];
 let server;
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);

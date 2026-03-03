@@ -1,4 +1,6 @@
 const axios = require('axios');
+const crypto = require('crypto');
+const Flutterwave = require('flutterwave-node-v3');
 const config = require('../config/payment');
 
 class PaymentService {
@@ -6,6 +8,10 @@ class PaymentService {
     this.baseURL = config.baseUrl;
     this.secretKey = config.secretKey;
     this.publicKey = config.publicKey;
+    this.webhookSecretHash = String(process.env.FLW_WEBHOOK_SECRET_HASH || '').trim();
+    this.flw = this.publicKey && this.secretKey
+      ? new Flutterwave(this.publicKey, this.secretKey)
+      : null;
   }
 
   // Initialize a transaction (charge)
@@ -46,6 +52,10 @@ class PaymentService {
   // Verify transaction
   async verifyTransaction(transactionId) {
     try {
+      if (this.flw?.Transaction) {
+        return await this.flw.Transaction.verify({ id: Number(transactionId) || transactionId });
+      }
+
       const response = await axios.get(
         `${this.baseURL}/transactions/${transactionId}/verify`,
         {
@@ -63,6 +73,10 @@ class PaymentService {
   // Verify transaction by reference (tx_ref)
   async verifyTransactionByReference(txRef) {
     try {
+      if (this.flw?.Transaction) {
+        return await this.flw.Transaction.verify_by_tx({ tx_ref: txRef });
+      }
+
       const response = await axios.get(
         `${this.baseURL}/transactions/verify_by_reference`,
         {
@@ -78,11 +92,16 @@ class PaymentService {
     }
   }
 
-  // Handle webhook (to be called by Flutterwave)
-  handleWebhook(payload, signature) {
-    // Verify signature using your secret key (if provided by Flutterwave)
-    // Then update order status based on payload
-    return payload;
+  verifyWebhookSignature(signatureHeader = '') {
+    const incoming = String(signatureHeader || '').trim();
+    const expected = this.webhookSecretHash;
+    if (!incoming || !expected) return false;
+
+    const incomingBuffer = Buffer.from(incoming);
+    const expectedBuffer = Buffer.from(expected);
+    if (incomingBuffer.length !== expectedBuffer.length) return false;
+
+    return crypto.timingSafeEqual(incomingBuffer, expectedBuffer);
   }
 }
 

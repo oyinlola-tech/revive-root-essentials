@@ -18,6 +18,7 @@ const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const paymentWebhookRoutes = require('./routes/paymentWebhookRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const contactRoutes = require('./routes/contactRoutes');
@@ -92,6 +93,7 @@ app.use(cors({
   credentials: false,
 }));
 app.use(compression());
+app.use('/api', paymentWebhookRoutes);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());

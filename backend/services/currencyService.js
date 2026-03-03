@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { ensureRedisConnection } = require('../config/redis');
 
 const COUNTRY_CACHE_MS = 10 * 60 * 1000;
 const RATE_CACHE_MS = 30 * 60 * 1000;
@@ -38,6 +39,16 @@ const getCountryFromIp = async (ip) => {
   const normalizedIp = normalizeIp(ip);
   if (!normalizedIp) return null;
 
+  const redis = await ensureRedisConnection();
+  if (redis) {
+    try {
+      const cachedCountry = await redis.get(`geo:country:${normalizedIp}`);
+      if (cachedCountry) return cachedCountry;
+    } catch (error) {
+      // Continue with fallback caches.
+    }
+  }
+
   const cached = countryCache.get(normalizedIp);
   if (cached && cached.expiresAt > Date.now()) return cached.countryCode;
 
@@ -45,6 +56,13 @@ const getCountryFromIp = async (ip) => {
     const { data } = await axios.get(`https://ipapi.co/${normalizedIp}/json/`, { timeout: 4000 });
     const countryCode = (data?.country_code || '').toUpperCase() || null;
     countryCache.set(normalizedIp, { countryCode, expiresAt: Date.now() + COUNTRY_CACHE_MS });
+    if (redis && countryCode) {
+      try {
+        await redis.set(`geo:country:${normalizedIp}`, countryCode, 'EX', Math.floor(COUNTRY_CACHE_MS / 1000));
+      } catch (error) {
+        // Ignore cache write errors.
+      }
+    }
     return countryCode;
   } catch (error) {
     return null;
@@ -52,12 +70,29 @@ const getCountryFromIp = async (ip) => {
 };
 
 const getNgnRates = async () => {
+  const redis = await ensureRedisConnection();
+  if (redis) {
+    try {
+      const cachedRates = await redis.get('fx:NGN');
+      if (cachedRates) return JSON.parse(cachedRates);
+    } catch (error) {
+      // Continue with fallback caches.
+    }
+  }
+
   if (rateCache.value && rateCache.expiresAt > Date.now()) return rateCache.value;
   try {
     const { data } = await axios.get('https://open.er-api.com/v6/latest/NGN', { timeout: 4000 });
     const rates = data?.rates || null;
     if (!rates || typeof rates !== 'object') throw new Error('Invalid conversion rates');
     rateCache = { value: rates, expiresAt: Date.now() + RATE_CACHE_MS };
+    if (redis) {
+      try {
+        await redis.set('fx:NGN', JSON.stringify(rates), 'EX', Math.floor(RATE_CACHE_MS / 1000));
+      } catch (error) {
+        // Ignore cache write errors.
+      }
+    }
     return rates;
   } catch (error) {
     return null;

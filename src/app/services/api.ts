@@ -178,6 +178,16 @@ export interface AdminOrder {
   createdAt: string;
 }
 
+export interface UserOrder {
+  id: string;
+  orderNumber: string;
+  totalAmount: number;
+  currency: string;
+  status: BackendOrder["status"];
+  paymentStatus: BackendOrder["paymentStatus"];
+  createdAt: string;
+}
+
 export interface ContactRecord {
   id: string;
   name: string;
@@ -437,6 +447,29 @@ export const createOrder = async (payload: CreateOrderPayload) => {
     status: string;
     paymentUrl: string | null;
   }>("/orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const getOrderById = async (orderId: string): Promise<UserOrder> => {
+  const order = await fetchJson<BackendOrder>(`/orders/${encodeURIComponent(orderId)}`, undefined, true);
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    totalAmount: Number(order.totalAmount || 0),
+    currency: order.currency || "NGN",
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    createdAt: order.createdAt,
+  };
+};
+
+export const verifyOrderPayment = async (
+  orderId: string,
+  payload: { transactionId?: string; reference?: string },
+) => {
+  return fetchJson<{ message: string; order: BackendOrder }>(`/orders/${encodeURIComponent(orderId)}/verify-payment`, {
     method: "POST",
     body: JSON.stringify(payload),
   }, true);

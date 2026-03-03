@@ -1,8 +1,21 @@
 const { User, Product, Order, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const { ensureRedisConnection } = require('../config/redis');
+
+const DASHBOARD_CACHE_TTL_SECONDS = 60;
 
 class AnalyticsService {
   async getDashboardStats() {
+    const redis = await ensureRedisConnection();
+    if (redis) {
+      try {
+        const cached = await redis.get('analytics:dashboard');
+        if (cached) return JSON.parse(cached);
+      } catch (error) {
+        // ignore cache read failures
+      }
+    }
+
     const totalUsers = await User.count();
     const totalProducts = await Product.count();
     const totalOrders = await Order.count();
@@ -10,12 +23,22 @@ class AnalyticsService {
       where: { paymentStatus: 'paid' },
     });
 
-    return {
+    const stats = {
       totalUsers,
       totalProducts,
       totalOrders,
       totalRevenue: totalRevenue || 0,
     };
+
+    if (redis) {
+      try {
+        await redis.set('analytics:dashboard', JSON.stringify(stats), 'EX', DASHBOARD_CACHE_TTL_SECONDS);
+      } catch (error) {
+        // ignore cache write failures
+      }
+    }
+
+    return stats;
   }
 
   async getSalesData(startDate, endDate) {

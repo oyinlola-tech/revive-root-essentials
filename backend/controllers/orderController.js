@@ -14,6 +14,41 @@ const mapOrderItems = (orderItems = []) => orderItems.map((item) => ({
   price: item.price,
 }));
 
+const mapTransactionStatus = (txn = {}) => String(
+  txn.transaction_status
+  || txn.status
+  || txn.processor_response
+  || txn.charge_response_message
+  || '',
+).toLowerCase();
+
+const isSuccessfulTransaction = (txn = {}) => {
+  const status = mapTransactionStatus(txn);
+  return ['success', 'successful', 'paid', 'completed'].includes(status);
+};
+
+const markOrderPaidFromTransaction = async (order, txn) => {
+  if (txn?.tx_ref && String(txn.tx_ref) !== String(order.orderNumber)) {
+    throw new AppError('Transaction reference does not match this order', 400);
+  }
+
+  if (txn?.currency && String(txn.currency).toUpperCase() !== String(order.currency).toUpperCase()) {
+    throw new AppError('Payment currency does not match this order', 400);
+  }
+
+  const paidAmount = Number(txn?.amount || txn?.transaction_amount || 0);
+  if (paidAmount && paidAmount < Number(order.totalAmount)) {
+    throw new AppError('Paid amount is lower than order total. Verification rejected.', 400);
+  }
+
+  const wasAlreadyPaid = order.paymentStatus === 'paid';
+  order.paymentStatus = 'paid';
+  order.status = order.status === 'pending' ? 'processing' : order.status;
+  order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || txn?.id || order.paymentTransactionRef;
+  await order.save();
+  return { wasAlreadyPaid };
+};
+
 exports.getUserOrders = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const orders = await Order.findAll({
@@ -165,31 +200,17 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
     : await paymentService.verifyTransactionByReference(reference);
   const txn = paymentData?.data || paymentData;
 
-  const succeeded = String(txn?.transaction_status || txn?.status || '').toLowerCase();
-  if (!['success', 'successful', 'paid', 'completed'].includes(succeeded)) {
+  if (!isSuccessfulTransaction(txn)) {
     return next(new AppError('Payment has not been confirmed yet', 400));
   }
 
-  if (txn?.tx_ref && String(txn.tx_ref) !== String(order.orderNumber)) {
-    return next(new AppError('Transaction reference does not match this order', 400));
-  }
-
-  if (txn?.currency && String(txn.currency).toUpperCase() !== String(order.currency).toUpperCase()) {
-    return next(new AppError('Payment currency does not match this order', 400));
-  }
-
-  const paidAmount = Number(txn?.amount || txn?.transaction_amount || 0);
-  if (paidAmount && paidAmount < Number(order.totalAmount)) {
-    return next(new AppError('Paid amount is lower than order total. Verification rejected.', 400));
-  }
-
-  order.paymentStatus = 'paid';
-  order.status = order.status === 'pending' ? 'processing' : order.status;
-  order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || transactionId || reference;
-  await order.save();
+  const { wasAlreadyPaid } = await markOrderPaidFromTransaction(order, {
+    ...txn,
+    flw_ref: txn?.flw_ref || transactionId || reference,
+  });
 
   const user = await User.findByPk(order.userId);
-  if (user) {
+  if (user && !wasAlreadyPaid) {
     await notificationService.sendReceiptEmail(user, order, mapOrderItems(order.OrderItems));
   }
 
@@ -197,6 +218,57 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
     message: 'Payment verified successfully',
     order,
   });
+});
+
+exports.handleFlutterwaveWebhook = catchAsync(async (req, res, next) => {
+  const signature = req.headers['verif-hash'] || req.headers['x-verif-hash'];
+  if (!paymentService.verifyWebhookSignature(signature)) {
+    return next(new AppError('Invalid webhook signature', 401));
+  }
+
+  const rawPayload = Buffer.isBuffer(req.body)
+    ? req.body.toString('utf8')
+    : JSON.stringify(req.body || {});
+
+  let payload;
+  try {
+    payload = JSON.parse(rawPayload || '{}');
+  } catch (error) {
+    return next(new AppError('Invalid webhook payload', 400));
+  }
+
+  const eventType = String(payload?.event || '').toLowerCase();
+  if (!eventType.includes('charge')) {
+    return res.status(200).json({ message: 'Webhook ignored' });
+  }
+
+  const txn = payload?.data || {};
+  if (!isSuccessfulTransaction(txn)) {
+    return res.status(200).json({ message: 'Payment not successful, no update applied' });
+  }
+
+  const txRef = String(txn.tx_ref || '').trim();
+  if (!txRef) {
+    return next(new AppError('Webhook transaction reference missing', 400));
+  }
+
+  const order = await Order.findOne({
+    where: { orderNumber: txRef },
+    include: [{ model: OrderItem, include: [Product] }],
+  });
+
+  if (!order) {
+    return next(new AppError('Order not found for webhook transaction', 404));
+  }
+
+  const { wasAlreadyPaid } = await markOrderPaidFromTransaction(order, txn);
+
+  const user = await User.findByPk(order.userId);
+  if (user && !wasAlreadyPaid) {
+    await notificationService.sendReceiptEmail(user, order, mapOrderItems(order.OrderItems));
+  }
+
+  return res.status(200).json({ message: 'Webhook processed' });
 });
 
 exports.refundOrder = catchAsync(async (req, res, next) => {

@@ -1,3 +1,5 @@
+const { ensureRedisConnection } = require('../config/redis');
+
 const buckets = new Map();
 let lastCleanup = 0;
 
@@ -12,9 +14,38 @@ const cleanupExpiredBuckets = (now) => {
   }
 };
 
-const rateLimit = ({ windowMs, max, message }) => (req, res, next) => {
+const rateLimit = ({ windowMs, max, message }) => async (req, res, next) => {
   const key = `${req.ip}:${req.baseUrl || req.path}`;
   const now = Date.now();
+  const redis = await ensureRedisConnection();
+
+  if (redis) {
+    try {
+      const redisKey = `rl:${key}`;
+      const count = await redis.incr(redisKey);
+      if (count === 1) {
+        await redis.pexpire(redisKey, windowMs);
+      }
+      const ttlMs = Math.max(0, await redis.pttl(redisKey));
+
+      res.setHeader('X-RateLimit-Limit', String(max));
+      res.setHeader('X-RateLimit-Remaining', String(Math.max(0, max - count)));
+
+      if (count > max) {
+        const retryAfter = Math.max(1, Math.ceil(ttlMs / 1000));
+        res.setHeader('Retry-After', String(retryAfter));
+        return res.status(429).json({
+          error: true,
+          message: message || 'Too many requests. Please try again later.',
+        });
+      }
+
+      return next();
+    } catch (error) {
+      // Fallback to in-process limiter on redis failures.
+    }
+  }
+
   cleanupExpiredBuckets(now);
 
   const current = buckets.get(key);
