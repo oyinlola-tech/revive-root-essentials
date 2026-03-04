@@ -1,5 +1,5 @@
 const { ensureRedisConnection } = require('../config/redis');
-const Logger = require('./Logger');
+const Logger = require('../utils/Logger');
 
 const logger = new Logger('CacheService');
 
