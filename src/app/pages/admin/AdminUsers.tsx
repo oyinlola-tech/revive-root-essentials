@@ -59,7 +59,11 @@ export default function AdminUsers() {
       setLoading(true);
       setError(null);
       const response = await api.adminGetUsers();
-      const usersList = Array.isArray(response) ? response : response.users || [];
+      const usersList = (response.data || []).map(u => ({
+        ...u,
+        role: (u.role as any) as 'customer' | 'admin' | 'superadmin',
+        status: (u.status as any) as 'active' | 'inactive' | 'suspended',
+      })) as User[];
       setUsers(usersList);
       setFilteredUsers(usersList);
     } catch (err) {

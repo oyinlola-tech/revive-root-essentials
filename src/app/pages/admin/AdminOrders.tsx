@@ -53,7 +53,10 @@ export default function AdminOrders() {
       setLoading(true);
       setError(null);
       const response = await api.adminGetOrders();
-      const ordersList = Array.isArray(response) ? response : response.orders || [];
+      const ordersList = (response.data || []).map(o => ({
+        ...o,
+        totalAmount: typeof o.totalAmount === 'string' ? parseFloat(o.totalAmount) : o.totalAmount,
+      }));
       setOrders(ordersList);
       setFilteredOrders(ordersList);
     } catch (err) {

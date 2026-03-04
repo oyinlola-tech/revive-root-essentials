@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Download, Filter, Eye } from 'lucide-react';
 
-interface AuditLog {
+type LocalAuditLog = {
   id: string;
   userId: string;
   userName?: string;
@@ -23,12 +23,12 @@ interface AuditLog {
   errorMessage?: string;
   createdAt: string;
   timestamp: string;
-}
+};
 
 export default function AdminAuditLogs() {
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
+  const [logs, setLogs] = useState<LocalAuditLog[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<LocalAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,7 +86,10 @@ export default function AdminAuditLogs() {
       setLoading(true);
       setError(null);
       const response = await api.adminGetAuditLogs();
-      const logsList = Array.isArray(response) ? response : response.logs || [];
+      const logsList = (response.data || []).map(log => ({
+        ...log,
+        timestamp: log.createdAt,
+      })) as LocalAuditLog[];
       setLogs(logsList);
       setFilteredLogs(logsList);
     } catch (err) {
@@ -101,17 +104,10 @@ export default function AdminAuditLogs() {
     try {
       setExporting(true);
       setError(null);
-      const response = await api.adminExportAuditLogs({
-        dateFrom,
-        dateTo,
-        action: actionFilter,
-        resourceType: resourceFilter,
-        status: statusFilter,
-      });
+      const blob = await api.adminExportAuditLogs();
 
       // Create blob and download
-      const blob = new Blob([response as BlobPart], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob as Blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;

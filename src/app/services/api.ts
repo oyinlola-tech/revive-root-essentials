@@ -882,6 +882,12 @@ export const adminUpdateUser = async (userId: string, payload: {
   }, true);
 };
 
+export const adminDeleteUser = async (userId: string) => {
+  return fetchJson<{ message: string }>(`/admin/users/${userId}`, {
+    method: "DELETE",
+  }, true);
+};
+
 // ============================================
 // ADMIN: ORDER MANAGEMENT
 // ============================================

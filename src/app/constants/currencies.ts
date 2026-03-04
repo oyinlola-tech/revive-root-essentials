@@ -16,7 +16,7 @@ export const SUPPORTED_PAYMENT_CURRENCIES = [
   "SLL",
   "EGP",
   "COP",
-  "IRN",
+  "IRR",
 ] as const;
 
 export type SupportedPaymentCurrency = (typeof SUPPORTED_PAYMENT_CURRENCIES)[number];

@@ -3,6 +3,21 @@ import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Plus, Edit2, Trash2, Copy, Eye } from 'lucide-react';
 
+type AdminCoupon = {
+  id: string;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number;
+  timesUsed: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  expiresAt?: string;
+  isActive: boolean;
+  createdAt: string;
+  description?: string;
+};
+
 interface Coupon {
   id: string;
   code: string;
@@ -12,7 +27,7 @@ interface Coupon {
   timesUsed: number;
   minOrderAmount?: number;
   maxDiscountAmount?: number;
-  expiryDate?: string;
+  expiresAt?: string;
   isActive: boolean;
   createdAt: string;
   description?: string;
@@ -20,15 +35,15 @@ interface Coupon {
 
 export default function AdminCoupons() {
   const navigate = useNavigate();
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [filteredCoupons, setFilteredCoupons] = useState<AdminCoupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [expandedCoupon, setExpandedCoupon] = useState<string | null>(null);
 
@@ -41,7 +56,7 @@ export default function AdminCoupons() {
     maxUses: 0,
     minOrderAmount: 0,
     maxDiscountAmount: 0,
-    expiryDate: '',
+    expiresAt: '',
     isActive: true,
     description: '',
   });
@@ -69,9 +84,9 @@ export default function AdminCoupons() {
       setLoading(true);
       setError(null);
       const response = await api.adminGetCoupons();
-      const couponsList = Array.isArray(response) ? response : response.coupons || [];
-      setCoupons(couponsList);
-      setFilteredCoupons(couponsList);
+      const couponsList = response.data || [];
+      setCoupons(couponsList as AdminCoupon[]);
+      setFilteredCoupons(couponsList as AdminCoupon[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load coupons');
       console.error('Error loading coupons:', err);
@@ -85,12 +100,12 @@ export default function AdminCoupons() {
       setEditingCoupon(coupon);
       setFormData({
         code: coupon.code,
-        discountType: coupon.discountType,
+        discountType: coupon.discountType as any,
         discountValue: coupon.discountValue,
         maxUses: coupon.maxUses,
         minOrderAmount: coupon.minOrderAmount || 0,
         maxDiscountAmount: coupon.maxDiscountAmount || 0,
-        expiryDate: coupon.expiryDate || '',
+        expiresAt: coupon.expiresAt || '',
         isActive: coupon.isActive,
         description: coupon.description || '',
       });
@@ -103,7 +118,7 @@ export default function AdminCoupons() {
         maxUses: 0,
         minOrderAmount: 0,
         maxDiscountAmount: 0,
-        expiryDate: '',
+        expiresAt: '',
         isActive: true,
         description: '',
       });
@@ -317,10 +332,10 @@ export default function AdminCoupons() {
                         >
                           {coupon.isActive ? 'Active' : 'Inactive'}
                         </span>
-                        {coupon.expiryDate && (
+                        {coupon.expiresAt && (
                           <p className="text-sm text-gray-500 mt-2">
                             Expires:{' '}
-                            {new Date(coupon.expiryDate).toLocaleDateString()}
+                            {new Date(coupon.expiresAt).toLocaleDateString()}
                           </p>
                         )}
                       </div>
@@ -555,11 +570,11 @@ export default function AdminCoupons() {
                     </label>
                     <input
                       type="date"
-                      value={formData.expiryDate}
+                      value={formData.expiresAt}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          expiryDate: e.target.value,
+                          expiresAt: e.target.value,
                         })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"

@@ -76,9 +76,19 @@ export default function AdminInventory() {
       setLoading(true);
       setError(null);
       const response = await api.adminGetInventory();
-      const inventoryList = Array.isArray(response)
-        ? response
-        : response.inventory || [];
+      const raw = response.data || [];
+      const inventoryList = raw.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: 'Product',
+        sku: item.sku,
+        totalStock: item.quantity,
+        availableStock: item.quantity - item.reservedQuantity,
+        reservedStock: item.reservedQuantity,
+        reorderLevel: item.reorderLevel,
+        reorderQuantity: 10,
+        status: (item.quantity > item.reorderLevel ? 'in-stock' : item.quantity > 0 ? 'low-stock' : 'out-of-stock') as any,
+      })) as InventoryItem[];
       setInventory(inventoryList);
       setFilteredInventory(inventoryList);
     } catch (err) {
