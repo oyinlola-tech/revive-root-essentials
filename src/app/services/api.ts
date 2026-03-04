@@ -465,6 +465,22 @@ export const getOrderById = async (orderId: string): Promise<UserOrder> => {
   };
 };
 
+// Backwards-compatible aliases used by some pages.
+export const getOrder = getOrderById;
+
+export const getOrders = async (): Promise<UserOrder[]> => {
+  const orders = await fetchJson<BackendOrder[]>("/orders", undefined, true);
+  return orders.map((order) => ({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    totalAmount: Number(order.totalAmount || 0),
+    currency: order.currency || "NGN",
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    createdAt: order.createdAt,
+  }));
+};
+
 export const verifyOrderPayment = async (
   orderId: string,
   payload: { transactionId?: string; reference?: string },
