@@ -742,3 +742,299 @@ export const updateMyProfile = async (payload: {
 
   return updatedUser;
 };
+
+// ============================================
+// REFUND ENDPOINTS
+// ============================================
+
+interface Refund {
+  id: string;
+  orderId: string;
+  status: "pending" | "approved" | "rejected" | "completed";
+  reason: string;
+  requestedAmount: number;
+  approvedAmount?: number;
+  createdAt: string;
+}
+
+interface RefundsResponse {
+  data: Refund[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const getRefunds = async (limit = 10, offset = 0, status?: string) => {
+  const url = `/refunds?limit=${limit}&offset=${offset}${status ? `&status=${status}` : ""}`;
+  return fetchJson<RefundsResponse>(url, {}, true);
+};
+
+export const getRefund = async (refundId: string) => {
+  return fetchJson<Refund>(`/refunds/${refundId}`, {}, true);
+};
+
+export const createRefund = async (payload: {
+  orderId: string;
+  reason: string;
+  requestedAmount?: number;
+}) => {
+  return fetchJson<Refund>("/refunds", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+// ============================================
+// COUPON ENDPOINTS
+// ============================================
+
+interface Coupon {
+  id: string;
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  minOrderAmount: number;
+  expiresAt: string;
+  isActive: boolean;
+}
+
+export const getCoupons = async () => {
+  return fetchJson<{ data: Coupon[] }>("/coupons", {});
+};
+
+export const applyCoupon = async (code: string, orderTotal: number) => {
+  return fetchJson<{
+    code: string;
+    discountAmount: number;
+    finalTotal: number;
+  }>("/coupons/apply", {
+    method: "POST",
+    body: JSON.stringify({ code, orderTotal }),
+  });
+};
+
+export const validateCoupon = async (code: string) => {
+  return fetchJson<Coupon>("/coupons/validate", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+};
+
+// ============================================
+// ADMIN: USER MANAGEMENT
+// ============================================
+
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  status: string;
+  createdAt: string;
+}
+
+interface AdminUsersResponse {
+  data: AdminUser[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const adminGetUsers = async (limit = 20, offset = 0, role?: string) => {
+  const url = `/admin/users?limit=${limit}&offset=${offset}${role ? `&role=${role}` : ""}`;
+  return fetchJson<AdminUsersResponse>(url, {}, true);
+};
+
+export const adminGetUser = async (userId: string) => {
+  return fetchJson<AdminUser>(`/admin/users/${userId}`, {}, true);
+};
+
+export const adminUpdateUser = async (userId: string, payload: {
+  role?: string;
+  status?: string;
+}) => {
+  return fetchJson<AdminUser>(`/admin/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+// ============================================
+// ADMIN: ORDER MANAGEMENT
+// ============================================
+
+interface AdminOrdersResponse {
+  data: BackendOrder[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const adminGetOrders = async (limit = 20, offset = 0, status?: string) => {
+  const url = `/admin/orders?limit=${limit}&offset=${offset}${status ? `&status=${status}` : ""}`;
+  return fetchJson<AdminOrdersResponse>(url, {}, true);
+};
+
+export const adminUpdateOrderStatus = async (orderId: string, status: string) => {
+  return fetchJson<BackendOrder>(`/admin/orders/${orderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  }, true);
+};
+
+// ============================================
+// ADMIN: INVENTORY MANAGEMENT
+// ============================================
+
+interface Inventory {
+  id: string;
+  productId: string;
+  quantity: number;
+  reservedQuantity: number;
+  sku: string;
+  reorderLevel: number;
+}
+
+interface InventoryResponse {
+  data: Inventory[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const adminGetInventory = async (limit = 20, offset = 0) => {
+  const url = `/admin/inventory?limit=${limit}&offset=${offset}`;
+  return fetchJson<InventoryResponse>(url, {}, true);
+};
+
+export const adminAdjustInventory = async (productId: string, payload: {
+  quantity: number;
+  reason: string;
+}) => {
+  return fetchJson<Inventory>(`/admin/inventory/${productId}/adjust`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const adminGetReorderItems = async () => {
+  return fetchJson<{ data: Inventory[] }>("/admin/inventory/reorder/items", {}, true);
+};
+
+// ============================================
+// ADMIN: COUPON MANAGEMENT
+// ============================================
+
+interface AdminCouponPayload {
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  maxUses: number;
+  minOrderAmount?: number;
+  expiresAt: string;
+}
+
+interface AdminCouponsResponse {
+  data: Coupon[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const adminGetCoupons = async (limit = 20, offset = 0) => {
+  const url = `/admin/coupons?limit=${limit}&offset=${offset}`;
+  return fetchJson<AdminCouponsResponse>(url, {}, true);
+};
+
+export const adminCreateCoupon = async (payload: AdminCouponPayload) => {
+  return fetchJson<Coupon>("/admin/coupons", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const adminUpdateCoupon = async (couponId: string, payload: Partial<AdminCouponPayload>) => {
+  return fetchJson<Coupon>(`/admin/coupons/${couponId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }, true);
+};
+
+export const adminDeleteCoupon = async (couponId: string) => {
+  return fetchJson<{ message: string }>(`/admin/coupons/${couponId}`, {
+    method: "DELETE",
+  }, true);
+};
+
+// ============================================
+// ADMIN: DASHBOARD & ANALYTICS
+// ============================================
+
+export const adminGetDashboard = async () => {
+  return fetchJson<any>("/admin/dashboard", {}, true);
+};
+
+export const adminGetAnalytics = async (period = "week") => {
+  return fetchJson<any>(`/admin/analytics?period=${period}`, {}, true);
+};
+
+// ============================================
+// ADMIN: AUDIT LOGS
+// ============================================
+
+interface AuditLog {
+  id: string;
+  userId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  ipAddress: string;
+  status: string;
+  changes?: unknown;
+  createdAt: string;
+}
+
+interface AuditLogsResponse {
+  data: AuditLog[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    pages: number;
+  };
+}
+
+export const adminGetAuditLogs = async (limit = 50, offset = 0, action?: string) => {
+  const url = `/admin/audit-logs?limit=${limit}&offset=${offset}${action ? `&action=${action}` : ""}`;
+  return fetchJson<AuditLogsResponse>(url, {}, true);
+};
+
+export const adminExportAuditLogs = async () => {
+  const session = getSession();
+  if (!session) throw new Error("Authentication required");
+
+  const response = await fetch(
+    `${getApiBaseUrls()[0]}/admin/audit-logs/export/csv`,
+    {
+      headers: { Authorization: `Bearer ${session.token}` },
+    }
+  );
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.blob();
+};

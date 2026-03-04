@@ -130,6 +130,9 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderLimiter);
 app.use('/api/orders', orderRoutes);
+app.use('/api/refunds', refundRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contact', contactLimiter);
@@ -138,6 +141,8 @@ app.use('/api/newsletter', newsletterLimiter);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/shipping-fees', require('./routes/shippingRoutes'));
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/audit-logs', auditRoutes);
 app.use((error, req, res, next) => {
   if (error && error.type === 'entity.parse.failed') {
     return res.status(400).json({ error: true, message: 'Invalid JSON payload' });
