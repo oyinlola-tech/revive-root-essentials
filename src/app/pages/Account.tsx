@@ -191,12 +191,56 @@ export function Account() {
 
   return (
     <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-3xl">
+      <div className="container mx-auto px-4 max-w-5xl">
         <h1 className="text-4xl font-bold mb-2">My Account</h1>
         <p className="opacity-70 mb-8">
           Manage your profile, communication preferences, and checkout currency.
         </p>
 
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* Sidebar Navigation */}
+          <div className="md:col-span-1">
+            <div className="border border-border rounded-lg p-4 sticky top-20">
+              <h3 className="font-semibold text-sm text-gray-700 mb-4 uppercase tracking-wide">
+                Account Menu
+              </h3>
+              <nav className="space-y-2">
+                <Link
+                  to="/account"
+                  className="block px-3 py-2 rounded text-sm hover:bg-emerald-50 text-emerald-700 font-medium transition"
+                >
+                  Settings
+                </Link>
+                <Link
+                  to="/order-history"
+                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                >
+                  Order History
+                </Link>
+                <Link
+                  to="/refund-tracking"
+                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                >
+                  Refunds
+                </Link>
+                <Link
+                  to="/address-management"
+                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                >
+                  Addresses
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-red-50 text-red-700 transition"
+                >
+                  Logout
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="md:col-span-3">
         <form onSubmit={handleSave} className="space-y-6 border border-border rounded-lg p-6">
           <div>
             <Label>Full Name</Label>
@@ -354,6 +398,8 @@ export function Account() {
           <Button type="button" variant="outline" onClick={handleDeleteAccount} disabled={deleting}>
             {deleting ? "Deleting..." : "Delete My Account"}
           </Button>
+        </div>
+          </div>
         </div>
       </div>
     </div>
