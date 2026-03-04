@@ -9,6 +9,7 @@ const catchAsync = require('../utils/catchAsync');
 const generateOtp = require('../utils/generateOtp');
 const notificationService = require('../services/notificationService');
 const { jwtSecret, jwtExpiresIn, jwtRefreshSecret, jwtRefreshExpiresIn } = require('../config/auth');
+const { bruteForceProtector, tokenBlacklist } = require('../utils/securityUtils');
 
 const normalizeIdentifier = (identifier, type) => {
   if (type === 'email') return String(identifier || '').toLowerCase().trim();
@@ -318,8 +319,16 @@ exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   const normalizedEmail = String(email || '').toLowerCase().trim();
 
+  // Check if account is locked due to brute force
+  const isLocked = await bruteForceProtector.isLocked(normalizedEmail);
+  if (isLocked) {
+    return next(new AppError('Account temporarily locked. Try again in 15 minutes.', 429));
+  }
+
   const user = await User.scope('withPassword').findOne({ where: { email: normalizedEmail } });
   if (!user) {
+    // Record failed attempt for security audit
+    await bruteForceProtector.recordFailedAttempt(normalizedEmail);
     return next(new AppError('Incorrect email or password', 401));
   }
 
@@ -328,12 +337,20 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   if (!(await user.comparePassword(password))) {
+    // Record failed attempt
+    const result = await bruteForceProtector.recordFailedAttempt(normalizedEmail);
+    if (result && result.locked) {
+      return next(new AppError('Account locked after multiple failed attempts. Try again in 15 minutes.', 429));
+    }
     return next(new AppError('Incorrect email or password', 401));
   }
 
   if (!user.isVerified) {
     return next(new AppError('Please verify your email before logging in', 403));
   }
+
+  // Reset attempts on successful login
+  await bruteForceProtector.resetAttempts(normalizedEmail);
 
   // Admin and superadmin users must use OTP for enhanced security
   if (user.role === 'admin' || user.role === 'superadmin') {
@@ -464,6 +481,16 @@ exports.oauthApple = catchAsync(async (req, res, next) => {
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
+  // Blacklist the current token
+  if (req.token && req.user) {
+    const { jwtExpiresIn: expiresIn } = require('../config/auth');
+    // Parse expiry time (e.g., "7d" -> milliseconds)
+    const expiryMs = expiresIn.endsWith('d')
+      ? parseInt(expiresIn) * 24 * 60 * 60 * 1000
+      : parseInt(expiresIn) * 60 * 1000;
+    await tokenBlacklist.blacklistToken(req.token, expiryMs);
+  }
+
   req.user.currentSessionId = null;
   await req.user.save();
   res.json({ message: 'Logged out successfully' });

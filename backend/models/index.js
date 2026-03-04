@@ -12,6 +12,10 @@ const Newsletter = require('./Newsletter')(sequelize);
 const ShippingFee = require('./ShippingFee')(sequelize);
 const NewsletterCampaignLog = require('./NewsletterCampaignLog')(sequelize);
 const WishlistItem = require('./WishlistItem')(sequelize);
+const Coupon = require('./Coupon')(sequelize);
+const Inventory = require('./Inventory')(sequelize);
+const AuditLog = require('./AuditLog')(sequelize);
+const RefundRequest = require('./RefundRequest')(sequelize);
 
 // Associations
 // User <-> Otp
@@ -58,6 +62,28 @@ WishlistItem.belongsTo(User, { foreignKey: 'userId' });
 Product.hasMany(WishlistItem, { foreignKey: 'productId', onDelete: 'CASCADE' });
 WishlistItem.belongsTo(Product, { foreignKey: 'productId' });
 
+// User <-> Coupon (createdBy relationship)
+User.hasMany(Coupon, { foreignKey: 'createdBy', onDelete: 'SET NULL' });
+Coupon.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
+// Product <-> Inventory
+Product.hasOne(Inventory, { foreignKey: 'productId', onDelete: 'CASCADE' });
+Inventory.belongsTo(Product, { foreignKey: 'productId' });
+
+// User <-> AuditLog
+User.hasMany(AuditLog, { foreignKey: 'userId', onDelete: 'SET NULL' });
+AuditLog.belongsTo(User, { foreignKey: 'userId' });
+
+// Order <-> RefundRequest
+Order.hasMany(RefundRequest, { foreignKey: 'orderId', onDelete: 'CASCADE' });
+RefundRequest.belongsTo(Order, { foreignKey: 'orderId' });
+
+// User <-> RefundRequest (requestor and processor)
+User.hasMany(RefundRequest, { foreignKey: 'userId', onDelete: 'SET NULL', as: 'refundRequests' });
+RefundRequest.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(RefundRequest, { foreignKey: 'processedBy', onDelete: 'SET NULL', as: 'processedRefunds' });
+RefundRequest.belongsTo(User, { foreignKey: 'processedBy', as: 'processor' });
+
 module.exports = {
   sequelize,
   User,
@@ -73,4 +99,8 @@ module.exports = {
   NewsletterCampaignLog,
   ShippingFee,
   WishlistItem,
+  Coupon,
+  Inventory,
+  AuditLog,
+  RefundRequest,
 };
