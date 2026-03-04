@@ -32,6 +32,11 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const newsletterRoutes = require('./routes/newsletterRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const refundRoutes = require('./routes/refundRoutes');
+const couponRoutes = require('./routes/couponRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 const errorHandler = require('./middlewares/errorMiddleware');
 
