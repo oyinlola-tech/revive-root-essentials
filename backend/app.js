@@ -7,10 +7,18 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const rateLimit = require('./middlewares/rateLimitMiddleware');
+const requestLoggingMiddleware = require('./middlewares/requestLoggingMiddleware');
+const {
+  additionalSecurityHeadersMiddleware,
+  suspiciousActivityDetectionMiddleware,
+} = require('./middlewares/securityMiddleware');
+const Logger = require('./utils/Logger');
 
 // Load backend-specific env first, then allow root-level .env as fallback.
 dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
+
+const logger = new Logger('App');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -79,7 +87,9 @@ app.use(helmet({
     ? { maxAge: 31536000, includeSubDomains: true, preload: true }
     : false,
 }));
+app.use(additionalSecurityHeadersMiddleware);
 app.use(globalLimiter);
+app.use(suspiciousActivityDetectionMiddleware);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -89,7 +99,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code', 'X-CSRF-Token'],
   credentials: false,
 }));
 app.use(compression());
@@ -98,6 +108,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(requestLoggingMiddleware);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
   setHeaders: (res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -131,7 +142,20 @@ app.use((error, req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+  res.status(200).json({ 
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
+// API version endpoint
+app.get('/api/version', (req, res) => {
+  res.status(200).json({
+    version: '1.0.0',
+    api: 'v1',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // 404 handler

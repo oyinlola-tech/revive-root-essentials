@@ -3,6 +3,10 @@ const { Op, fn, literal } = require('sequelize');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const currencyService = require('../services/currencyService');
+const cacheService = require('../services/cacheService');
+const Logger = require('../utils/Logger');
+
+const logger = new Logger('ProductController');
 
 const slugify = (value = '') =>
   value
@@ -152,13 +156,26 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 
 exports.getProductById = catchAsync(async (req, res, next) => {
   const pricingContext = await currencyService.getPricingContext(req);
-  const product = await Product.findByPk(req.params.id, {
-    include: [{ model: Category, attributes: ['id', 'name'] }],
-  });
+  
+  // Try to get from cache
+  let product = await cacheService.getCachedProductDetail(req.params.id);
+  
   if (!product) {
-    return next(new AppError('Product not found', 404));
+    product = await Product.findByPk(req.params.id, {
+      include: [{ model: Category, attributes: ['id', 'name'] }],
+    });
+    
+    if (!product) {
+      return next(new AppError('Product not found', 404));
+    }
+    
+    await ensureProductSlug(product);
+    await cacheService.setCachedProductDetail(req.params.id, product);
+    logger.debug(`Product ${req.params.id} cached`);
+  } else {
+    await ensureProductSlug(product);
   }
-  await ensureProductSlug(product);
+  
   applyPricingContext(product, pricingContext);
   res.json(product);
 });
@@ -198,6 +215,12 @@ exports.createProduct = catchAsync(async (req, res, next) => {
   const seoPayload = buildSeoPayload(req.body);
   seoPayload.slug = await resolveUniqueSlug(seoPayload.slug || seoPayload.name);
   const product = await Product.create(seoPayload);
+  
+  // Invalidate product caches
+  await cacheService.invalidateProducts();
+  await cacheService.invalidateFeaturedProducts();
+  logger.info(`Product created: ${product.id}`, { productName: product.name });
+  
   res.status(201).json(product);
 });
 
@@ -209,6 +232,13 @@ exports.updateProduct = catchAsync(async (req, res, next) => {
   const seoPayload = buildSeoPayload({ ...product.toJSON(), ...req.body });
   seoPayload.slug = await resolveUniqueSlug(seoPayload.slug || seoPayload.name, product.id);
   await product.update(seoPayload);
+  
+  // Invalidate product caches
+  await cacheService.invalidateProductDetail(req.params.id);
+  await cacheService.invalidateProducts();
+  await cacheService.invalidateFeaturedProducts();
+  logger.info(`Product updated: ${product.id}`, { productName: product.name });
+  
   res.json(product);
 });
 
@@ -218,17 +248,35 @@ exports.deleteProduct = catchAsync(async (req, res, next) => {
     return next(new AppError('Product not found', 404));
   }
   await product.destroy();
+  
+  // Invalidate product caches
+  await cacheService.invalidateProductDetail(req.params.id);
+  await cacheService.invalidateProducts();
+  await cacheService.invalidateFeaturedProducts();
+  logger.info(`Product deleted: ${req.params.id}`, { productName: product.name });
+  
   res.status(204).json(null);
 });
 
 exports.getFeaturedProducts = catchAsync(async (req, res, next) => {
   const pricingContext = await currencyService.getPricingContext(req);
-  const products = await Product.findAll({
-    where: { isFeatured: true },
-    include: [{ model: Category, attributes: ['id', 'name'] }],
-    limit: 10,
-  });
-  await Promise.all(products.map((product) => ensureProductSlug(product)));
+  
+  // Try to get from cache
+  let products = await cacheService.getCachedFeaturedProducts();
+  
+  if (!products) {
+    products = await Product.findAll({
+      where: { isFeatured: true },
+      include: [{ model: Category, attributes: ['id', 'name'] }],
+      limit: 10,
+    });
+    await Promise.all(products.map((product) => ensureProductSlug(product)));
+    
+    // Cache the products
+    await cacheService.setCachedFeaturedProducts(products);
+    logger.debug('Featured products cached');
+  }
+  
   products.forEach((product) => applyPricingContext(product, pricingContext));
   res.json(products);
 });
