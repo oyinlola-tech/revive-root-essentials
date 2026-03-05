@@ -1,7 +1,11 @@
 const express = require('express');
 const couponController = require('../controllers/couponController');
 const { authenticate, requireAdmin } = require('../middlewares/authMiddlewareEnhanced');
-const { couponValidation } = require('../validations/advancedValidation');
+const {
+  createCouponValidation,
+  updateCouponValidation,
+  applyCouponValidation,
+} = require('../validations/advancedValidation');
 
 const router = express.Router();
 
@@ -18,14 +22,14 @@ router.get(
 // Apply coupon code
 router.post(
   '/apply',
-  couponValidation.applyCoupon,
+  applyCouponValidation,
   couponController.applyCoupon,
 );
 
 // Validate coupon code
 router.post(
   '/validate',
-  couponValidation.validateCoupon,
+  applyCouponValidation,
   couponController.validateCoupon,
 );
 
@@ -54,7 +58,7 @@ router.post(
   '/admin',
   authenticate,
   requireAdmin,
-  couponValidation.createCoupon,
+  createCouponValidation,
   couponController.createCoupon,
 );
 
@@ -71,7 +75,7 @@ router.put(
   '/admin/:id',
   authenticate,
   requireAdmin,
-  couponValidation.updateCoupon,
+  updateCouponValidation,
   couponController.updateCoupon,
 );
 

@@ -27,25 +27,33 @@ if (missingOptionalVars.length > 0) {
   console.warn(`Missing optional environment variables (email notifications may be disabled): ${missingOptionalVars.join(', ')}`);
 }
 
-sequelize
-  .ensureDatabase()
-  .then(() => sequelize.authenticate())
-  .then(() => {
-    console.log('Database connected...');
-    // Create tables if they don't exist. Do not alter existing schema.
-    return sequelize.sync();
-  })
-  .then(() => seedSuperadmin())
-  .then(() => {
-    server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      startNewsletterScheduler();
-    });
-  })
-  .catch((err) => {
-    console.error('Unable to connect to the database:', err);
-    process.exit(1);
+if (process.env.SKIP_DB === 'true') {
+  console.warn('SKIP_DB is true - skipping database initialization (development/test mode)');
+  server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} (DB skipped)`);
+    // Do not start newsletter scheduler when DB is skipped
   });
+} else {
+  sequelize
+    .ensureDatabase()
+    .then(() => sequelize.authenticate())
+    .then(() => {
+      console.log('Database connected...');
+      // Create tables if they don't exist. Do not alter existing schema.
+      return sequelize.sync();
+    })
+    .then(() => seedSuperadmin())
+    .then(() => {
+      server = app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        startNewsletterScheduler();
+      });
+    })
+    .catch((err) => {
+      console.error('Unable to connect to the database:', err);
+      process.exit(1);
+    });
+}
 
 process.on('unhandledRejection', (error) => {
   console.error('UNHANDLED_REJECTION', error);

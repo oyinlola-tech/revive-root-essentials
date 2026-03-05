@@ -1,7 +1,11 @@
 const express = require('express');
 const inventoryController = require('../controllers/inventoryController');
 const { authenticate, requireAdmin } = require('../middlewares/authMiddlewareEnhanced');
-const { inventoryValidation } = require('../validations/advancedValidation');
+const {
+  createInventoryValidation,
+  updateInventoryValidation,
+  adjustStockValidation,
+} = require('../validations/advancedValidation');
 
 const router = express.Router();
 
@@ -38,7 +42,7 @@ router.post(
   '/',
   authenticate,
   requireAdmin,
-  inventoryValidation.createInventory,
+  createInventoryValidation,
   inventoryController.createInventory,
 );
 
@@ -63,7 +67,7 @@ router.post(
   '/:productId/adjust',
   authenticate,
   requireAdmin,
-  inventoryValidation.adjustInventory,
+  adjustStockValidation,
   inventoryController.adjustInventory,
 );
 
@@ -88,7 +92,7 @@ router.put(
   '/:productId',
   authenticate,
   requireAdmin,
-  inventoryValidation.updateInventory,
+  updateInventoryValidation,
   inventoryController.updateInventory,
 );
 

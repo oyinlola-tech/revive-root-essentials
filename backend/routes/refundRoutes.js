@@ -1,7 +1,7 @@
 const express = require('express');
 const refundController = require('../controllers/refundController');
 const { authenticate, authorize, requireAdmin } = require('../middlewares/authMiddlewareEnhanced');
-const { refundValidation } = require('../validations/advancedValidation');
+const { createRefundValidation } = require('../validations/advancedValidation');
 
 const router = express.Router();
 
@@ -13,7 +13,7 @@ const router = express.Router();
 router.post(
   '/',
   authenticate,
-  refundValidation.createRefund,
+  createRefundValidation,
   refundController.createRefund,
 );
 
