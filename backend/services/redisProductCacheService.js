@@ -14,6 +14,7 @@
 
 const redis = require('redis');
 const Logger = require('../utils/Logger');
+const logger = new Logger('RedisCacheService');
 
 // Cache TTL (Time To Live) in seconds
 const CACHE_TTL = {
@@ -54,48 +55,54 @@ let cacheEnabled = false;
  */
 async function initializeRedis() {
   try {
-    if (!process.env.REDIS_ENABLED || process.env.REDIS_ENABLED === 'false') {
-      Logger.info('Redis caching disabled. Using in-memory fallback.');
+    // Enable Redis when REDIS_ENABLED=true or when a REDIS_URL is provided
+    const redisEnabledEnv = typeof process.env.REDIS_ENABLED !== 'undefined'
+      ? !(process.env.REDIS_ENABLED === 'false' || process.env.REDIS_ENABLED === '0')
+      : false;
+
+    if (!redisEnabledEnv && !process.env.REDIS_URL) {
+      logger.info('Redis caching disabled. Using in-memory fallback.');
       cacheEnabled = false;
       return;
     }
 
-    redisClient = redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: process.env.REDIS_PORT || 6379,
-      password: process.env.REDIS_PASSWORD || undefined,
-      db: parseInt(process.env.REDIS_DB || '0'),
-      socket: {
-        reconnectStrategy: (retries) => {
-          const delay = Math.min(retries * 50, 500);
-          return delay;
-        },
-        connectTimeout: 10000
-      }
-    });
+    const clientOptions = {};
+    if (process.env.REDIS_URL) {
+      clientOptions.url = process.env.REDIS_URL;
+    } else {
+      clientOptions.socket = {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: Number(process.env.REDIS_PORT || 6379),
+        connectTimeout: 10000,
+      };
+      if (process.env.REDIS_PASSWORD) clientOptions.password = process.env.REDIS_PASSWORD;
+      if (process.env.REDIS_DB) clientOptions.database = parseInt(process.env.REDIS_DB, 10);
+    }
+
+    redisClient = redis.createClient(clientOptions);
 
     // Handle connection events
     redisClient.on('error', (err) => {
-      Logger.error('Redis Client Error:', err);
+      logger.error('Redis Client Error:', err);
       cacheEnabled = false;
     });
 
     redisClient.on('connect', () => {
-      Logger.info('Redis connected successfully');
+      logger.info('Redis connected successfully');
       cacheEnabled = true;
     });
 
     redisClient.on('reconnecting', () => {
-      Logger.warn('Redis reconnecting...');
+      logger.warn('Redis reconnecting...');
     });
 
     // Connect to Redis
     await redisClient.connect();
-    Logger.info('Redis cache initialized');
+    logger.info('Redis cache initialized');
     cacheEnabled = true;
   } catch (error) {
-    Logger.error('Failed to initialize Redis:', error);
-    Logger.warn('Falling back to in-memory caching');
+    logger.error('Failed to initialize Redis:', error);
+    logger.warn('Falling back to in-memory caching');
     cacheEnabled = false;
   }
 }
@@ -108,9 +115,9 @@ async function closeRedis() {
   if (redisClient && cacheEnabled) {
     try {
       await redisClient.quit();
-      Logger.info('Redis connection closed');
+      logger.info('Redis connection closed');
     } catch (error) {
-      Logger.error('Error closing Redis connection:', error);
+      logger.error('Error closing Redis connection:', error);
     }
   }
 }
@@ -140,13 +147,13 @@ async function getCache(key) {
   try {
     const cached = await redisClient.get(key);
     if (cached) {
-      Logger.debug(`Cache HIT: ${key}`);
+      logger.debug(`Cache HIT: ${key}`);
       return JSON.parse(cached);
     }
-    Logger.debug(`Cache MISS: ${key}`);
+    logger.debug(`Cache MISS: ${key}`);
     return null;
   } catch (error) {
-    Logger.error(`Error getting cache for ${key}:`, error);
+    logger.error(`Error getting cache for ${key}:`, error);
     return null;
   }
 }
@@ -165,10 +172,10 @@ async function setCache(key, value, ttl) {
 
   try {
     await redisClient.setEx(key, ttl, JSON.stringify(value));
-    Logger.debug(`Cache SET: ${key} (TTL: ${ttl}s)`);
+    logger.debug(`Cache SET: ${key} (TTL: ${ttl}s)`);
     return true;
   } catch (error) {
-    Logger.error(`Error setting cache for ${key}:`, error);
+    logger.error(`Error setting cache for ${key}:`, error);
     return false;
   }
 }
@@ -185,10 +192,10 @@ async function deleteCache(key) {
 
   try {
     await redisClient.del(key);
-    Logger.debug(`Cache DELETE: ${key}`);
+    logger.debug(`Cache DELETE: ${key}`);
     return true;
   } catch (error) {
-    Logger.error(`Error deleting cache for ${key}:`, error);
+    logger.error(`Error deleting cache for ${key}:`, error);
     return false;
   }
 }
@@ -207,11 +214,11 @@ async function deleteCachePattern(pattern) {
     const keys = await redisClient.keys(pattern);
     if (keys.length > 0) {
       await redisClient.del(keys);
-      Logger.debug(`Cache DELETE PATTERN: ${pattern} (${keys.length} keys)`);
+      logger.debug(`Cache DELETE PATTERN: ${pattern} (${keys.length} keys)`);
     }
     return keys.length;
   } catch (error) {
-    Logger.error(`Error deleting cache pattern ${pattern}:`, error);
+    logger.error(`Error deleting cache pattern ${pattern}:`, error);
     return 0;
   }
 }
@@ -227,10 +234,10 @@ async function clearAllCache() {
 
   try {
     await redisClient.flushDb();
-    Logger.info('All cache cleared');
+    logger.info('All cache cleared');
     return true;
   } catch (error) {
-    Logger.error('Error clearing all cache:', error);
+    logger.error('Error clearing all cache:', error);
     return false;
   }
 }
@@ -261,7 +268,7 @@ async function getCacheStats() {
         : 'N/A'
     };
   } catch (error) {
-    Logger.error('Error getting cache stats:', error);
+    logger.error('Error getting cache stats:', error);
     return {
       enabled: true,
       status: 'Error retrieving stats'

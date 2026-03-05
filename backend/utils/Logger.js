@@ -3,10 +3,11 @@ const path = require('path');
 
 const LOGS_DIR = path.join(__dirname, '..', 'logs');
 
-const ensureLogsDir = () => {
-  if (!fs.existsSync(LOGS_DIR)) {
-    fs.mkdirSync(LOGS_DIR, { recursive: true });
-  }
+const ensureLogsDir = (cb) => {
+  fs.mkdir(LOGS_DIR, { recursive: true }, (err) => {
+    // ignore error if directory already exists
+    if (cb) cb(err);
+  });
 };
 
 const getTimeStamp = () => {
@@ -29,8 +30,6 @@ const sanitizeObject = (obj) => {
 };
 
 const logToFile = (level, message, meta = {}) => {
-  ensureLogsDir();
-  
   const timestamp = getTimeStamp();
   const logEntry = {
     timestamp,
@@ -38,11 +37,18 @@ const logToFile = (level, message, meta = {}) => {
     message,
     meta: sanitizeObject(meta),
   };
-  
+
   const logLine = JSON.stringify(logEntry) + '\n';
   const filename = path.join(LOGS_DIR, `${level.toLowerCase()}-${new Date().toISOString().split('T')[0]}.log`);
-  
-  fs.appendFileSync(filename, logLine, { encoding: 'utf8' });
+
+  ensureLogsDir(() => {
+    fs.appendFile(filename, logLine, { encoding: 'utf8' }, (err) => {
+      if (err) {
+        // Fallback to console error if file write fails
+        console.error('[Logger] Failed to write log file', err);
+      }
+    });
+  });
 };
 
 class Logger {
@@ -96,7 +102,11 @@ class Logger {
     
     console.log(`[AUDIT] ${JSON.stringify(auditEntry)}`);
     const filename = path.join(LOGS_DIR, `audit-${new Date().toISOString().split('T')[0]}.log`);
-    fs.appendFileSync(filename, JSON.stringify(auditEntry) + '\n', { encoding: 'utf8' });
+    ensureLogsDir(() => {
+      fs.appendFile(filename, JSON.stringify(auditEntry) + '\n', { encoding: 'utf8' }, (err) => {
+        if (err) console.error('[Logger] Failed to write audit log', err);
+      });
+    });
   }
 }
 

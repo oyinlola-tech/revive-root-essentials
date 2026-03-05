@@ -15,6 +15,9 @@ const requiredEnvVars = [
   'FLW_SECRET_KEY',
 ];
 const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS', 'REDIS_URL', 'FLW_WEBHOOK_SECRET_HASH'];
+
+// COOKIE_SECRET is optional but recommended when signing cookies
+optionalEnvVars.push('COOKIE_SECRET');
 let server;
 
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);

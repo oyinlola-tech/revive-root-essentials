@@ -85,13 +85,41 @@ const orderLimiter = rateLimit({
 });
 
 // Middlewares
-app.use(helmet({
+// Configure Helmet with stricter CSP in production
+const helmetOptions = {
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   hsts: process.env.NODE_ENV === 'production'
     ? { maxAge: 31536000, includeSubDomains: true, preload: true }
     : false,
-}));
+};
+
+if (process.env.NODE_ENV === 'production') {
+  helmetOptions.contentSecurityPolicy = {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https:'],
+      styleSrc: ["'self'", 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'", 'https:'],
+      connectSrc: ["'self'", 'https:'],
+    },
+  };
+} else {
+  // Looser policy for development to allow inline scripts/styles from dev tooling
+  helmetOptions.contentSecurityPolicy = {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'", 'https:'],
+      connectSrc: ["'self'", 'https:'],
+    },
+  };
+}
+
+app.use(helmet(helmetOptions));
 app.use(additionalSecurityHeadersMiddleware);
 app.use(globalLimiter);
 app.use(suspiciousActivityDetectionMiddleware);
@@ -105,13 +133,23 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code', 'X-CSRF-Token'],
-  credentials: false,
+  // Allow credentials so signed cookies and CSRF tokens can be used from the frontend
+  credentials: true,
 }));
-app.use(compression());
+// Use compression with moderate level and threshold to avoid compressing tiny responses
+app.use(compression({ level: 6, threshold: 1024 }));
 app.use('/api', paymentWebhookRoutes);
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(cookieParser());
+// Use signed cookies when COOKIE_SECRET is provided (recommended in production)
+if (process.env.COOKIE_SECRET) {
+  app.use(cookieParser(process.env.COOKIE_SECRET));
+} else {
+  app.use(cookieParser());
+}
+// Mount CSRF protection for API endpoints (relies on cookies)
+const { csrfProtectionMiddleware } = require('./middlewares/securityMiddleware');
+app.use('/api', csrfProtectionMiddleware);
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(requestLoggingMiddleware);
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
@@ -167,6 +205,30 @@ app.get('/api/version', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Serve frontend static files in production from the `dist` folder
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      // Strong cache for static assets; index.html is served with no-cache below
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
+  }));
+
+  // Fallback to index.html for client-side routing (ignore API routes)
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
+}
 
 // 404 handler
 app.use((req, res, next) => {

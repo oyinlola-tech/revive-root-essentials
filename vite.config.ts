@@ -5,8 +5,6 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
@@ -34,6 +32,22 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+
+  build: {
+    // Help reduce the size of the main chunk by splitting vendor code
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
+            if (id.includes('@mui') || id.includes('@emotion')) return 'ui-vendor';
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.

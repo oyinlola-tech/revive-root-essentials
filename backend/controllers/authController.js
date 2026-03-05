@@ -67,6 +67,41 @@ const verifyAppleIdToken = async (idToken) => {
   });
 };
 
+const parseExpiryToMs = (expiry) => {
+  // Supports formats like '30d', '7d', '24h', '60m', '3600s'
+  if (!expiry) return null;
+  const match = String(expiry).trim().toLowerCase().match(/^(\d+)([smhd])?$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  const unit = match[2] || 's';
+  switch (unit) {
+    case 'd': return value * 24 * 60 * 60 * 1000;
+    case 'h': return value * 60 * 60 * 1000;
+    case 'm': return value * 60 * 1000;
+    case 's':
+    default:
+      return value * 1000;
+  }
+};
+
+const setRefreshTokenCookie = (res, refreshToken) => {
+  try {
+    const maxAge = parseExpiryToMs(jwtRefreshExpiresIn) || parseExpiryToMs('30d');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge,
+    };
+    if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
+    // Use a conservative cookie name
+    res.cookie('refresh_token', refreshToken, cookieOptions);
+  } catch (err) {
+    // Do not block auth flow if cookie setting fails
+    // Logger omitted here to avoid circular requires
+  }
+};
+
 const buildAuthPayload = async (user) => {
   const sessionId = await createSession(user);
   return {
@@ -304,6 +339,10 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
     },
   });
 
+  // Also set refresh token in a secure, HttpOnly cookie to reduce token exposure to JS.
+  // Note: for compatibility we still return the refreshToken in the JSON body for now.
+  setRefreshTokenCookie(res, refreshToken);
+
   if (wasUnverified) {
     notificationService.sendWelcomeEmail(user).catch(() => {});
   }
@@ -384,6 +423,9 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const payload = await buildAuthPayload(user);
 
+  // Set refresh token cookie and return payload. Frontend should be migrated to use the cookie
+  // for refresh flows and stop reading refreshToken from JS when ready.
+  try { setRefreshTokenCookie(res, payload.refreshToken); } catch (e) {}
   res.json(payload);
 
   notificationService.sendLoginAlert(user, {
@@ -435,6 +477,7 @@ exports.oauthGoogle = catchAsync(async (req, res, next) => {
   });
 
   const payload = await buildAuthPayload(user);
+  try { setRefreshTokenCookie(res, payload.refreshToken); } catch (e) {}
   res.json(payload);
 
   if (isNewUser) {
@@ -473,6 +516,7 @@ exports.oauthApple = catchAsync(async (req, res, next) => {
   });
 
   const payload = await buildAuthPayload(user);
+  try { setRefreshTokenCookie(res, payload.refreshToken); } catch (e) {}
   res.json(payload);
 
   if (isNewUser) {
@@ -493,6 +537,16 @@ exports.logout = catchAsync(async (req, res, next) => {
 
   req.user.currentSessionId = null;
   await req.user.save();
+
+  // Clear refresh token cookie if present (use conservative flags)
+  try {
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+  } catch (e) {}
+
   res.json({ message: 'Logged out successfully' });
 });
 
@@ -501,7 +555,16 @@ exports.getMe = catchAsync(async (req, res, next) => {
 });
 
 exports.refreshToken = catchAsync(async (req, res, next) => {
-  const { refreshToken } = req.body;
+  // Support refresh token in request body or HttpOnly cookie (signed if COOKIE_SECRET set)
+  let refreshToken = req.body.refreshToken || req.body.refresh_token || null;
+  if (!refreshToken) {
+    if (req.signedCookies && req.signedCookies.refresh_token) {
+      refreshToken = req.signedCookies.refresh_token;
+    } else if (req.cookies && req.cookies.refresh_token) {
+      refreshToken = req.cookies.refresh_token;
+    }
+  }
+
   if (!refreshToken) {
     return next(new AppError('Refresh token required', 400));
   }

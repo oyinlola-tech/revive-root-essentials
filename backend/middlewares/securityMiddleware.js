@@ -18,12 +18,17 @@ const csrfProtectionMiddleware = (req, res, next) => {
     const token = generateCsrfToken();
     csrfTokens.add(token);
     res.setHeader('X-CSRF-Token', token);
-    res.cookie(CSRF_COOKIE_NAME, token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 3600000, // 1 hour
-    });
+    };
+
+    // If cookie signing is enabled, sign the CSRF cookie too.
+    if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
+
+    res.cookie(CSRF_COOKIE_NAME, token, cookieOptions);
     return next();
   }
 
@@ -72,10 +77,7 @@ const csrfProtectionMiddleware = (req, res, next) => {
  */
 const additionalSecurityHeadersMiddleware = (req, res, next) => {
   // Content Security Policy
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https:;"
-  );
+  // Content Security Policy is handled by Helmet; don't set it here to avoid header conflicts.
 
   // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
