@@ -2,6 +2,7 @@ const app = require('./app');
 const { sequelize } = require('./models');
 const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
+const redisProductCacheService = require('./services/redisProductCacheService');
 
 const PORT = Number(process.env.PORT) || 3000;
 const requiredEnvVars = [
@@ -27,11 +28,29 @@ if (missingOptionalVars.length > 0) {
   console.warn(`Missing optional environment variables (email notifications may be disabled): ${missingOptionalVars.join(', ')}`);
 }
 
+// Initialize Redis caching
+const initializeRedisCache = async () => {
+  try {
+    await redisProductCacheService.initializeRedis();
+    if (redisProductCacheService.isRedisEnabled()) {
+      console.log('✅ Redis caching initialized successfully');
+      const stats = await redisProductCacheService.getCacheStats();
+      console.log('Cache Stats:', stats);
+    } else {
+      console.warn('⚠️  Redis caching disabled - using database queries only');
+    }
+  } catch (error) {
+    console.error('⚠️  Failed to initialize Redis:', error.message);
+    console.warn('Continuing without Redis caching...');
+  }
+};
+
 if (process.env.SKIP_DB === 'true') {
   console.warn('SKIP_DB is true - skipping database initialization (development/test mode)');
-  server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} (DB skipped)`);
-    // Do not start newsletter scheduler when DB is skipped
+  initializeRedisCache().then(() => {
+    server = app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} (DB skipped)`);
+    });
   });
 } else {
   sequelize
@@ -43,6 +62,7 @@ if (process.env.SKIP_DB === 'true') {
       return sequelize.sync();
     })
     .then(() => seedSuperadmin())
+    .then(() => initializeRedisCache())
     .then(() => {
       server = app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);

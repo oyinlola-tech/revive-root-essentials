@@ -4,6 +4,7 @@ const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const currencyService = require('../services/currencyService');
 const cacheService = require('../services/cacheService');
+const redisProductCacheService = require('../services/redisProductCacheService');
 const Logger = require('../utils/Logger');
 
 const logger = new Logger('ProductController');
@@ -97,85 +98,104 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
   const offset = (page - 1) * limit;
 
-  const where = {};
-  if (req.query.search) {
-    where.name = { [Op.like]: `%${req.query.search}%` };
-  }
-  if (req.query.minPrice || req.query.maxPrice) {
-    where.price = {};
-    if (req.query.minPrice) where.price[Op.gte] = Number(req.query.minPrice);
-    if (req.query.maxPrice) where.price[Op.lte] = Number(req.query.maxPrice);
-  }
-
-  const categoryFilter = req.query.category
-    ? req.query.category.split(',').map((name) => name.trim()).filter(Boolean)
-    : null;
-  const categoryWhere = categoryFilter && categoryFilter.length > 0
-    ? {
-      [Op.or]: categoryFilter.map((name) => ({
-        name: { [Op.like]: `%${name}%` },
-      })),
-    }
-    : undefined;
-
-  let order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
-  if (req.query.sort === 'name') order = [['name', 'ASC']];
-  if (req.query.sort === 'price-asc') order = [['price', 'ASC']];
-  if (req.query.sort === 'price-desc') order = [['price', 'DESC']];
-  if (req.query.sort === 'newest') order = [['createdAt', 'DESC']];
-  if (req.query.sort === 'ranked') order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
-  if (req.query.search) {
-    const rawSearch = String(req.query.search).toLowerCase();
-    order = [[literal(`CASE WHEN LOWER(name) LIKE ${Product.sequelize.escape(`${rawSearch}%`)} THEN 0 ELSE 1 END`), 'ASC'], ...order];
-  }
-
-  const include = [{
-    model: Category,
-    attributes: ['id', 'name'],
-    ...(categoryWhere ? { where: categoryWhere } : {}),
-    required: !!categoryWhere,
-  }];
-
-  const { rows: products, count: total } = await Product.findAndCountAll({
-    where,
-    include,
-    limit,
-    offset,
-    order,
-  });
-  await Promise.all(products.map((product) => ensureProductSlug(product)));
-  products.forEach((product) => applyPricingContext(product, pricingContext));
-
-  res.json({
-    products,
-    total: Array.isArray(total) ? total.length : total,
+  // Create cache key based on query parameters
+  const cacheKey = `products:list:${JSON.stringify({
     page,
     limit,
-  });
+    search: req.query.search,
+    minPrice: req.query.minPrice,
+    maxPrice: req.query.maxPrice,
+    category: req.query.category,
+    sort: req.query.sort
+  })}`;
+
+  // Try to get from Redis cache
+  let result = await redisProductCacheService.getCache(cacheKey);
+  
+  if (!result) {
+    const where = {};
+    if (req.query.search) {
+      where.name = { [Op.like]: `%${req.query.search}%` };
+    }
+    if (req.query.minPrice || req.query.maxPrice) {
+      where.price = {};
+      if (req.query.minPrice) where.price[Op.gte] = Number(req.query.minPrice);
+      if (req.query.maxPrice) where.price[Op.lte] = Number(req.query.maxPrice);
+    }
+
+    const categoryFilter = req.query.category
+      ? req.query.category.split(',').map((name) => name.trim()).filter(Boolean)
+      : null;
+    const categoryWhere = categoryFilter && categoryFilter.length > 0
+      ? {
+        [Op.or]: categoryFilter.map((name) => ({
+          name: { [Op.like]: `%${name}%` },
+        })),
+      }
+      : undefined;
+
+    let order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
+    if (req.query.sort === 'name') order = [['name', 'ASC']];
+    if (req.query.sort === 'price-asc') order = [['price', 'ASC']];
+    if (req.query.sort === 'price-desc') order = [['price', 'DESC']];
+    if (req.query.sort === 'newest') order = [['createdAt', 'DESC']];
+    if (req.query.sort === 'ranked') order = [['isFeatured', 'DESC'], ['stock', 'DESC'], ['createdAt', 'DESC']];
+    if (req.query.search) {
+      const rawSearch = String(req.query.search).toLowerCase();
+      order = [[literal(`CASE WHEN LOWER(name) LIKE ${Product.sequelize.escape(`${rawSearch}%`)} THEN 0 ELSE 1 END`), 'ASC'], ...order];
+    }
+
+    const include = [{
+      model: Category,
+      attributes: ['id', 'name'],
+      ...(categoryWhere ? { where: categoryWhere } : {}),
+      required: !!categoryWhere,
+    }];
+
+    const { rows: products, count: total } = await Product.findAndCountAll({
+      where,
+      include,
+      limit,
+      offset,
+      order,
+    });
+    await Promise.all(products.map((product) => ensureProductSlug(product)));
+    products.forEach((product) => applyPricingContext(product, pricingContext));
+
+    result = {
+      products,
+      total: Array.isArray(total) ? total.length : total,
+      page,
+      limit,
+    };
+
+    // Cache the result (TTL: 10 minutes for search results, 1 hour for others)
+    const ttl = req.query.search ? 600 : 3600;
+    await redisProductCacheService.setCache(cacheKey, result, ttl);
+    logger.debug(`Products list cached (TTL: ${ttl}s)`);
+  } else {
+    // Apply pricing context to cached products
+    result.products.forEach((product) => applyPricingContext(product, pricingContext));
+  }
+
+  res.json(result);
 });
 
 exports.getProductById = catchAsync(async (req, res, next) => {
   const pricingContext = await currencyService.getPricingContext(req);
   
-  // Try to get from cache
-  let product = await cacheService.getCachedProductDetail(req.params.id);
-  
-  if (!product) {
-    product = await Product.findByPk(req.params.id, {
+  // Try to get from Redis cache
+  let product = await redisProductCacheService.getProductById(req.params.id, async (id) => {
+    return await Product.findByPk(id, {
       include: [{ model: Category, attributes: ['id', 'name'] }],
     });
-    
-    if (!product) {
-      return next(new AppError('Product not found', 404));
-    }
-    
-    await ensureProductSlug(product);
-    await cacheService.setCachedProductDetail(req.params.id, product);
-    logger.debug(`Product ${req.params.id} cached`);
-  } else {
-    await ensureProductSlug(product);
+  });
+  
+  if (!product) {
+    return next(new AppError('Product not found', 404));
   }
   
+  await ensureProductSlug(product);
   applyPricingContext(product, pricingContext);
   res.json(product);
 });
@@ -217,8 +237,7 @@ exports.createProduct = catchAsync(async (req, res, next) => {
   const product = await Product.create(seoPayload);
   
   // Invalidate product caches
-  await cacheService.invalidateProducts();
-  await cacheService.invalidateFeaturedProducts();
+  await redisProductCacheService.invalidateAllProductCaches();
   logger.info(`Product created: ${product.id}`, { productName: product.name });
   
   res.status(201).json(product);
@@ -234,9 +253,7 @@ exports.updateProduct = catchAsync(async (req, res, next) => {
   await product.update(seoPayload);
   
   // Invalidate product caches
-  await cacheService.invalidateProductDetail(req.params.id);
-  await cacheService.invalidateProducts();
-  await cacheService.invalidateFeaturedProducts();
+  await redisProductCacheService.invalidateProductCache(req.params.id);
   logger.info(`Product updated: ${product.id}`, { productName: product.name });
   
   res.json(product);
@@ -250,9 +267,7 @@ exports.deleteProduct = catchAsync(async (req, res, next) => {
   await product.destroy();
   
   // Invalidate product caches
-  await cacheService.invalidateProductDetail(req.params.id);
-  await cacheService.invalidateProducts();
-  await cacheService.invalidateFeaturedProducts();
+  await redisProductCacheService.invalidateProductCache(req.params.id);
   logger.info(`Product deleted: ${req.params.id}`, { productName: product.name });
   
   res.status(204).json(null);
@@ -261,22 +276,16 @@ exports.deleteProduct = catchAsync(async (req, res, next) => {
 exports.getFeaturedProducts = catchAsync(async (req, res, next) => {
   const pricingContext = await currencyService.getPricingContext(req);
   
-  // Try to get from cache
-  let products = await cacheService.getCachedFeaturedProducts();
-  
-  if (!products) {
-    products = await Product.findAll({
+  // Try to get from Redis cache
+  let products = await redisProductCacheService.getFeaturedProducts(async () => {
+    return await Product.findAll({
       where: { isFeatured: true },
       include: [{ model: Category, attributes: ['id', 'name'] }],
       limit: 10,
     });
-    await Promise.all(products.map((product) => ensureProductSlug(product)));
-    
-    // Cache the products
-    await cacheService.setCachedFeaturedProducts(products);
-    logger.debug('Featured products cached');
-  }
-  
+  });
+
+  await Promise.all(products.map((product) => ensureProductSlug(product)));
   products.forEach((product) => applyPricingContext(product, pricingContext));
   res.json(products);
 });
