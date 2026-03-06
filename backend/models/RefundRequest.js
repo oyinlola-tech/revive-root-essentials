@@ -18,7 +18,8 @@ module.exports = (sequelize) => {
     },
     userId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      // allow null so ON DELETE SET NULL associations succeed
+      allowNull: true,
       references: {
         model: 'users',
         key: 'id',

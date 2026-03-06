@@ -27,6 +27,8 @@ const CACHE_TTL = {
 class CacheService {
   constructor() {
     this.redis = null;
+    this.memoryCache = new Map();
+    this._lastCleanup = Date.now();
   }
 
   async init() {
@@ -39,73 +41,134 @@ class CacheService {
   }
 
   async get(key) {
-    if (!this.redis) return null;
-    
-    try {
-      const cached = await this.redis.get(key);
-      if (cached) {
-        logger.debug(`Cache HIT for key: ${key}`);
-        return JSON.parse(cached);
+    // If Redis is available, prefer it
+    if (this.redis) {
+      try {
+        const cached = await this.redis.get(key);
+        if (cached) {
+          logger.debug(`Cache HIT for key: ${key}`);
+          return JSON.parse(cached);
+        }
+        logger.debug(`Cache MISS for key: ${key}`);
+        return null;
+      } catch (error) {
+        logger.error('Cache get error', error, { key });
+        // fall through to memory cache
       }
-      logger.debug(`Cache MISS for key: ${key}`);
-      return null;
-    } catch (error) {
-      logger.error('Cache get error', error, { key });
+    }
+
+    // Memory fallback
+    const entry = this.memoryCache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt && entry.expiresAt < Date.now()) {
+      this.memoryCache.delete(key);
       return null;
     }
+    logger.debug(`Memory cache HIT for key: ${key}`);
+    return entry.value;
   }
 
   async set(key, value, ttl = CACHE_TTL.MEDIUM) {
-    if (!this.redis) return false;
-    
+    if (this.redis) {
+      try {
+        await this.redis.setex(key, ttl, JSON.stringify(value));
+        logger.debug(`Cache SET for key: ${key} with TTL: ${ttl}`);
+        return true;
+      } catch (error) {
+        logger.error('Cache set error', error, { key, ttl });
+        // fall through to memory cache
+      }
+    }
+
+    // Memory fallback
     try {
-      await this.redis.setex(key, ttl, JSON.stringify(value));
-      logger.debug(`Cache SET for key: ${key} with TTL: ${ttl}`);
+      const expiresAt = ttl ? Date.now() + ttl * 1000 : null;
+      this.memoryCache.set(key, { value, expiresAt });
+      logger.debug(`Memory cache SET for key: ${key} with TTL: ${ttl}`);
+      // Periodic cleanup
+      const now = Date.now();
+      if (now - this._lastCleanup > 60000) {
+        this._lastCleanup = now;
+        for (const [k, v] of this.memoryCache.entries()) {
+          if (v.expiresAt && v.expiresAt < now) this.memoryCache.delete(k);
+        }
+      }
       return true;
     } catch (error) {
-      logger.error('Cache set error', error, { key, ttl });
+      logger.error('Memory cache set error', error, { key, ttl });
       return false;
     }
   }
 
   async del(key) {
-    if (!this.redis) return false;
-    
+    if (this.redis) {
+      try {
+        await this.redis.del(key);
+        logger.debug(`Cache DELETE for key: ${key}`);
+        return true;
+      } catch (error) {
+        logger.error('Cache delete error', error, { key });
+        // fall through to memory cache
+      }
+    }
+
+    // Memory fallback
     try {
-      await this.redis.del(key);
-      logger.debug(`Cache DELETE for key: ${key}`);
+      this.memoryCache.delete(key);
+      logger.debug(`Memory cache DELETE for key: ${key}`);
       return true;
     } catch (error) {
-      logger.error('Cache delete error', error, { key });
+      logger.error('Memory cache delete error', error, { key });
       return false;
     }
   }
 
   async delPattern(pattern) {
-    if (!this.redis) return 0;
-    
-    try {
-      const keys = await this.redis.keys(pattern);
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
-        logger.debug(`Cache pattern DELETE: ${pattern} (${keys.length} keys)`);
+    if (this.redis) {
+      try {
+        const keys = await this.redis.keys(pattern);
+        if (keys.length > 0) {
+          await this.redis.del(...keys);
+          logger.debug(`Cache pattern DELETE: ${pattern} (${keys.length} keys)`);
+        }
+        return keys.length;
+      } catch (error) {
+        logger.error('Cache pattern delete error', error, { pattern });
+        // fall through to memory cache
       }
-      return keys.length;
+    }
+
+    // Memory fallback: delete keys that match the simple prefix pattern
+    try {
+      const entries = Array.from(this.memoryCache.keys());
+      const matching = entries.filter(k => k.startsWith(pattern.replace('*', '')));
+      for (const k of matching) this.memoryCache.delete(k);
+      logger.debug(`Memory cache pattern DELETE: ${pattern} (${matching.length} keys)`);
+      return matching.length;
     } catch (error) {
-      logger.error('Cache pattern delete error', error, { pattern });
+      logger.error('Memory cache pattern delete error', error, { pattern });
       return 0;
     }
   }
 
   async clear() {
-    if (!this.redis) return false;
-    
+    if (this.redis) {
+      try {
+        await this.redis.flushdb();
+        logger.info('Cache completely cleared');
+        return true;
+      } catch (error) {
+        logger.error('Cache clear error', error);
+        // fall through to memory
+      }
+    }
+
     try {
-      await this.redis.flushdb();
-      logger.info('Cache completely cleared');
+      this.memoryCache.clear();
+      logger.info('Memory cache completely cleared');
       return true;
     } catch (error) {
-      logger.error('Cache clear error', error);
+      logger.error('Memory cache clear error', error);
       return false;
     }
   }

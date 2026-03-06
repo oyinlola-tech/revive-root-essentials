@@ -288,6 +288,8 @@ const getSession = (): AuthSession | null => {
   }
 };
 
+let csrfTokenCache: Record<string, string | null> = {};
+
 const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = false): Promise<T> => {
   const session = authenticated ? getSession() : null;
   const baseUrls = getApiBaseUrls();
@@ -301,13 +303,32 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
       const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       try {
+        // For unsafe methods ensure we have a CSRF token obtained from a prior GET
+        if (requestMethod !== 'GET') {
+          if (!csrfTokenCache[baseUrl]) {
+            try {
+              const csrfResp = await fetch(`${baseUrl}/version`, {
+                method: 'GET',
+                credentials: 'include',
+              });
+              const token = csrfResp.headers.get('x-csrf-token');
+              csrfTokenCache[baseUrl] = token;
+            } catch (e) {
+              csrfTokenCache[baseUrl] = null;
+            }
+          }
+        }
+
         const response = await fetch(`${baseUrl}${path}`, {
           headers: {
             "Content-Type": "application/json",
             ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
             "X-Currency": getPreferredCurrency(),
+            ...(csrfTokenCache[baseUrl] ? { 'X-CSRF-Token': csrfTokenCache[baseUrl] as string } : {}),
             ...(init?.headers || {}),
           },
+          // include credentials so cookies are sent/received across origins
+          credentials: 'include',
           ...init,
           signal: controller.signal,
         });

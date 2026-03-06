@@ -15,6 +15,7 @@ export function Login() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [socialLoading, setSocialLoading] = useState<"" | "google" | "apple">("");
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -125,15 +126,36 @@ export function Login() {
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={(event) => setFormData({ ...formData, password: event.target.value })}
-            placeholder="********"
-            required
-            className="bg-input-background"
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+              placeholder="********"
+              required
+              className="bg-input-background pr-10"
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center p-1 text-sm opacity-70 hover:opacity-100"
+            >
+              {showPassword ? (
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                  <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M9.88 9.88A3 3 0 0114.12 14.12" />
+                  <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M7.75 7.75C5.9 9.03 4.5 10.8 3 12c2.2 2.2 4.8 4 9 4 1.26 0 2.45-.2 3.56-.55" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M2.46 12C3.96 9.8 6.54 8 9.88 8c4.2 0 6.8 1.8 9 4-1.5 1.2-3 2.98-5.25 4.25" />
+                  <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </button>
+          </div>
           <div className="mt-2 text-right">
             <Link to="/auth/forgot-password" className="text-sm font-medium hover:opacity-70">
               Forgot Password?

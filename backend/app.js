@@ -133,6 +133,8 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code', 'X-CSRF-Token'],
+  // Expose the CSRF token header so frontend JS can read it after preflight
+  exposedHeaders: ['X-CSRF-Token'],
   // Allow credentials so signed cookies and CSRF tokens can be used from the frontend
   credentials: true,
 }));

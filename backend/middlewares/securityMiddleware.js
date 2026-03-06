@@ -21,7 +21,8 @@ const csrfProtectionMiddleware = (req, res, next) => {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // Use 'lax' in development to allow fetch() from the dev server (different origin)
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 3600000, // 1 hour
     };
 
