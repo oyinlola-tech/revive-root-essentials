@@ -12,12 +12,13 @@ const getApiBaseUrls = () => {
   const fromWindow = typeof window !== "undefined"
     ? `${window.location.origin}/api`
     : "";
+  const localFallback = import.meta.env.PROD ? "" : "http://localhost:3000/api";
 
   const bases = [
     configuredApiUrl,
     fromBackendOrigin,
-    "http://localhost:3000/api",
     fromWindow,
+    localFallback,
   ].filter(Boolean);
 
   return Array.from(new Set(bases));
