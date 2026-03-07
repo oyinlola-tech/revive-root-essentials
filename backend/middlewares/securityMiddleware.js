@@ -5,43 +5,55 @@ const logger = new Logger('Middleware:Security');
 
 const CSRF_TOKEN_HEADER = 'x-csrf-token';
 const CSRF_COOKIE_NAME = '__csrf_token';
+const CSRF_TOKEN_TTL_MS = 60 * 60 * 1000;
 
-// In-memory storage for CSRF tokens (in production, use Redis)
-const csrfTokens = new Set();
+// In-memory CSRF token storage with expiry.
+const csrfTokens = new Map();
+
+const purgeExpiredCsrfTokens = (now = Date.now()) => {
+  for (const [token, expiresAt] of csrfTokens) {
+    if (expiresAt <= now) csrfTokens.delete(token);
+  }
+};
+
+const getCsrfCookieToken = (req) => {
+  if (req.signedCookies && req.signedCookies[CSRF_COOKIE_NAME]) {
+    return req.signedCookies[CSRF_COOKIE_NAME];
+  }
+  return req.cookies ? req.cookies[CSRF_COOKIE_NAME] : undefined;
+};
 
 /**
  * Middleware to generate CSRF tokens for protected operations
  */
 const csrfProtectionMiddleware = (req, res, next) => {
-  // Generate token for GET requests
+  purgeExpiredCsrfTokens();
+
   if (req.method === 'GET') {
+    const now = Date.now();
     const token = generateCsrfToken();
-    csrfTokens.add(token);
+    csrfTokens.set(token, now + CSRF_TOKEN_TTL_MS);
     res.setHeader('X-CSRF-Token', token);
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      // Use 'lax' in development to allow fetch() from the dev server (different origin)
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: 3600000, // 1 hour
+      maxAge: CSRF_TOKEN_TTL_MS,
     };
 
-    // If cookie signing is enabled, sign the CSRF cookie too.
     if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
 
     res.cookie(CSRF_COOKIE_NAME, token, cookieOptions);
     return next();
   }
 
-  // Verify token for unsafe methods
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    // Skip CSRF check for webhook endpoints
     if (req.path.includes('/webhook') || req.path.includes('/flutterwave')) {
       return next();
     }
 
-    const token = req.get(CSRF_TOKEN_HEADER) || req.body._csrf;
-    const cookieToken = req.cookies[CSRF_COOKIE_NAME];
+    const token = req.get(CSRF_TOKEN_HEADER) || (req.body && req.body._csrf);
+    const cookieToken = getCsrfCookieToken(req);
 
     if (!token || !cookieToken) {
       logger.warn('CSRF token missing', {
@@ -55,7 +67,8 @@ const csrfProtectionMiddleware = (req, res, next) => {
       });
     }
 
-    if (!timingSafeEqual(token, cookieToken) || !csrfTokens.has(token)) {
+    const tokenExpiry = csrfTokens.get(token);
+    if (!tokenExpiry || tokenExpiry <= Date.now() || !timingSafeEqual(token, cookieToken)) {
       logger.warn('CSRF token validation failed', {
         path: req.path,
         method: req.method,
@@ -67,7 +80,7 @@ const csrfProtectionMiddleware = (req, res, next) => {
       });
     }
 
-    csrfTokens.delete(token); // One-time use token
+    csrfTokens.delete(token);
   }
 
   next();
@@ -77,93 +90,56 @@ const csrfProtectionMiddleware = (req, res, next) => {
  * Middleware to add additional security headers
  */
 const additionalSecurityHeadersMiddleware = (req, res, next) => {
-  // Content Security Policy
-  // Content Security Policy is handled by Helmet; don't set it here to avoid header conflicts.
-
-  // Prevent MIME type sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
-
-  // Enable XSS protection
   res.setHeader('X-XSS-Protection', '1; mode=block');
-
-  // Clickjacking protection
   res.setHeader('X-Frame-Options', 'DENY');
 
-  // Disable client-side caching for sensitive content
   if (req.path.includes('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   }
 
-  // Feature-Policy / Permissions-Policy
   res.setHeader(
     'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()'
   );
 
-  // Referrer policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   next();
 };
 
 /**
- * Middleware to detect and log suspicious activity
+ * Middleware to block prototype pollution keys in query/body payloads.
  */
 const suspiciousActivityDetectionMiddleware = (req, res, next) => {
-  const suspiciousPatterns = [
-    /('|"|;|--|\/\*|\*\/|xp_|sp_|exec|execute|script|javascript|onerror|onclick)/i, // SQL injection & XSS
-    /\.\.\//g, // Path traversal
-    /(<|>)/g, // HTML tags
-  ];
+  const dangerousKeys = new Set(['__proto__', 'constructor', 'prototype']);
 
-  const checkString = (str) => {
-    if (typeof str !== 'string') return false;
-    return suspiciousPatterns.some(pattern => pattern.test(str));
+  const hasDangerousKey = (value) => {
+    if (!value || typeof value !== 'object') return false;
+    if (Array.isArray(value)) {
+      return value.some((item) => hasDangerousKey(item));
+    }
+
+    for (const key of Object.keys(value)) {
+      if (dangerousKeys.has(key) || hasDangerousKey(value[key])) {
+        return true;
+      }
+    }
+    return false;
   };
 
-  // Check query string
-  for (const key in req.query) {
-    if (checkString(String(req.query[key]))) {
-      logger.warn('Suspicious activity detected in query', {
-        path: req.path,
-        ip: req.ip,
-        key,
-      });
-      return res.status(400).json({
-        error: true,
-        message: 'Invalid request parameters',
-      });
-    }
-  }
-
-  // Check request body
-  if (req.body && typeof req.body === 'object') {
-    const checkObject = (obj) => {
-      for (const key in obj) {
-        const value = obj[key];
-        if (checkString(String(value))) {
-          logger.warn('Suspicious activity detected in body', {
-            path: req.path,
-            ip: req.ip,
-            key,
-          });
-          return true;
-        }
-        if (typeof value === 'object' && value !== null) {
-          if (checkObject(value)) return true;
-        }
-      }
-      return false;
-    };
-
-    if (checkObject(req.body)) {
-      return res.status(400).json({
-        error: true,
-        message: 'Invalid request body',
-      });
-    }
+  if (hasDangerousKey(req.query) || hasDangerousKey(req.body)) {
+    logger.warn('Blocked request containing dangerous object keys', {
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+    });
+    return res.status(400).json({
+      error: true,
+      message: 'Invalid request payload',
+    });
   }
 
   next();

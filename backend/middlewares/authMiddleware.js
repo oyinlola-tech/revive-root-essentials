@@ -52,6 +52,7 @@ const protect = async (req, res, next) => {
       return next(new AppError('Your account is not active.', 401));
     }
 
+    req.token = token;
     req.user = user;
     next();
   } catch (error) {

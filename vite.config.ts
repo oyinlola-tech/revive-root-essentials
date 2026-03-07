@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+  envDir: path.resolve(__dirname, 'frontend-env'),
   plugins: [
     react(),
     tailwindcss(),
@@ -40,18 +41,6 @@ export default defineConfig({
   },
 
   build: {
-    // Help reduce the size of the main chunk by splitting vendor code
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
-            if (id.includes('@mui') || id.includes('@emotion')) return 'ui-vendor';
-            return 'vendor';
-          }
-        },
-      },
-    },
     chunkSizeWarningLimit: 800,
   },
 

@@ -94,12 +94,15 @@ const setRefreshTokenCookie = (res, refreshToken) => {
       maxAge,
     };
     if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
-    // Use a conservative cookie name
     res.cookie('refresh_token', refreshToken, cookieOptions);
   } catch (err) {
-    // Do not block auth flow if cookie setting fails
-    // Logger omitted here to avoid circular requires
+    // Do not block auth flow if cookie setting fails.
   }
+};
+
+const allowRefreshTokenInBody = () => {
+  if (process.env.ALLOW_REFRESH_TOKEN_IN_BODY === 'true') return true;
+  return process.env.NODE_ENV !== 'production';
 };
 
 const buildAuthPayload = async (user) => {
@@ -327,6 +330,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   const sessionId = await createSession(user);
   const token = signToken(user.id, sessionId);
   const refreshToken = signRefreshToken(user.id, sessionId);
+  setRefreshTokenCookie(res, refreshToken);
 
   res.json({
     token,
@@ -338,10 +342,6 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
       role: user.role,
     },
   });
-
-  // Also set refresh token in a secure, HttpOnly cookie to reduce token exposure to JS.
-  // Note: for compatibility we still return the refreshToken in the JSON body for now.
-  setRefreshTokenCookie(res, refreshToken);
 
   if (wasUnverified) {
     notificationService.sendWelcomeEmail(user).catch(() => {});
@@ -525,13 +525,8 @@ exports.oauthApple = catchAsync(async (req, res, next) => {
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
-  // Blacklist the current token
   if (req.token && req.user) {
-    const { jwtExpiresIn: expiresIn } = require('../config/auth');
-    // Parse expiry time (e.g., "7d" -> milliseconds)
-    const expiryMs = expiresIn.endsWith('d')
-      ? parseInt(expiresIn) * 24 * 60 * 60 * 1000
-      : parseInt(expiresIn) * 60 * 1000;
+    const expiryMs = parseExpiryToMs(jwtExpiresIn) || parseExpiryToMs('15m');
     await tokenBlacklist.blacklistToken(req.token, expiryMs);
   }
 
@@ -555,8 +550,11 @@ exports.getMe = catchAsync(async (req, res, next) => {
 });
 
 exports.refreshToken = catchAsync(async (req, res, next) => {
-  // Support refresh token in request body or HttpOnly cookie (signed if COOKIE_SECRET set)
-  let refreshToken = req.body.refreshToken || req.body.refresh_token || null;
+  let refreshToken = null;
+  if (allowRefreshTokenInBody()) {
+    refreshToken = req.body.refreshToken || req.body.refresh_token || null;
+  }
+
   if (!refreshToken) {
     if (req.signedCookies && req.signedCookies.refresh_token) {
       refreshToken = req.signedCookies.refresh_token;
@@ -566,7 +564,7 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
   }
 
   if (!refreshToken) {
-    return next(new AppError('Refresh token required', 400));
+    return next(new AppError('Refresh token required. Use the secure cookie-based flow.', 400));
   }
 
   try {

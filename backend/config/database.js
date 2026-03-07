@@ -1,8 +1,9 @@
 const { Sequelize } = require('sequelize');
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
