@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Plus, Edit2, Trash2, Copy, Eye } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 type AdminCoupon = {
   id: string;
@@ -88,7 +89,7 @@ export default function AdminCoupons() {
       setCoupons(couponsList as AdminCoupon[]);
       setFilteredCoupons(couponsList as AdminCoupon[]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load coupons');
+      setError(getDisplayErrorMessage(err, 'Failed to load coupons'));
       console.error('Error loading coupons:', err);
     } finally {
       setLoading(false);
@@ -151,7 +152,7 @@ export default function AdminCoupons() {
       handleCloseForm();
       await loadCoupons();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save coupon');
+      setError(getDisplayErrorMessage(err, 'Failed to save coupon'));
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +168,7 @@ export default function AdminCoupons() {
       await api.adminDeleteCoupon(couponId);
       await loadCoupons();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete coupon');
+      setError(getDisplayErrorMessage(err, 'Failed to delete coupon'));
     }
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Download, MoreVertical } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface Order {
   id: string;
@@ -56,11 +57,18 @@ export default function AdminOrders() {
       const ordersList = (response.data || []).map(o => ({
         ...o,
         totalAmount: typeof o.totalAmount === 'string' ? parseFloat(o.totalAmount) : o.totalAmount,
+        customerName: o.User?.name || o.customerName,
+        customerEmail: o.User?.email || o.customerEmail,
+        items: (o.OrderItems || o.items || []).map((item: any) => ({
+          name: item.Product?.name || item.name || 'Product',
+          quantity: Number(item.quantity || 0),
+          price: Number(item.price || 0),
+        })),
       }));
       setOrders(ordersList);
       setFilteredOrders(ordersList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load orders');
+      setError(getDisplayErrorMessage(err, 'Failed to load orders'));
       console.error('Error loading orders:', err);
     } finally {
       setLoading(false);
@@ -74,7 +82,7 @@ export default function AdminOrders() {
       await api.adminUpdateOrderStatus(orderId, newStatus as any);
       await loadOrders();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update order status');
+      setError(getDisplayErrorMessage(err, 'Failed to update order status'));
     } finally {
       setUpdatingStatus(null);
     }

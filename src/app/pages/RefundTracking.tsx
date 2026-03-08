@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import * as api from '../services/api';
 import { AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { getDisplayErrorMessage } from '../utils/uiErrorMessages';
 
 interface Refund {
   id: string;
@@ -47,15 +48,13 @@ export default function RefundTracking() {
       const offset = (currentPage - 1) * limit;
       const response = await api.getRefunds(limit, offset, selectedStatus || undefined);
       
-      // Handle response structure
-      const data = response as any;
-      const refundsList = Array.isArray(data) ? data : data.refunds || [];
-      const total = data.total || refundsList.length;
-      
+      const refundsList = response.data || [];
+      const total = response.pagination?.total || refundsList.length;
+
       setRefunds(refundsList);
       setTotalPages(Math.ceil(total / limit));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load refunds');
+      setError(getDisplayErrorMessage(err, 'Failed to load refunds'));
       console.error('Error loading refunds:', err);
     } finally {
       setLoading(false);

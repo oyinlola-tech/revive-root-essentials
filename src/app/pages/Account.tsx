@@ -17,6 +17,7 @@ import {
 } from "../services/api";
 import { SUPPORTED_PAYMENT_CURRENCIES } from "../constants/currencies";
 import { getPasswordStrength } from "../utils/passwordStrength";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export function Account() {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export function Account() {
           currency: getPreferredCurrency(),
         });
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Unable to load account settings.");
+        setErrorMessage(getDisplayErrorMessage(error, "Unable to load account settings."));
       } finally {
         setLoading(false);
       }
@@ -104,7 +105,7 @@ export function Account() {
       setPreferredCurrency(formData.currency);
       setSuccessMessage("Account settings updated.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to save settings.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to save settings."));
     } finally {
       setSaving(false);
     }
@@ -157,7 +158,7 @@ export function Account() {
       await logout();
       navigate("/auth/login");
     } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : "Unable to change password.");
+      setPasswordError(getDisplayErrorMessage(error, "Unable to change password."));
     } finally {
       setPasswordSaving(false);
     }
@@ -173,7 +174,7 @@ export function Account() {
       await deleteMyAccount();
       navigate("/auth/signup");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to delete account.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to delete account."));
     } finally {
       setDeleting(false);
     }

@@ -1,7 +1,15 @@
 const AppError = require('../utils/AppError');
 
+const normalizeStatusCode = (statusCode) => {
+  const code = Number(statusCode);
+  if (!Number.isInteger(code) || code < 400 || code > 599) {
+    return 500;
+  }
+  return code;
+};
+
 const sendErrorDev = (err, res) => {
-  res.status(err.statusCode || 500).json({
+  res.status(normalizeStatusCode(err.statusCode)).json({
     error: true,
     message: err.message,
     stack: err.stack,
@@ -12,7 +20,7 @@ const sendErrorDev = (err, res) => {
 const sendErrorProd = (err, res) => {
   // Operational, trusted error: send message to client
   if (err.isOperational) {
-    res.status(err.statusCode).json({
+    res.status(normalizeStatusCode(err.statusCode)).json({
       error: true,
       message: err.message,
     });
@@ -27,7 +35,7 @@ const sendErrorProd = (err, res) => {
 };
 
 module.exports = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
+  err.statusCode = normalizeStatusCode(err.statusCode);
 
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
@@ -40,13 +48,22 @@ module.exports = (err, req, res, next) => {
       error = new AppError(err.errors.map(e => e.message).join(', '), 400);
     }
     if (err.name === 'SequelizeUniqueConstraintError') {
-      error = new AppError('Duplicate field value: already exists', 400);
+      error = new AppError('Duplicate field value: already exists', 409);
+    }
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      error = new AppError('The requested action references invalid related data.', 400);
+    }
+    if (err.name === 'SequelizeDatabaseError') {
+      error = new AppError('The request could not be completed.', 400);
     }
     if (err.name === 'JsonWebTokenError') {
       error = new AppError('Invalid token', 401);
     }
     if (err.name === 'TokenExpiredError') {
       error = new AppError('Token expired', 401);
+    }
+    if (err.message === 'Not allowed by CORS') {
+      error = new AppError('Origin is not allowed to access this resource.', 403);
     }
 
     sendErrorProd(error, res);

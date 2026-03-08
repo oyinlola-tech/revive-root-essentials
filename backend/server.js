@@ -15,6 +15,8 @@ const requiredEnvVars = [
   'FLW_SECRET_KEY',
 ];
 const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS', 'REDIS_URL', 'FLW_WEBHOOK_SECRET_HASH'];
+const shouldSyncDatabase = process.env.DB_SYNC_ON_BOOT === 'true' || process.env.NODE_ENV !== 'production';
+const shouldStartNewsletterScheduler = process.env.ENABLE_NEWSLETTER_SCHEDULER === 'true';
 
 // COOKIE_SECRET is optional but recommended when signing cookies
 optionalEnvVars.push('COOKIE_SECRET');
@@ -29,6 +31,11 @@ if (missingEnvVars.length > 0) {
 const missingOptionalVars = optionalEnvVars.filter((key) => !process.env[key]);
 if (missingOptionalVars.length > 0) {
   console.warn(`Missing optional environment variables (email notifications may be disabled): ${missingOptionalVars.join(', ')}`);
+}
+
+if (process.env.NODE_ENV === 'production' && !process.env.COOKIE_SECRET) {
+  console.error('COOKIE_SECRET is required in production to sign auth and CSRF cookies.');
+  process.exit(1);
 }
 
 // Initialize Redis caching
@@ -61,6 +68,10 @@ if (process.env.SKIP_DB === 'true') {
     .then(() => sequelize.authenticate())
     .then(() => {
       console.log('Database connected...');
+      if (!shouldSyncDatabase) {
+        console.log('Database sync skipped in production. Set DB_SYNC_ON_BOOT=true to enable it.');
+        return null;
+      }
       // Create tables if they don't exist. Do not alter existing schema.
       return sequelize.sync();
     })
@@ -69,7 +80,9 @@ if (process.env.SKIP_DB === 'true') {
     .then(() => {
       server = app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
-        startNewsletterScheduler();
+        if (shouldStartNewsletterScheduler) {
+          startNewsletterScheduler();
+        }
       });
     })
     .catch((err) => {

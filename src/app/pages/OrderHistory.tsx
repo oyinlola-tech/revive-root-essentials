@@ -1,44 +1,31 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { getOrders } from "../services/api";
 import type { Order } from "../types/order";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export const OrderHistory = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    limit: 10,
-    offset: 0,
-    pages: 0,
-  });
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
         setLoading(true);
-        const result = await getOrders(pagination.limit, pagination.offset);
-        setOrders(result.data);
-        setPagination(result.pagination);
+        const result = await getOrders();
+        setOrders(result as Order[]);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || "Failed to load orders");
+      } catch (err) {
+        setError(getDisplayErrorMessage(err, "Unable to load your orders right now."));
       } finally {
         setLoading(false);
       }
     };
 
     loadOrders();
-  }, [pagination.offset]);
-
-  const handlePageChange = (newOffset: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      offset: newOffset,
-    }));
-  };
+  }, []);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -134,20 +121,14 @@ export const OrderHistory = () => {
                       </p>
                       <div className="flex gap-3">
                         <button
-                          onClick={() => navigate(`/orders/${order.id}`)}
+                          onClick={() => navigate(`/order/${order.id}`)}
                           className="text-primary hover:underline font-medium"
                         >
                           View Details
                         </button>
-                        <button
-                          onClick={() => navigate(`/invoices/${order.id}`)}
-                          className="text-primary hover:underline font-medium"
-                        >
-                          Invoice
-                        </button>
                         {order.status !== 'delivered' && order.paymentStatus === 'paid' && (
                           <button
-                            onClick={() => navigate(`/refunds/new?orderId=${order.id}`)}
+                            onClick={() => navigate(`/refund-request?orderId=${order.id}`)}
                             className="text-orange-600 hover:underline font-medium"
                           >
                             Request Refund
@@ -160,26 +141,6 @@ export const OrderHistory = () => {
               ))}
             </div>
 
-            {/* Pagination */}
-            <div className="flex justify-center gap-2">
-              <button
-                onClick={() => handlePageChange(Math.max(0, pagination.offset - pagination.limit))}
-                disabled={pagination.offset === 0}
-                className="px-4 py-2 border rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span className="px-4 py-2 flex items-center">
-                Page {Math.floor(pagination.offset / pagination.limit) + 1} of {pagination.pages}
-              </span>
-              <button
-                onClick={() => handlePageChange(pagination.offset + pagination.limit)}
-                disabled={pagination.offset + pagination.limit >= pagination.total}
-                className="px-4 py-2 border rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
           </>
         )}
       </div>

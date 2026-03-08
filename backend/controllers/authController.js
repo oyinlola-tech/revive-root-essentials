@@ -11,12 +11,24 @@ const notificationService = require('../services/notificationService');
 const { jwtSecret, jwtExpiresIn, jwtRefreshSecret, jwtRefreshExpiresIn } = require('../config/auth');
 const { bruteForceProtector, tokenBlacklist } = require('../utils/securityUtils');
 
+const REFRESH_COOKIE_NAME = process.env.NODE_ENV === 'production' ? '__Host-refresh_token' : 'refresh_token';
+const LEGACY_REFRESH_COOKIE_NAME = 'refresh_token';
+
 const normalizeIdentifier = (identifier, type) => {
   if (type === 'email') return String(identifier || '').toLowerCase().trim();
   return String(identifier || '').trim();
 };
 
 const normalizeEmail = (email) => String(email || '').toLowerCase().trim();
+const queueOtpNotification = ({ channel, recipient, name, code, expiresMinutes = 5 }) => {
+  notificationService.sendOtpNotification({
+    channel,
+    recipient,
+    name,
+    code,
+    expiresMinutes,
+  }).catch(() => {});
+};
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 const appleKeysClient = jwksClient({
   jwksUri: 'https://appleid.apple.com/auth/keys',
@@ -92,9 +104,10 @@ const setRefreshTokenCookie = (res, refreshToken) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge,
+      path: '/api/auth',
     };
     if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
-    res.cookie('refresh_token', refreshToken, cookieOptions);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, cookieOptions);
   } catch (err) {
     // Do not block auth flow if cookie setting fails.
   }
@@ -227,7 +240,7 @@ exports.register = catchAsync(async (req, res, next) => {
     expiresAt,
   });
 
-  await notificationService.sendOtpNotification({
+  queueOtpNotification({
     channel: 'email',
     recipient: normalizedEmail,
     name,
@@ -276,7 +289,7 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
     expiresAt,
   });
 
-  await notificationService.sendOtpNotification({
+  queueOtpNotification({
     channel: type,
     recipient: normalizedIdentifier,
     name: user.name,
@@ -406,13 +419,13 @@ exports.login = catchAsync(async (req, res, next) => {
       expiresAt,
     });
 
-    notificationService.sendOtpNotification({
+    queueOtpNotification({
       channel: 'email',
       recipient: normalizedEmail,
       name: user.name,
       code: otpCode,
       expiresMinutes: 5,
-    }).catch(() => {});
+    });
 
     return res.status(202).json({
       message: `OTP sent to ${normalizedEmail}. Please verify to complete login.`,
@@ -535,11 +548,16 @@ exports.logout = catchAsync(async (req, res, next) => {
 
   // Clear refresh token cookie if present (use conservative flags)
   try {
-    res.clearCookie('refresh_token', {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-    });
+      path: '/api/auth',
+    };
+    res.clearCookie(REFRESH_COOKIE_NAME, cookieOptions);
+    if (REFRESH_COOKIE_NAME !== LEGACY_REFRESH_COOKIE_NAME) {
+      res.clearCookie(LEGACY_REFRESH_COOKIE_NAME, cookieOptions);
+    }
   } catch (e) {}
 
   res.json({ message: 'Logged out successfully' });
@@ -556,10 +574,10 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
   }
 
   if (!refreshToken) {
-    if (req.signedCookies && req.signedCookies.refresh_token) {
-      refreshToken = req.signedCookies.refresh_token;
-    } else if (req.cookies && req.cookies.refresh_token) {
-      refreshToken = req.cookies.refresh_token;
+    if (req.signedCookies && (req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME])) {
+      refreshToken = req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME];
+    } else if (req.cookies && (req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME])) {
+      refreshToken = req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME];
     }
   }
 
@@ -568,7 +586,7 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, jwtRefreshSecret);
+    const decoded = jwt.verify(refreshToken, jwtRefreshSecret, { algorithms: ['HS256'] });
     const user = await User.findByPk(decoded.id);
     if (!user || !user.currentSessionId || user.currentSessionId !== decoded.sessionId) {
       return next(new AppError('Session expired. Please log in again.', 401));
@@ -605,7 +623,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     expiresAt,
   });
 
-  await notificationService.sendOtpNotification({
+  queueOtpNotification({
     channel: 'email',
     recipient: normalizedEmail,
     name: user.name,

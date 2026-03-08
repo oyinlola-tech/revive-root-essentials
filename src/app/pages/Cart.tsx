@@ -9,6 +9,7 @@ import { useCommerce } from "../contexts/CommerceContext";
 import { createOrder, getAuthSession } from "../services/api";
 import { formatMoney } from "../utils/formatMoney";
 import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 const initialCheckout = {
   country: "Nigeria",
@@ -96,7 +97,7 @@ export function Cart() {
         }, 1500);
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to complete checkout.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to complete checkout."));
     } finally {
       setSubmitting(false);
     }

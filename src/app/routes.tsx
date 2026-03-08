@@ -1,35 +1,48 @@
+import { lazy, type ComponentType } from "react";
 import { createBrowserRouter } from "react-router";
-import { Home } from "./pages/Home";
-import { About } from "./pages/About";
-import { Shop } from "./pages/Shop";
-import { ProductDetails } from "./pages/ProductDetails";
-import { Contact } from "./pages/Contact";
-import { Cart } from "./pages/Cart";
-import { OrderPaymentStatus } from "./pages/OrderPaymentStatus";
-import { Wishlist } from "./pages/Wishlist";
-import { Account } from "./pages/Account";
-import { NewsletterUnsubscribe } from "./pages/NewsletterUnsubscribe";
-import { OrderHistory } from "./pages/OrderHistory";
-import { OrderDetail } from "./pages/OrderDetail";
-import { RefundRequest } from "./pages/RefundRequest";
-import RefundTracking from "./pages/RefundTracking";
-import AddressManagement from "./pages/AddressManagement";
-import { Login } from "./pages/auth/Login";
-import { Signup } from "./pages/auth/Signup";
-import { OTP } from "./pages/auth/OTP";
-import { ForgotPassword } from "./pages/auth/ForgotPassword";
-import { ResetPassword } from "./pages/auth/ResetPassword";
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminCoupons from "./pages/admin/AdminCoupons";
-import AdminInventory from "./pages/admin/AdminInventory";
-import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
-import { SuperAdminDashboard } from "./pages/admin/SuperAdminDashboard";
-import { NotFound } from "./pages/NotFound";
 import { RootLayout } from "./components/RootLayout";
 import { AuthLayout } from "./components/AuthLayout";
+
+const lazyNamed = <T extends Record<string, ComponentType<any>>>(
+  factory: () => Promise<T>,
+  name: keyof T,
+) =>
+  lazy(async () => {
+    const module = await factory();
+    return { default: module[name] as ComponentType<any> };
+  });
+
+const Home = lazyNamed(() => import("./pages/Home"), "Home");
+const About = lazyNamed(() => import("./pages/About"), "About");
+const Shop = lazyNamed(() => import("./pages/Shop"), "Shop");
+const ProductDetails = lazyNamed(() => import("./pages/ProductDetails"), "ProductDetails");
+const Contact = lazyNamed(() => import("./pages/Contact"), "Contact");
+const Cart = lazyNamed(() => import("./pages/Cart"), "Cart");
+const OrderPaymentStatus = lazyNamed(() => import("./pages/OrderPaymentStatus"), "OrderPaymentStatus");
+const Wishlist = lazyNamed(() => import("./pages/Wishlist"), "Wishlist");
+const Account = lazyNamed(() => import("./pages/Account"), "Account");
+const NewsletterUnsubscribe = lazyNamed(() => import("./pages/NewsletterUnsubscribe"), "NewsletterUnsubscribe");
+const OrderHistory = lazyNamed(() => import("./pages/OrderHistory"), "OrderHistory");
+const OrderDetail = lazyNamed(() => import("./pages/OrderDetail"), "OrderDetail");
+const RefundRequest = lazyNamed(() => import("./pages/RefundRequest"), "RefundRequest");
+const RefundTracking = lazy(() => import("./pages/RefundTracking"));
+const AddressManagement = lazy(() => import("./pages/AddressManagement"));
+
+const Login = lazyNamed(() => import("./pages/auth/Login"), "Login");
+const Signup = lazyNamed(() => import("./pages/auth/Signup"), "Signup");
+const OTP = lazyNamed(() => import("./pages/auth/OTP"), "OTP");
+const ForgotPassword = lazyNamed(() => import("./pages/auth/ForgotPassword"), "ForgotPassword");
+const ResetPassword = lazyNamed(() => import("./pages/auth/ResetPassword"), "ResetPassword");
+
+const AdminDashboard = lazyNamed(() => import("./pages/admin/AdminDashboard"), "AdminDashboard");
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
+const AdminInventory = lazy(() => import("./pages/admin/AdminInventory"));
+const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
+const SuperAdminDashboard = lazyNamed(() => import("./pages/admin/SuperAdminDashboard"), "SuperAdminDashboard");
+const NotFound = lazyNamed(() => import("./pages/NotFound"), "NotFound");
 
 export const router = createBrowserRouter([
   {
@@ -46,7 +59,6 @@ export const router = createBrowserRouter([
       { path: "account", Component: Account },
       { path: "contact", Component: Contact },
       { path: "newsletter/unsubscribe", Component: NewsletterUnsubscribe },
-      // Customer Features
       { path: "order-history", Component: OrderHistory },
       { path: "order/:id", Component: OrderDetail },
       { path: "refund-request", Component: RefundRequest },
@@ -65,40 +77,13 @@ export const router = createBrowserRouter([
       { path: "reset-password", Component: ResetPassword },
     ],
   },
-  {
-    path: "/admin",
-    Component: AdminDashboard,
-  },
-  {
-    path: "/admin/products",
-    Component: AdminProducts,
-  },
-  {
-    path: "/admin/orders",
-    Component: AdminOrders,
-  },
-  {
-    path: "/admin/users",
-    Component: AdminUsers,
-  },
-  {
-    path: "/admin/coupons",
-    Component: AdminCoupons,
-  },
-  {
-    path: "/admin/inventory",
-    Component: AdminInventory,
-  },
-  {
-    path: "/admin/audit-logs",
-    Component: AdminAuditLogs,
-  },
-  {
-    path: "/super-admin",
-    Component: SuperAdminDashboard,
-  },
-  {
-    path: "*",
-    Component: NotFound,
-  },
+  { path: "/admin", Component: AdminDashboard },
+  { path: "/admin/products", Component: AdminProducts },
+  { path: "/admin/orders", Component: AdminOrders },
+  { path: "/admin/users", Component: AdminUsers },
+  { path: "/admin/coupons", Component: AdminCoupons },
+  { path: "/admin/inventory", Component: AdminInventory },
+  { path: "/admin/audit-logs", Component: AdminAuditLogs },
+  { path: "/super-admin", Component: SuperAdminDashboard },
+  { path: "*", Component: NotFound },
 ]);

@@ -7,6 +7,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { submitContactMessage } from "../services/api";
 import { SITE_IMAGES } from "../constants/siteImages";
 import { useSeo } from "../hooks/useSeo";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -65,7 +66,7 @@ export function Contact() {
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
       setSubmitState("error");
-      setSubmitMessage(error instanceof Error ? error.message : "Unable to send your message right now. Please try again.");
+      setSubmitMessage(getDisplayErrorMessage(error, "Unable to send your message right now. Please try again."));
     }
   };
 

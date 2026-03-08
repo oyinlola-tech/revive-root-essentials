@@ -1,23 +1,20 @@
 import type { Product } from "../types/product";
+import { getNetworkErrorMessage, sanitizeApiErrorMessage } from "../utils/uiErrorMessages";
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
 const configuredBackendOrigin = (import.meta.env.VITE_BACKEND_ORIGIN || "").trim().replace(/\/$/, "");
 const AUTH_STORAGE_KEY = "revive_roots_auth";
 const CURRENCY_STORAGE_KEY = "revive_roots_currency";
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 30000;
 const MAX_GET_RETRIES = 1;
 
 const getApiBaseUrls = () => {
   const fromBackendOrigin = configuredBackendOrigin ? `${configuredBackendOrigin}/api` : "";
-  const fromWindow = typeof window !== "undefined"
+  const fromWindow = !configuredApiUrl && !fromBackendOrigin && typeof window !== "undefined"
     ? `${window.location.origin}/api`
     : "";
 
-  const bases = [
-    configuredApiUrl,
-    fromBackendOrigin,
-    fromWindow,
-  ].filter(Boolean);
+  const bases = [configuredApiUrl, fromBackendOrigin, fromWindow].filter(Boolean);
 
   return Array.from(new Set(bases));
 };
@@ -96,6 +93,27 @@ interface BackendOrder {
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   createdAt: string;
+  User?: {
+    id?: string;
+    email?: string;
+    name?: string;
+  };
+  OrderItems?: Array<{
+    id?: string;
+    quantity?: number;
+    price?: number | string;
+    Product?: {
+      id?: string;
+      name?: string;
+    };
+  }>;
+  shippingAddress?: string | {
+    country?: string;
+    state?: string;
+    city?: string;
+    line1?: string;
+    postalCode?: string;
+  } | null;
 }
 
 interface AuthResponse {
@@ -185,6 +203,13 @@ export interface UserOrder {
   status: BackendOrder["status"];
   paymentStatus: BackendOrder["paymentStatus"];
   createdAt: string;
+  items?: Array<{
+    productId?: string;
+    quantity: number;
+    name?: string;
+    price?: number;
+  }>;
+  shippingAddress?: string;
 }
 
 export interface ContactRecord {
@@ -268,12 +293,16 @@ const normalizeAdminProduct = (product: BackendProduct): AdminProduct => ({
   isFeatured: Boolean(product.isFeatured),
 });
 
-const getErrorMessage = async (response: Response): Promise<string> => {
+const getErrorMessage = async (response: Response, path?: string): Promise<string> => {
   try {
     const data = await response.json();
-    return data?.message || data?.error || `Request failed with status ${response.status}`;
+    return sanitizeApiErrorMessage({
+      message: data?.message || data?.error,
+      status: response.status,
+      path,
+    });
   } catch {
-    return `Request failed with status ${response.status}`;
+    return sanitizeApiErrorMessage({ status: response.status, path });
   }
 };
 
@@ -333,7 +362,7 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
         });
 
         if (!response.ok) {
-          throw new Error(await getErrorMessage(response));
+          throw new Error(await getErrorMessage(response, path));
         }
 
         if (response.status === 204) {
@@ -342,7 +371,7 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
 
         return response.json() as Promise<T>;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error("Network request failed");
+        lastError = new Error(getNetworkErrorMessage(error));
       } finally {
         clearTimeout(timeout);
       }
@@ -482,6 +511,23 @@ export const getOrderById = async (orderId: string): Promise<UserOrder> => {
     status: order.status,
     paymentStatus: order.paymentStatus,
     createdAt: order.createdAt,
+    items: (order.OrderItems || []).map((item) => ({
+      productId: item.Product?.id,
+      quantity: Number(item.quantity || 0),
+      name: item.Product?.name || "Product",
+      price: Number(item.price || 0),
+    })),
+    shippingAddress: typeof order.shippingAddress === "string"
+      ? order.shippingAddress
+      : order.shippingAddress
+        ? [
+          order.shippingAddress.line1,
+          order.shippingAddress.city,
+          order.shippingAddress.state,
+          order.shippingAddress.postalCode,
+          order.shippingAddress.country,
+        ].filter(Boolean).join(", ")
+        : undefined,
   };
 };
 
@@ -498,6 +544,12 @@ export const getOrders = async (): Promise<UserOrder[]> => {
     status: order.status,
     paymentStatus: order.paymentStatus,
     createdAt: order.createdAt,
+    items: (order.OrderItems || []).map((item) => ({
+      productId: item.Product?.id,
+      quantity: Number(item.quantity || 0),
+      name: item.Product?.name || "Product",
+      price: Number(item.price || 0),
+    })),
   }));
 };
 
@@ -786,10 +838,13 @@ export const updateMyProfile = async (payload: {
 interface Refund {
   id: string;
   orderId: string;
+  orderNumber?: string;
   status: "pending" | "approved" | "rejected" | "completed";
   reason: string;
   requestedAmount: number;
   approvedAmount?: number;
+  rejectionReason?: string;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -803,13 +858,57 @@ interface RefundsResponse {
   };
 }
 
+interface BackendRefund {
+  id: string;
+  orderId: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "completed";
+  requestedAmount: number | string;
+  approvedAmount?: number | string | null;
+  adminNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  Order?: {
+    id?: string;
+    orderNumber?: string;
+  };
+  order?: {
+    id?: string;
+    orderNumber?: string;
+  };
+}
+
+const normalizeRefund = (refund: BackendRefund): Refund => {
+  const notes = String(refund.adminNotes || "").trim();
+  const status = refund.status;
+  const rejectionReason = status === "rejected" && notes ? notes.split("\n")[0] : undefined;
+
+  return {
+    id: refund.id,
+    orderId: refund.orderId,
+    orderNumber: refund.Order?.orderNumber || refund.order?.orderNumber,
+    reason: refund.reason,
+    status,
+    requestedAmount: Number(refund.requestedAmount || 0),
+    approvedAmount: refund.approvedAmount == null ? undefined : Number(refund.approvedAmount),
+    rejectionReason,
+    createdAt: refund.createdAt,
+    updatedAt: refund.updatedAt,
+  };
+};
+
 export const getRefunds = async (limit = 10, offset = 0, status?: string) => {
   const url = `/refunds?limit=${limit}&offset=${offset}${status ? `&status=${status}` : ""}`;
-  return fetchJson<RefundsResponse>(url, {}, true);
+  const response = await fetchJson<{ data: BackendRefund[]; pagination: RefundsResponse["pagination"] }>(url, {}, true);
+  return {
+    data: (response.data || []).map(normalizeRefund),
+    pagination: response.pagination,
+  };
 };
 
 export const getRefund = async (refundId: string) => {
-  return fetchJson<Refund>(`/refunds/${refundId}`, {}, true);
+  const response = await fetchJson<{ data: BackendRefund }>(`/refunds/${refundId}`, {}, true);
+  return normalizeRefund(response.data);
 };
 
 export const createRefund = async (payload: {
@@ -817,10 +916,11 @@ export const createRefund = async (payload: {
   reason: string;
   requestedAmount?: number;
 }) => {
-  return fetchJson<Refund>("/refunds", {
+  const response = await fetchJson<{ data: BackendRefund }>("/refunds", {
     method: "POST",
     body: JSON.stringify(payload),
   }, true);
+  return normalizeRefund(response.data);
 };
 
 // ============================================
@@ -866,11 +966,13 @@ export const validateCoupon = async (code: string) => {
 interface AdminUser {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   role: string;
-  status: string;
+  status: "active" | "inactive";
   createdAt: string;
+  isEmailVerified?: boolean;
 }
 
 interface AdminUsersResponse {
@@ -894,7 +996,7 @@ export const adminGetUser = async (userId: string) => {
 
 export const adminUpdateUser = async (userId: string, payload: {
   role?: string;
-  status?: string;
+  status?: "active" | "inactive";
 }) => {
   return fetchJson<AdminUser>(`/admin/users/${userId}`, {
     method: "PATCH",
@@ -945,6 +1047,12 @@ interface Inventory {
   reservedQuantity: number;
   sku: string;
   reorderLevel: number;
+  product?: {
+    id: string;
+    name: string;
+    sku?: string;
+    price?: number;
+  };
 }
 
 interface InventoryResponse {
@@ -958,7 +1066,7 @@ interface InventoryResponse {
 }
 
 export const adminGetInventory = async (limit = 20, offset = 0) => {
-  const url = `/admin/inventory?limit=${limit}&offset=${offset}`;
+  const url = `/inventory?limit=${limit}&offset=${offset}`;
   return fetchJson<InventoryResponse>(url, {}, true);
 };
 
@@ -966,14 +1074,14 @@ export const adminAdjustInventory = async (productId: string, payload: {
   quantity: number;
   reason: string;
 }) => {
-  return fetchJson<Inventory>(`/admin/inventory/${productId}/adjust`, {
+  return fetchJson<Inventory>(`/inventory/${productId}/adjust`, {
     method: "POST",
     body: JSON.stringify(payload),
   }, true);
 };
 
 export const adminGetReorderItems = async () => {
-  return fetchJson<{ data: Inventory[] }>("/admin/inventory/reorder/items", {}, true);
+  return fetchJson<{ data: Inventory[] }>("/inventory/reorder/items", {}, true);
 };
 
 // ============================================
@@ -1000,26 +1108,26 @@ interface AdminCouponsResponse {
 }
 
 export const adminGetCoupons = async (limit = 20, offset = 0) => {
-  const url = `/admin/coupons?limit=${limit}&offset=${offset}`;
+  const url = `/coupons/admin/all?limit=${limit}&offset=${offset}`;
   return fetchJson<AdminCouponsResponse>(url, {}, true);
 };
 
 export const adminCreateCoupon = async (payload: AdminCouponPayload) => {
-  return fetchJson<Coupon>("/admin/coupons", {
+  return fetchJson<Coupon>("/coupons/admin", {
     method: "POST",
     body: JSON.stringify(payload),
   }, true);
 };
 
 export const adminUpdateCoupon = async (couponId: string, payload: Partial<AdminCouponPayload>) => {
-  return fetchJson<Coupon>(`/admin/coupons/${couponId}`, {
+  return fetchJson<Coupon>(`/coupons/admin/${couponId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   }, true);
 };
 
 export const adminDeleteCoupon = async (couponId: string) => {
-  return fetchJson<{ message: string }>(`/admin/coupons/${couponId}`, {
+  return fetchJson<{ message: string }>(`/coupons/admin/${couponId}`, {
     method: "DELETE",
   }, true);
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { getOrderById, createRefund } from "../services/api";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export const RefundRequest = () => {
   const navigate = useNavigate();
@@ -17,6 +18,15 @@ export const RefundRequest = () => {
     requestedAmount: 0,
     description: "",
   });
+
+  const refundReasons: Record<string, string> = {
+    defective_product: "Defective Product",
+    not_as_described: "Not As Described",
+    wrong_item_received: "Wrong Item Received",
+    changed_mind: "Changed Mind",
+    duplicate_order: "Duplicate Order",
+    other: "Other",
+  };
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -37,8 +47,8 @@ export const RefundRequest = () => {
             : result.totalAmount,
         }));
         setError(null);
-      } catch (err: any) {
-        setError(err.message || "Failed to load order");
+      } catch (err) {
+        setError(getDisplayErrorMessage(err, "Failed to load order"));
       } finally {
         setLoading(false);
       }
@@ -55,6 +65,11 @@ export const RefundRequest = () => {
       return;
     }
 
+    if (formData.reason === "other" && formData.description.trim().length < 10) {
+      setError("Please provide at least 10 characters of detail for this refund request.");
+      return;
+    }
+
     if (formData.requestedAmount <= 0) {
       setError("Refund amount must be greater than 0");
       return;
@@ -68,17 +83,21 @@ export const RefundRequest = () => {
     try {
       setSubmitting(true);
       setError(null);
+      const selectedReason = refundReasons[formData.reason] || formData.reason;
+      const detailedReason = formData.description.trim()
+        ? `${selectedReason}: ${formData.description.trim()}`
+        : selectedReason;
       await createRefund({
         orderId,
-        reason: formData.reason,
+        reason: detailedReason,
         requestedAmount: formData.requestedAmount,
       });
       setSuccess(true);
       setTimeout(() => {
-        navigate("/refunds");
+        navigate("/refund-tracking");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || "Failed to submit refund request");
+    } catch (err) {
+      setError(getDisplayErrorMessage(err, "Failed to submit refund request"));
     } finally {
       setSubmitting(false);
     }
@@ -100,10 +119,10 @@ export const RefundRequest = () => {
             {error || "Order not found"}
           </div>
           <button
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate("/order-history")}
             className="mt-4 text-primary hover:underline"
           >
-            Back to Orders
+            Back to Order History
           </button>
         </div>
       </div>
@@ -114,10 +133,10 @@ export const RefundRequest = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <button
-          onClick={() => navigate("/refunds")}
+          onClick={() => navigate("/refund-tracking")}
           className="mb-6 text-primary hover:underline"
         >
-          ← Back to Refunds
+          ← Back to Refund Tracking
         </button>
 
         <div className="bg-white rounded-lg shadow p-8">
@@ -239,7 +258,7 @@ export const RefundRequest = () => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate("/orders")}
+                onClick={() => navigate("/order-history")}
                 className="flex-1 border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-medium"
               >
                 Cancel

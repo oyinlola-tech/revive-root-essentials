@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
 import { login, oauthAppleLogin, oauthGoogleLogin } from "../../services/api";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 export function Login() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export function Login() {
       }
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to sign in.");
+      setError(getDisplayErrorMessage(err, "Unable to sign in."));
     } finally {
       setLoading(false);
     }
@@ -98,7 +99,7 @@ export function Login() {
       }
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to sign in with social login.");
+      setError(getDisplayErrorMessage(err, "Unable to sign in with social login."));
     } finally {
       setSocialLoading("");
     }

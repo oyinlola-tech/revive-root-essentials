@@ -93,7 +93,7 @@ export default function AdminAuditLogs() {
       setLogs(logsList);
       setFilteredLogs(logsList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load audit logs');
+      setError(getDisplayErrorMessage(err, 'Failed to load audit logs'));
       console.error('Error loading logs:', err);
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ export default function AdminAuditLogs() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export logs');
+      setError(getDisplayErrorMessage(err, 'Failed to export logs'));
     } finally {
       setExporting(false);
     }

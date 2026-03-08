@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Separator } from "../../components/ui/separator";
 import { oauthAppleLogin, oauthGoogleLogin, register } from "../../services/api";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 export function Signup() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export function Signup() {
       const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
       navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}${redirectQuery}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create account.");
+      setError(getDisplayErrorMessage(err, "Unable to create account."));
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ export function Signup() {
       }
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to complete social sign up.");
+      setError(getDisplayErrorMessage(err, "Unable to complete social sign up."));
     } finally {
       setSocialLoading("");
     }

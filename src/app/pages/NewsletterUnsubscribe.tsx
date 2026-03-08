@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { unsubscribeFromNewsletter } from "../services/api";
 import { useSeo } from "../hooks/useSeo";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export function NewsletterUnsubscribe() {
   const [searchParams] = useSearchParams();
@@ -30,7 +31,7 @@ export function NewsletterUnsubscribe() {
         setMessage(response.message || "You have been unsubscribed successfully.");
       } catch (error) {
         setStatus("error");
-        setMessage(error instanceof Error ? error.message : "Unable to process unsubscribe request.");
+        setMessage(getDisplayErrorMessage(error, "Unable to process unsubscribe request."));
       }
     };
 

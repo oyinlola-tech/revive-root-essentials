@@ -8,6 +8,7 @@ import { getFeaturedProducts, subscribeToNewsletter } from "../services/api";
 import { useCommerce } from "../contexts/CommerceContext";
 import { SITE_IMAGES } from "../constants/siteImages";
 import { useSeo } from "../hooks/useSeo";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -69,7 +70,7 @@ export function Home() {
       setNewsletterEmail("");
     } catch (error) {
       setNewsletterState("error");
-      setNewsletterMessage(error instanceof Error ? error.message : "Unable to subscribe right now. Please try again.");
+      setNewsletterMessage(getDisplayErrorMessage(error, "Unable to subscribe right now. Please try again."));
     }
   };
 

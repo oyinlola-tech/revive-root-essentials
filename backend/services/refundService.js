@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { RefundRequest, Order, User, AuditLog } = require('../models');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/Logger');
@@ -27,7 +28,7 @@ class RefundService {
       throw new AppError('Cannot refund unpaid orders', 400);
     }
 
-    if (!['pending', 'processing', 'completed'].includes(order.status)) {
+    if (!['pending', 'processing', 'delivered'].includes(order.status)) {
       throw new AppError('Cannot refund orders with this status', 400);
     }
 
@@ -77,9 +78,9 @@ class RefundService {
   async getRefund(refundId, userId = null) {
     const refund = await RefundRequest.findByPk(refundId, {
       include: [
-        { model: Order, as: 'order' },
-        { model: User, as: 'requester', attributes: ['id', 'email', 'firstName', 'lastName'] },
-        { model: User, as: 'processor', attributes: ['id', 'email', 'firstName', 'lastName'] },
+        { model: Order, attributes: ['id', 'orderNumber', 'totalAmount', 'status', 'paymentStatus'] },
+        { model: User, as: 'user', attributes: ['id', 'email', 'name'] },
+        { model: User, as: 'processor', attributes: ['id', 'email', 'name'] },
       ],
     });
 
@@ -111,11 +112,11 @@ class RefundService {
     const { count, rows } = await RefundRequest.findAndCountAll({
       where,
       include: [
-        { model: Order, as: 'order', attributes: ['id', 'orderNumber', 'totalAmount'] },
+        { model: Order, attributes: ['id', 'orderNumber', 'totalAmount', 'status'] },
         {
           model: User,
           as: 'processor',
-          attributes: ['id', 'email', 'firstName', 'lastName'],
+          attributes: ['id', 'email', 'name'],
         },
       ],
       limit,
@@ -151,19 +152,19 @@ class RefundService {
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.$gte = new Date(startDate);
+        where.createdAt[Op.gte] = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.$lte = new Date(endDate);
+        where.createdAt[Op.lte] = new Date(endDate);
       }
     }
 
     const { count, rows } = await RefundRequest.findAndCountAll({
       where,
       include: [
-        { model: Order, as: 'order' },
-        { model: User, as: 'requester', attributes: ['id', 'email', 'firstName', 'lastName'] },
-        { model: User, as: 'processor', attributes: ['id', 'email', 'firstName', 'lastName'] },
+        { model: Order, attributes: ['id', 'orderNumber', 'totalAmount', 'status', 'paymentStatus'] },
+        { model: User, as: 'user', attributes: ['id', 'email', 'name'] },
+        { model: User, as: 'processor', attributes: ['id', 'email', 'name'] },
       ],
       limit,
       offset,
@@ -198,8 +199,8 @@ class RefundService {
     refund.status = 'approved';
     refund.approvedAmount = approvedAmount;
     refund.processedBy = adminId;
-    refund.approvalNotes = approvalData.notes || '';
-    refund.approvedAt = new Date();
+    refund.adminNotes = approvalData.notes || '';
+    refund.processedAt = new Date();
     await refund.save();
 
     await auditService.log(adminId, 'APPROVE_REFUND', 'RefundRequest', refundId, {
@@ -231,9 +232,8 @@ class RefundService {
 
     refund.status = 'rejected';
     refund.processedBy = adminId;
-    refund.rejectionReason = rejectionData.reason || '';
-    refund.approvalNotes = rejectionData.notes || '';
-    refund.approvedAt = new Date();
+    refund.adminNotes = [rejectionData.reason, rejectionData.notes].filter(Boolean).join('\n');
+    refund.processedAt = new Date();
     await refund.save();
 
     await auditService.log(adminId, 'REJECT_REFUND', 'RefundRequest', refundId, {
@@ -264,14 +264,19 @@ class RefundService {
     }
 
     refund.status = 'completed';
-    refund.refundTransactionRef = completionData.transactionRef || '';
-    refund.completedAt = completionData.completedAt || new Date();
+    refund.processedBy = adminId;
+    refund.processedAt = completionData.completedAt || new Date();
+    refund.adminNotes = [
+      refund.adminNotes,
+      completionData.transactionRef ? `Transaction reference: ${completionData.transactionRef}` : null,
+    ].filter(Boolean).join('\n');
     await refund.save();
 
     // Update order status if fully refunded
     const order = await Order.findByPk(refund.orderId);
     if (order && refund.approvedAmount >= order.totalAmount) {
-      order.status = 'refunded';
+      order.paymentStatus = 'refunded';
+      order.status = 'cancelled';
       await order.save();
     }
 
@@ -297,10 +302,10 @@ class RefundService {
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.$gte = new Date(startDate);
+        where.createdAt[Op.gte] = new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.$lte = new Date(endDate);
+        where.createdAt[Op.lte] = new Date(endDate);
       }
     }
 

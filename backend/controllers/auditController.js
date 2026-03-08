@@ -1,4 +1,5 @@
-const { AuditLog, User } = require('../models');
+const { Op } = require('sequelize');
+const { AuditLog, User, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const auditService = require('../services/auditService');
@@ -94,7 +95,7 @@ exports.getRecentLogs = catchAsync(async (req, res, next) => {
     include: [
       {
         model: User,
-        attributes: ['id', 'email', 'firstName', 'lastName', 'role'],
+        attributes: ['id', 'email', 'name', 'role'],
       },
     ],
     limit: parseInt(limit, 10),
@@ -118,10 +119,10 @@ exports.getAuditStats = catchAsync(async (req, res, next) => {
   if (startDate || endDate) {
     where.createdAt = {};
     if (startDate) {
-      where.createdAt.$gte = new Date(startDate);
+      where.createdAt[Op.gte] = new Date(startDate);
     }
     if (endDate) {
-      where.createdAt.$lte = new Date(endDate);
+      where.createdAt[Op.lte] = new Date(endDate);
     }
   }
 
@@ -134,10 +135,10 @@ exports.getAuditStats = catchAsync(async (req, res, next) => {
     failedActions,
   ] = await Promise.all([
     AuditLog.count({ where }),
-    AuditLog.count({ where: { ...where, action: { $like: 'CREATE%' } } }),
-    AuditLog.count({ where: { ...where, action: { $like: 'UPDATE%' } } }),
-    AuditLog.count({ where: { ...where, action: { $like: 'DELETE%' } } }),
-    AuditLog.count({ where: { ...where, action: { $like: 'APPROVE%' } } }),
+    AuditLog.count({ where: { ...where, action: { [Op.like]: 'CREATE%' } } }),
+    AuditLog.count({ where: { ...where, action: { [Op.like]: 'UPDATE%' } } }),
+    AuditLog.count({ where: { ...where, action: { [Op.like]: 'DELETE%' } } }),
+    AuditLog.count({ where: { ...where, action: { [Op.like]: 'APPROVE%' } } }),
     AuditLog.count({ where: { ...where, status: 'failed' } }),
   ]);
 
@@ -165,10 +166,10 @@ exports.exportAuditLogs = catchAsync(async (req, res, next) => {
   if (startDate || endDate) {
     where.createdAt = {};
     if (startDate) {
-      where.createdAt.$gte = new Date(startDate);
+      where.createdAt[Op.gte] = new Date(startDate);
     }
     if (endDate) {
-      where.createdAt.$lte = new Date(endDate);
+      where.createdAt[Op.lte] = new Date(endDate);
     }
   }
 
@@ -177,7 +178,7 @@ exports.exportAuditLogs = catchAsync(async (req, res, next) => {
     include: [
       {
         model: User,
-        attributes: ['email', 'firstName', 'lastName'],
+        attributes: ['email', 'name'],
       },
     ],
     order: [['createdAt', 'DESC']],

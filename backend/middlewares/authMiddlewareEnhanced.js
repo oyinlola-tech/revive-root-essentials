@@ -29,7 +29,7 @@ exports.authenticate = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, jwtSecret);
+      decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         return next(new AppError('Token expired. Please refresh.', 401));
@@ -48,6 +48,10 @@ exports.authenticate = async (req, res, next) => {
     // Verify session is still active
     if (user.currentSessionId !== decoded.sessionId) {
       return next(new AppError('Session invalidated. Please log in again.', 401));
+    }
+
+    if (user.isDeleted || user.isBanned) {
+      return next(new AppError('Your account is not active.', 401));
     }
 
     req.user = user;
@@ -164,7 +168,7 @@ exports.optionalAuth = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, jwtSecret);
+      decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
     } catch {
       return next(); // Treat as unauthenticated
     }

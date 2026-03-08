@@ -1,6 +1,7 @@
 const {
-  User, Product, Order, OrderItem, Coupon, RefundRequest, AuditLog,
+  User, Product, Order, OrderItem, Coupon, RefundRequest, AuditLog, sequelize,
 } = require('../models');
+const { Op } = require('sequelize');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const analyticsService = require('../services/analyticsService');
@@ -8,6 +9,30 @@ const auditService = require('../services/auditService');
 const Logger = require('../utils/Logger');
 
 const logger = new Logger('AdminController');
+
+const VALID_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const VALID_USER_ROLES = ['user', 'admin', 'superadmin'];
+const VALID_ADMIN_USER_STATUSES = ['active', 'inactive'];
+
+const applyDateRange = (where, startDate, endDate) => {
+  if (!startDate && !endDate) return where;
+
+  where.createdAt = {};
+  if (startDate) {
+    where.createdAt[Op.gte] = new Date(startDate);
+  }
+  if (endDate) {
+    where.createdAt[Op.lte] = new Date(endDate);
+  }
+
+  return where;
+};
+
+const toAdminUserPayload = (user) => ({
+  ...user.toJSON(),
+  status: user.isVerified ? 'active' : 'inactive',
+  isEmailVerified: Boolean(user.isVerified),
+});
 
 /**
  * ADMIN: Get dashboard statistics
@@ -66,16 +91,7 @@ exports.getAnalytics = catchAsync(async (req, res, next) => {
     period = 'week',
   } = req.query;
 
-  const where = {};
-  if (startDate || endDate) {
-    where.createdAt = {};
-    if (startDate) {
-      where.createdAt.$gte = new Date(startDate);
-    }
-    if (endDate) {
-      where.createdAt.$lte = new Date(endDate);
-    }
-  }
+  const where = applyDateRange({}, startDate, endDate);
 
   const [
     orderStats,
@@ -156,11 +172,16 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
   const where = {};
   if (role) where.role = role;
-  if (status) where.status = status;
+  if (status) {
+    if (!VALID_ADMIN_USER_STATUSES.includes(status)) {
+      return next(new AppError('Invalid user status filter', 400));
+    }
+    where.isVerified = status === 'active';
+  }
 
   const { count, rows } = await User.findAndCountAll({
     where,
-    attributes: { exclude: ['password'] },
+    attributes: { exclude: ['passwordHash'] },
     limit: parseInt(limit, 10),
     offset: parseInt(offset, 10),
     order: [['createdAt', 'DESC']],
@@ -168,7 +189,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: rows,
+    data: rows.map(toAdminUserPayload),
     pagination: {
       total: count,
       limit: parseInt(limit, 10),
@@ -184,11 +205,10 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
  */
 exports.getUser = catchAsync(async (req, res, next) => {
   const user = await User.findByPk(req.params.id, {
-    attributes: { exclude: ['password'] },
+    attributes: { exclude: ['passwordHash'] },
     include: [
       {
         model: Order,
-        as: 'orders',
         attributes: ['id', 'orderNumber', 'totalAmount', 'status'],
       },
     ],
@@ -200,7 +220,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: user,
+    data: toAdminUserPayload(user),
   });
 });
 
@@ -217,23 +237,41 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
   const { role, status, isEmailVerified } = req.body;
 
-  const oldData = { role: user.role, status: user.status, isEmailVerified: user.isEmailVerified };
+  if (role && !VALID_USER_ROLES.includes(role)) {
+    return next(new AppError('Invalid role', 400));
+  }
+  if (status && !VALID_ADMIN_USER_STATUSES.includes(status)) {
+    return next(new AppError('Invalid status', 400));
+  }
+  if (user.id === req.user.id && role && role !== req.user.role) {
+    return next(new AppError('You cannot change your own admin role.', 400));
+  }
+
+  const oldData = {
+    role: user.role,
+    status: user.isVerified ? 'active' : 'inactive',
+    isEmailVerified: Boolean(user.isVerified),
+  };
 
   if (role) user.role = role;
-  if (status) user.status = status;
-  if (isEmailVerified !== undefined) user.isEmailVerified = isEmailVerified;
+  if (status) user.isVerified = status === 'active';
+  if (typeof isEmailVerified === 'boolean') user.isVerified = isEmailVerified;
 
   await user.save();
 
   await auditService.log(req.user.id, 'UPDATE_USER', 'User', user.id, {
     oldData,
-    newData: { role: user.role, status: user.status, isEmailVerified: user.isEmailVerified },
+    newData: {
+      role: user.role,
+      status: user.isVerified ? 'active' : 'inactive',
+      isEmailVerified: Boolean(user.isVerified),
+    },
   });
 
   res.status(200).json({
     success: true,
     message: 'User updated successfully',
-    data: user,
+    data: toAdminUserPayload(user),
   });
 });
 
@@ -253,7 +291,7 @@ exports.getAllOrders = catchAsync(async (req, res, next) => {
     include: [
       {
         model: User,
-        attributes: ['id', 'email', 'firstName', 'lastName'],
+        attributes: ['id', 'email', 'name'],
       },
       {
         model: OrderItem,
@@ -289,14 +327,30 @@ exports.getAllOrders = catchAsync(async (req, res, next) => {
 exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   const { status } = req.body;
 
-  if (!status) {
-    return next(new AppError('Status is required', 400));
+  if (!status || !VALID_ORDER_STATUSES.includes(status)) {
+    return next(new AppError('Invalid order status', 400));
   }
 
   const order = await Order.findByPk(req.params.id);
 
   if (!order) {
     return next(new AppError('Order not found', 404));
+  }
+
+  if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
+    return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
+  }
+
+  const allowedTransitions = {
+    pending: ['processing', 'cancelled'],
+    processing: ['shipped', 'cancelled'],
+    shipped: ['delivered'],
+    delivered: [],
+    cancelled: [],
+  };
+
+  if (status !== order.status && !allowedTransitions[order.status]?.includes(status)) {
+    return next(new AppError(`Cannot change order status from ${order.status} to ${status}`, 400));
   }
 
   const oldStatus = order.status;

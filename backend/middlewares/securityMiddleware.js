@@ -23,6 +23,20 @@ const getCsrfCookieToken = (req) => {
   return req.cookies ? req.cookies[CSRF_COOKIE_NAME] : undefined;
 };
 
+const buildCsrfCookieOptions = () => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: CSRF_TOKEN_TTL_MS,
+    path: '/api',
+  };
+
+  if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
+
+  return cookieOptions;
+};
+
 /**
  * Middleware to generate CSRF tokens for protected operations
  */
@@ -31,19 +45,14 @@ const csrfProtectionMiddleware = (req, res, next) => {
 
   if (req.method === 'GET') {
     const now = Date.now();
-    const token = generateCsrfToken();
+    const existingToken = getCsrfCookieToken(req);
+    const existingExpiry = existingToken ? csrfTokens.get(existingToken) : null;
+    const token = existingToken && existingExpiry && existingExpiry > now
+      ? existingToken
+      : generateCsrfToken();
     csrfTokens.set(token, now + CSRF_TOKEN_TTL_MS);
     res.setHeader('X-CSRF-Token', token);
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      maxAge: CSRF_TOKEN_TTL_MS,
-    };
-
-    if (process.env.COOKIE_SECRET) cookieOptions.signed = true;
-
-    res.cookie(CSRF_COOKIE_NAME, token, cookieOptions);
+    res.cookie(CSRF_COOKIE_NAME, token, buildCsrfCookieOptions());
     return next();
   }
 

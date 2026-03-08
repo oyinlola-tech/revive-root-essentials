@@ -25,6 +25,7 @@ import {
   updateCategory,
   updateOrderStatus,
 } from "../../services/api";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 const initialProductForm = {
   id: "",
@@ -91,7 +92,7 @@ export function AdminDashboard() {
       setContacts(contactData);
       setSubscribers(subscriberData);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to load dashboard data.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to load dashboard data."));
     } finally {
       setLoading(false);
     }
@@ -160,7 +161,7 @@ export function AdminDashboard() {
       resetProductForm();
       await loadDashboardData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to save product.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to save product."));
     } finally {
       setSavingProduct(false);
     }
@@ -176,7 +177,7 @@ export function AdminDashboard() {
       setStatusMessage("Product deleted.");
       await loadDashboardData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to delete product.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to delete product."));
     }
   };
 
@@ -222,7 +223,7 @@ export function AdminDashboard() {
       resetCategoryForm();
       await loadDashboardData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to save category.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to save category."));
     } finally {
       setSavingCategory(false);
     }
@@ -236,7 +237,7 @@ export function AdminDashboard() {
       setStatusMessage("Category deleted.");
       await loadDashboardData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to delete category.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to delete category."));
     }
   };
 
@@ -246,7 +247,7 @@ export function AdminDashboard() {
       setStatusMessage("Order status updated.");
       await loadDashboardData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to update order status.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to update order status."));
     }
   };
 

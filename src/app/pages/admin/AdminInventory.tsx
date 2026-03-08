@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Plus, Edit2, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface InventoryItem {
   id: string;
@@ -80,7 +81,7 @@ export default function AdminInventory() {
       const inventoryList = raw.map(item => ({
         id: item.id,
         productId: item.productId,
-        productName: 'Product',
+        productName: item.product?.name || 'Product',
         sku: item.sku,
         totalStock: item.quantity,
         availableStock: item.quantity - item.reservedQuantity,
@@ -92,7 +93,7 @@ export default function AdminInventory() {
       setInventory(inventoryList);
       setFilteredInventory(inventoryList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load inventory');
+      setError(getDisplayErrorMessage(err, 'Failed to load inventory'));
       console.error('Error loading inventory:', err);
     } finally {
       setLoading(false);
@@ -121,7 +122,7 @@ export default function AdminInventory() {
           ? adjustmentData.quantity
           : -adjustmentData.quantity;
 
-      await api.adminAdjustInventory(selectedItem.id, {
+      await api.adminAdjustInventory(selectedItem.productId, {
         quantity: adjustedQuantity,
         reason: adjustmentData.reason,
       });
@@ -130,7 +131,7 @@ export default function AdminInventory() {
       setSelectedItem(null);
       await loadInventory();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to adjust inventory');
+      setError(getDisplayErrorMessage(err, 'Failed to adjust inventory'));
     } finally {
       setSubmitting(false);
     }

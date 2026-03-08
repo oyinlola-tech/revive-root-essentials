@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { requestPasswordReset } from "../../services/api";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export function ForgotPassword() {
         navigate(`/auth/reset-password?email=${encodeURIComponent(email.trim())}`);
       }, 1500);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to request password reset.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to request password reset."));
     } finally {
       setLoading(false);
     }

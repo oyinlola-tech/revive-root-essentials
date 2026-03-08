@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { confirmPasswordReset } from "../../services/api";
 import { getPasswordStrength } from "../../utils/passwordStrength";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 export function ResetPassword() {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ export function ResetPassword() {
       setSuccessMessage(response.message);
       setTimeout(() => navigate("/auth/login"), 1200);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to reset password.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to reset password."));
     } finally {
       setLoading(false);
     }

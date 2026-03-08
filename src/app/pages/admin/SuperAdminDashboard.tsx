@@ -13,6 +13,7 @@ import {
   logout,
   updateUserRole,
 } from "../../services/api";
+import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 export function SuperAdminDashboard() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export function SuperAdminDashboard() {
       setStats(statsData);
       setUsers(usersData);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to load super admin data.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to load super admin data."));
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export function SuperAdminDashboard() {
       setStatusMessage("User role updated.");
       await loadData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to update role.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to update role."));
     }
   };
 
@@ -84,7 +85,7 @@ export function SuperAdminDashboard() {
       setAdminForm({ name: "", email: "", password: "", phone: "" });
       await loadData();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to create admin account.");
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to create admin account."));
     } finally {
       setCreatingAdmin(false);
     }

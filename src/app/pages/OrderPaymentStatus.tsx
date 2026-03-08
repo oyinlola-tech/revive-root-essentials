@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { getAuthSession, getOrderById, verifyOrderPayment } from "../services/api";
 import { formatMoney } from "../utils/formatMoney";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 type ViewState = "loading" | "success" | "pending" | "error";
 
@@ -73,7 +74,7 @@ export function OrderPaymentStatus() {
         }
 
         setViewState("error");
-        setMessage(error instanceof Error ? error.message : "Unable to verify payment right now.");
+        setMessage(getDisplayErrorMessage(error, "Unable to verify payment right now."));
       }
     };
 

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../../components/ui/input-otp";
 import { resendOtp, verifyOtp } from "../../services/api";
+import { getOtpResendErrorMessage, getOtpVerificationErrorMessage } from "../../utils/authErrorMessages";
 
 export function OTP() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export function OTP() {
       }
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid OTP.");
+      setError(getOtpVerificationErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -59,7 +60,7 @@ export function OTP() {
       await resendOtp(identifier);
       setInfo("OTP sent again. Check your inbox.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to resend OTP.");
+      setError(getOtpResendErrorMessage(err));
     }
   };
 

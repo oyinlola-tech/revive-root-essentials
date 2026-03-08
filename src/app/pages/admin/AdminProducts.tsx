@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Plus, Edit2, Trash2, Search, AlertCircle, MoreVertical } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface Product {
   id: string;
@@ -76,7 +77,7 @@ export default function AdminProducts() {
       setFilteredProducts(productsRes);
       setCategories(categoriesRes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(getDisplayErrorMessage(err, 'Failed to load data'));
       console.error('Error loading data:', err);
     } finally {
       setLoading(false);
@@ -110,7 +111,7 @@ export default function AdminProducts() {
       await loadProductsAndCategories();
       handleCancel();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save product');
+      setError(getDisplayErrorMessage(err, 'Failed to save product'));
     }
   };
 
@@ -134,7 +135,7 @@ export default function AdminProducts() {
         await api.deleteAdminProduct(id);
         await loadProductsAndCategories();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete product');
+        setError(getDisplayErrorMessage(err, 'Failed to delete product'));
       }
     }
   };

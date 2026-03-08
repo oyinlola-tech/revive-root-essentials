@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router";
 import { getOrder } from "../services/api";
+import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,8 +18,8 @@ export const OrderDetail = () => {
         const result = await getOrder(id);
         setOrder(result);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || "Failed to load order");
+      } catch (err) {
+        setError(getDisplayErrorMessage(err, "Failed to load order"));
       } finally {
         setLoading(false);
       }
@@ -43,10 +44,10 @@ export const OrderDetail = () => {
             {error || "Order not found"}
           </div>
           <button
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate("/order-history")}
             className="mt-4 text-primary hover:underline"
           >
-            Back to Orders
+            Back to Order History
           </button>
         </div>
       </div>
@@ -57,10 +58,10 @@ export const OrderDetail = () => {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/order-history")}
           className="mb-6 text-primary hover:underline"
         >
-          ← Back to Orders
+          ← Back to Order History
         </button>
 
         <div className="bg-white rounded-lg shadow">
@@ -155,15 +156,9 @@ export const OrderDetail = () => {
 
           {/* Actions */}
           <div className="p-6 flex gap-4">
-            <button
-              onClick={() => navigate(`/invoices/${order.id}`)}
-              className="flex-1 bg-primary text-white px-4 py-2 rounded hover:opacity-90"
-            >
-              Download Invoice
-            </button>
             {order.status !== "delivered" && order.paymentStatus === "paid" && (
               <button
-                onClick={() => navigate(`/refunds/new?orderId=${order.id}`)}
+                onClick={() => navigate(`/refund-request?orderId=${order.id}`)}
                 className="flex-1 border border-orange-600 text-orange-600 px-4 py-2 rounded hover:bg-orange-50"
               >
                 Request Refund

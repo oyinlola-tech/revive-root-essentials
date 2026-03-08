@@ -3,6 +3,7 @@ const { User } = require('../models');
 const AppError = require('../utils/AppError');
 const { jwtSecret } = require('../config/auth');
 const Logger = require('../utils/Logger');
+const { tokenBlacklist } = require('../utils/securityUtils');
 
 const logger = new Logger('Middleware:Auth');
 
@@ -21,7 +22,7 @@ const protect = async (req, res, next) => {
     // Verify token
     let decoded;
     try {
-      decoded = jwt.verify(token, jwtSecret);
+      decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
     } catch (verifyError) {
       if (verifyError.name === 'JsonWebTokenError') {
         logger.warn('Invalid token attempt', { ip: req.ip, path: req.path });
@@ -31,6 +32,12 @@ const protect = async (req, res, next) => {
         return next(new AppError('Your token has expired. Please log in again.', 401));
       }
       throw verifyError;
+    }
+
+    const isBlacklisted = await tokenBlacklist.isBlacklisted(token);
+    if (isBlacklisted) {
+      logger.warn('Blacklisted token attempt', { ip: req.ip, path: req.path });
+      return next(new AppError('Session expired. Please log in again.', 401));
     }
 
     // Check if user still exists

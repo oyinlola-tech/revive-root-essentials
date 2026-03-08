@@ -24,17 +24,6 @@ router.get(
   refundController.getMyRefunds,
 );
 
-// Get specific refund
-router.get(
-  '/:id',
-  authenticate,
-  refundController.getRefund,
-);
-
-/**
- * Admin Routes
- */
-
 // Get all refunds (admin only)
 router.get(
   '/admin/all',
@@ -73,6 +62,13 @@ router.patch(
   authenticate,
   requireAdmin,
   refundController.completeRefund,
+);
+
+// Get specific refund
+router.get(
+  '/:id',
+  authenticate,
+  refundController.getRefund,
 );
 
 module.exports = router;

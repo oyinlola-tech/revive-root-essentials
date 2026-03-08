@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { Plus, Edit2, Trash2, Check, X, AlertCircle } from 'lucide-react';
 import { COUNTRIES_BY_REGION, STATES_BY_COUNTRY, DEFAULT_STATES } from '../constants/countries';
+import { getDisplayErrorMessage } from '../utils/uiErrorMessages';
 
 interface Address {
   id: string;
@@ -49,7 +50,7 @@ export default function AddressManagement() {
         setAddresses([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load addresses');
+      setError(getDisplayErrorMessage(err, 'Failed to load addresses'));
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ export default function AddressManagement() {
       });
       setIsFormOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save address');
+      setError(getDisplayErrorMessage(err, 'Failed to save address'));
     }
   };
 
@@ -127,7 +128,7 @@ export default function AddressManagement() {
         setAddresses(updatedAddresses);
         localStorage.setItem('user_addresses', JSON.stringify(updatedAddresses));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete address');
+        setError(getDisplayErrorMessage(err, 'Failed to delete address'));
       }
     }
   };
@@ -141,7 +142,7 @@ export default function AddressManagement() {
       setAddresses(updatedAddresses);
       localStorage.setItem('user_addresses', JSON.stringify(updatedAddresses));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update default address');
+      setError(getDisplayErrorMessage(err, 'Failed to update default address'));
     }
   };
 

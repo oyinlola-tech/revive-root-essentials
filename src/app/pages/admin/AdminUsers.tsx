@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Edit2, Trash2, Eye } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface User {
   id: string;
@@ -9,8 +10,8 @@ interface User {
   lastName: string;
   email: string;
   phone?: string;
-  role: 'customer' | 'admin' | 'superadmin';
-  status: 'active' | 'inactive' | 'suspended';
+  role: 'user' | 'admin' | 'superadmin';
+  status: 'active' | 'inactive';
   createdAt: string;
   lastLogin?: string;
   totalOrders?: number;
@@ -60,14 +61,16 @@ export default function AdminUsers() {
       setError(null);
       const response = await api.adminGetUsers();
       const usersList = (response.data || []).map(u => ({
+        firstName: String(u.firstName || u.name || '').split(' ').slice(0, -1).join(' ') || String(u.name || '').split(' ')[0] || '',
+        lastName: String(u.lastName || '').trim() || String(u.name || '').split(' ').slice(1).join(' '),
         ...u,
-        role: (u.role as any) as 'customer' | 'admin' | 'superadmin',
-        status: (u.status as any) as 'active' | 'inactive' | 'suspended',
+        role: (u.role as any) as 'user' | 'admin' | 'superadmin',
+        status: (u.status as any) as 'active' | 'inactive',
       })) as User[];
       setUsers(usersList);
       setFilteredUsers(usersList);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(getDisplayErrorMessage(err, 'Failed to load users'));
       console.error('Error loading users:', err);
     } finally {
       setLoading(false);
@@ -95,7 +98,7 @@ export default function AdminUsers() {
       setSelectedUser(null);
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update user');
+      setError(getDisplayErrorMessage(err, 'Failed to update user'));
     } finally {
       setUpdating(false);
     }
@@ -111,7 +114,7 @@ export default function AdminUsers() {
       await api.adminDeleteUser(userId);
       await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user');
+      setError(getDisplayErrorMessage(err, 'Failed to delete user'));
     }
   };
 
@@ -121,7 +124,7 @@ export default function AdminUsers() {
         return 'bg-red-100 text-red-800 border-red-300';
       case 'admin':
         return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'customer':
+      case 'user':
         return 'bg-green-100 text-green-800 border-green-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -134,8 +137,6 @@ export default function AdminUsers() {
         return 'bg-green-50 text-green-700';
       case 'inactive':
         return 'bg-yellow-50 text-yellow-700';
-      case 'suspended':
-        return 'bg-red-50 text-red-700';
       default:
         return 'bg-gray-50 text-gray-700';
     }
@@ -202,7 +203,7 @@ export default function AdminUsers() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Roles</option>
-                <option value="customer">Customer</option>
+                <option value="user">Customer</option>
                 <option value="admin">Admin</option>
                 <option value="superadmin">Super Admin</option>
               </select>
@@ -220,7 +221,6 @@ export default function AdminUsers() {
                 <option value="">All Statuses</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="suspended">Suspended</option>
               </select>
             </div>
 
@@ -273,8 +273,7 @@ export default function AdminUsers() {
                               user.role
                             )}`}
                           >
-                            {user.role.charAt(0).toUpperCase() +
-                              user.role.slice(1)}
+                            {user.role === 'user' ? 'Customer' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                           </span>
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
@@ -404,7 +403,7 @@ export default function AdminUsers() {
                     onChange={(e) => setEditingRole(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
-                    <option value="customer">Customer</option>
+                    <option value="user">Customer</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
                   </select>
@@ -421,7 +420,6 @@ export default function AdminUsers() {
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
                   </select>
                 </div>
               </div>
