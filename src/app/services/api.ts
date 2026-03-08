@@ -319,6 +319,21 @@ const getSession = (): AuthSession | null => {
 
 let csrfTokenCache: Record<string, string | null> = {};
 
+const refreshCsrfToken = async (baseUrl: string) => {
+  try {
+    const csrfResp = await fetch(`${baseUrl}/version`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const token = csrfResp.headers.get("x-csrf-token");
+    csrfTokenCache[baseUrl] = token;
+    return token;
+  } catch {
+    csrfTokenCache[baseUrl] = null;
+    return null;
+  }
+};
+
 const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = false): Promise<T> => {
   const session = authenticated ? getSession() : null;
   const baseUrls = getApiBaseUrls();
@@ -332,20 +347,10 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
       const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       try {
-        // For unsafe methods ensure we have a CSRF token obtained from a prior GET
+        // The backend invalidates CSRF tokens after each unsafe request,
+        // so refresh before every POST/PUT/PATCH/DELETE instead of reusing a cached token.
         if (requestMethod !== 'GET') {
-          if (!csrfTokenCache[baseUrl]) {
-            try {
-              const csrfResp = await fetch(`${baseUrl}/version`, {
-                method: 'GET',
-                credentials: 'include',
-              });
-              const token = csrfResp.headers.get('x-csrf-token');
-              csrfTokenCache[baseUrl] = token;
-            } catch (e) {
-              csrfTokenCache[baseUrl] = null;
-            }
-          }
+          await refreshCsrfToken(baseUrl);
         }
 
         const response = await fetch(`${baseUrl}${path}`, {
