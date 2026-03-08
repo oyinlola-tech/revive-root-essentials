@@ -38,7 +38,7 @@ export const OrderDetail = () => {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error || "Order not found"}
@@ -55,7 +55,7 @@ export const OrderDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate("/order-history")}
@@ -64,20 +64,20 @@ export const OrderDetail = () => {
           ← Back to Order History
         </button>
 
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-card rounded-lg border border-border shadow">
           {/* Order Header */}
           <div className="border-b p-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-foreground">
                   Order #{order.orderNumber}
                 </h1>
-                <p className="text-gray-600 mt-2">
+                <p className="text-muted-foreground mt-2">
                   Placed on {new Date(order.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-4xl font-bold text-gray-900">
+                <p className="text-4xl font-bold text-foreground">
                   {order.currency} {parseFloat(order.totalAmount).toFixed(2)}
                 </p>
               </div>
@@ -87,7 +87,7 @@ export const OrderDetail = () => {
           {/* Status Section */}
           <div className="border-b p-6 grid grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Order Status</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Order Status</h3>
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
@@ -103,7 +103,7 @@ export const OrderDetail = () => {
               </div>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Payment Status</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Payment Status</h3>
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
@@ -122,24 +122,24 @@ export const OrderDetail = () => {
 
           {/* Order Items */}
           <div className="border-b p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Order Items</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">Order Items</h2>
             <div className="space-y-4">
               {order.items && order.items.length > 0 ? (
                 order.items.map((item: any, index: number) => (
                   <div key={index} className="flex justify-between items-center border-b pb-4">
                     <div>
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-foreground">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">
                         Quantity: {item.quantity}
                       </p>
                     </div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-foreground">
                       {order.currency} {parseFloat(item.price).toFixed(2)} each
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-600">No items in this order</p>
+                <p className="text-muted-foreground">No items in this order</p>
               )}
             </div>
           </div>
@@ -147,8 +147,8 @@ export const OrderDetail = () => {
           {/* Shipping Address */}
           {order.shippingAddress && (
             <div className="border-b p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Shipping Address</h2>
-              <div className="text-gray-700 whitespace-pre-line">
+              <h2 className="text-xl font-bold text-foreground mb-4">Shipping Address</h2>
+              <div className="text-muted-foreground whitespace-pre-line">
                 {order.shippingAddress}
               </div>
             </div>

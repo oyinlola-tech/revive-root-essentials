@@ -72,7 +72,7 @@ export default function RefundTracking() {
       case 'rejected':
         return <XCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-5 h-5 text-muted-foreground" />;
     }
   };
 
@@ -87,7 +87,7 @@ export default function RefundTracking() {
       case 'rejected':
         return 'bg-red-50 border-red-200 text-red-800';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-muted border-border text-foreground';
     }
   };
 
@@ -105,32 +105,32 @@ export default function RefundTracking() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading refunds...</p>
+          <p className="text-muted-foreground">Loading refunds...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <div className="md:col-span-1">
-            <div className="border border-gray-200 rounded-lg p-4 sticky top-20 bg-white">
-              <h3 className="font-semibold text-sm text-gray-700 mb-4 uppercase tracking-wide">
+            <div className="border border-border rounded-lg p-4 sticky top-20 bg-card">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-4 uppercase tracking-wide">
                 Account Menu
               </h3>
               <nav className="space-y-2">
                 <Link
                   to="/account"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Settings
                 </Link>
                 <Link
                   to="/order-history"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Order History
                 </Link>
@@ -142,7 +142,7 @@ export default function RefundTracking() {
                 </Link>
                 <Link
                   to="/address-management"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Addresses
                 </Link>
@@ -153,8 +153,8 @@ export default function RefundTracking() {
           {/* Main Content */}
           <div className="md:col-span-3">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Refund Tracking</h1>
-          <p className="text-gray-600">Track the status of your refund requests</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Refund Tracking</h1>
+          <p className="text-muted-foreground">Track the status of your refund requests</p>
         </div>
 
         {error && (
@@ -168,15 +168,15 @@ export default function RefundTracking() {
         )}
 
         {/* Status Filter */}
-        <div className="bg-white rounded-lg shadow mb-6 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter by Status</h2>
+        <div className="bg-card rounded-lg border border-border shadow mb-6 p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Filter by Status</h2>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleStatusFilter(null)}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 selectedStatus === null
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-muted text-muted-foreground hover:bg-muted'
               }`}
             >
               All
@@ -188,7 +188,7 @@ export default function RefundTracking() {
                 className={`px-4 py-2 rounded-lg font-medium transition capitalize ${
                   selectedStatus === status
                     ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-muted text-muted-foreground hover:bg-muted'
                 }`}
               >
                 {getStatusText(status)}
@@ -200,16 +200,16 @@ export default function RefundTracking() {
         {/* Refunds List */}
         <div className="space-y-4">
           {refunds.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No refunds found</p>
-              <p className="text-gray-500 mt-2">You haven't requested any refunds yet</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No refunds found</p>
+              <p className="text-muted-foreground mt-2">You haven't requested any refunds yet</p>
             </div>
           ) : (
             refunds.map((refund) => (
               <div
                 key={refund.id}
-                className={`bg-white rounded-lg shadow overflow-hidden border-l-4 transition cursor-pointer hover:shadow-lg ${
+                className={`bg-card rounded-lg border border-border shadow overflow-hidden border-l-4 transition cursor-pointer hover:shadow-lg ${
                   refund.status === 'pending'
                     ? 'border-l-yellow-500'
                     : refund.status === 'approved'
@@ -229,10 +229,10 @@ export default function RefundTracking() {
                     <div className="flex items-start gap-4">
                       {getStatusIcon(refund.status)}
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-foreground">
                           Order #{refund.orderNumber || refund.orderId.substring(0, 8)}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           Requested on{' '}
                           {new Date(refund.createdAt).toLocaleDateString()}
                         </p>
@@ -249,14 +249,14 @@ export default function RefundTracking() {
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <p className="text-sm text-gray-500">Requested Amount</p>
-                      <p className="text-xl font-semibold text-gray-900">
+                      <p className="text-sm text-muted-foreground">Requested Amount</p>
+                      <p className="text-xl font-semibold text-foreground">
                         ₦{(refund.requestedAmount || 0).toLocaleString()}
                       </p>
                     </div>
                     {refund.approvedAmount && (
                       <div>
-                        <p className="text-sm text-gray-500">Approved Amount</p>
+                        <p className="text-sm text-muted-foreground">Approved Amount</p>
                         <p className="text-xl font-semibold text-emerald-600">
                           ₦{refund.approvedAmount.toLocaleString()}
                         </p>
@@ -267,8 +267,8 @@ export default function RefundTracking() {
                   {expandedRefund === refund.id && (
                     <div className="border-t pt-4 mt-4">
                       <div className="mb-4">
-                        <p className="text-sm text-gray-500 mb-2">Reason</p>
-                        <p className="text-gray-700">{refund.reason}</p>
+                        <p className="text-sm text-muted-foreground mb-2">Reason</p>
+                        <p className="text-muted-foreground">{refund.reason}</p>
                       </div>
 
                       {refund.rejectionReason && (
@@ -282,7 +282,7 @@ export default function RefundTracking() {
                         </div>
                       )}
 
-                      <div className="text-xs text-gray-500 space-y-1">
+                      <div className="text-xs text-muted-foreground space-y-1">
                         <p>
                           <strong>Refund ID:</strong> {refund.id.substring(0, 12)}...
                         </p>
@@ -325,7 +325,7 @@ export default function RefundTracking() {
                 setCurrentPage((prev) => Math.max(1, prev - 1))
               }
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
             >
               Previous
             </button>
@@ -336,7 +336,7 @@ export default function RefundTracking() {
                 className={`px-3 py-2 rounded-lg transition ${
                   currentPage === page
                     ? 'bg-emerald-600 text-white'
-                    : 'border border-gray-300 hover:bg-gray-50'
+                    : 'border border-border hover:bg-muted'
                 }`}
               >
                 {page}
@@ -347,7 +347,7 @@ export default function RefundTracking() {
                 setCurrentPage((prev) => Math.min(totalPages, prev + 1))
               }
               disabled={currentPage === totalPages}
-              className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
             >
               Next
             </button>

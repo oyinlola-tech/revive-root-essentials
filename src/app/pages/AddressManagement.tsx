@@ -166,38 +166,38 @@ export default function AddressManagement() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading addresses...</p>
+          <p className="text-muted-foreground">Loading addresses...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <div className="md:col-span-1">
-            <div className="border border-gray-200 rounded-lg p-4 sticky top-20 bg-white">
-              <h3 className="font-semibold text-sm text-gray-700 mb-4 uppercase tracking-wide">
+            <div className="border border-border rounded-lg p-4 sticky top-20 bg-card">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-4 uppercase tracking-wide">
                 Account Menu
               </h3>
               <nav className="space-y-2">
                 <Link
                   to="/account"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Settings
                 </Link>
                 <Link
                   to="/order-history"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Order History
                 </Link>
                 <Link
                   to="/refund-tracking"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Refunds
                 </Link>
@@ -215,8 +215,8 @@ export default function AddressManagement() {
           <div className="md:col-span-3">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Addresses</h1>
-            <p className="text-gray-600 mt-2">Manage your shipping and billing addresses</p>
+            <h1 className="text-3xl font-bold text-foreground">Addresses</h1>
+            <p className="text-muted-foreground mt-2">Manage your shipping and billing addresses</p>
           </div>
           {!isFormOpen && (
             <button
@@ -238,14 +238,14 @@ export default function AddressManagement() {
 
         {/* Add/Edit Form */}
         {isFormOpen && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <div className="bg-card rounded-lg border border-border shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-6">
               {editingId ? 'Edit Address' : 'Add New Address'}
             </h2>
 
             <form onSubmit={handleAddressSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Address Label (e.g., Home, Work)
                 </label>
                 <input
@@ -254,13 +254,13 @@ export default function AddressManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, label: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Home"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Street Address *
                 </label>
                 <input
@@ -269,14 +269,14 @@ export default function AddressManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, line1: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="123 Main Street"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Apartment, Suite, etc. (optional)
                 </label>
                 <input
@@ -285,14 +285,14 @@ export default function AddressManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, line2: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   placeholder="Apt 4B"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     City *
                   </label>
                   <input
@@ -301,14 +301,14 @@ export default function AddressManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, city: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     placeholder="Lagos"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     State *
                   </label>
                   <input
@@ -317,7 +317,7 @@ export default function AddressManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, state: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     placeholder="Lagos State"
                     required
                   />
@@ -326,7 +326,7 @@ export default function AddressManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     Postal Code
                   </label>
                   <input
@@ -335,13 +335,13 @@ export default function AddressManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, postalCode: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     placeholder="100001"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
                     Country
                   </label>
                   <select
@@ -349,7 +349,7 @@ export default function AddressManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, country: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
                     <option value="Nigeria">Nigeria</option>
                     <option value="Ghana">Ghana</option>
@@ -369,7 +369,7 @@ export default function AddressManagement() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg transition"
+                  className="flex-1 bg-muted hover:bg-accent text-muted-foreground py-2 rounded-lg transition"
                 >
                   Cancel
                 </button>
@@ -381,21 +381,21 @@ export default function AddressManagement() {
         {/* Addresses List */}
         <div className="space-y-4">
           {addresses.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No addresses saved</p>
-              <p className="text-gray-500 mt-2">Add an address to get started</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No addresses saved</p>
+              <p className="text-muted-foreground mt-2">Add an address to get started</p>
             </div>
           ) : (
             addresses.map((address) => (
               <div
                 key={address.id}
-                className="bg-white rounded-lg shadow p-6 border-l-4 border-emerald-600"
+                className="bg-card rounded-lg border border-border shadow p-6 border-l-4 border-emerald-600"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-foreground">
                         {address.label || 'Unnamed Address'}
                       </h3>
                       {address.isDefault && (
@@ -408,14 +408,14 @@ export default function AddressManagement() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditAddress(address)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                      className="p-2 hover:bg-muted rounded-lg transition"
                       title="Edit"
                     >
                       <Edit2 className="w-5 h-5 text-blue-600" />
                     </button>
                     <button
                       onClick={() => handleDeleteAddress(address.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                      className="p-2 hover:bg-muted rounded-lg transition"
                       title="Delete"
                     >
                       <Trash2 className="w-5 h-5 text-red-600" />
@@ -424,12 +424,12 @@ export default function AddressManagement() {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <p className="text-gray-700">{address.line1}</p>
-                  {address.line2 && <p className="text-gray-700">{address.line2}</p>}
-                  <p className="text-gray-700">
+                  <p className="text-muted-foreground">{address.line1}</p>
+                  {address.line2 && <p className="text-muted-foreground">{address.line2}</p>}
+                  <p className="text-muted-foreground">
                     {address.city}, {address.state} {address.postalCode}
                   </p>
-                  <p className="text-gray-700">{address.country}</p>
+                  <p className="text-muted-foreground">{address.country}</p>
                 </div>
 
                 {!address.isDefault && (

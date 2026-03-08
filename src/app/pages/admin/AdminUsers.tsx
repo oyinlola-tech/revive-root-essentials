@@ -127,7 +127,7 @@ export default function AdminUsers() {
       case 'user':
         return 'bg-green-100 text-green-800 border-green-300';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -138,7 +138,7 @@ export default function AdminUsers() {
       case 'inactive':
         return 'bg-yellow-50 text-yellow-700';
       default:
-        return 'bg-gray-50 text-gray-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -153,18 +153,18 @@ export default function AdminUsers() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
+          <p className="text-muted-foreground">Loading users...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-600 mt-2">Manage user accounts, roles, and permissions</p>
+          <h1 className="text-3xl font-bold text-foreground">Users</h1>
+          <p className="text-muted-foreground mt-2">Manage user accounts, roles, and permissions</p>
         </div>
 
         {error && (
@@ -175,32 +175,32 @@ export default function AdminUsers() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Name, Email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Role
               </label>
               <select
                 value={roleFilter || ''}
                 onChange={(e) => setRoleFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Roles</option>
                 <option value="user">Customer</option>
@@ -210,13 +210,13 @@ export default function AdminUsers() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Status
               </label>
               <select
                 value={statusFilter || ''}
                 onChange={(e) => setStatusFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Statuses</option>
                 <option value="active">Active</option>
@@ -238,31 +238,31 @@ export default function AdminUsers() {
         {/* Users List */}
         <div className="space-y-4">
           {filteredUsers.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No users found</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No users found</p>
             </div>
           ) : (
             <>
               {paginatedUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
                 >
                   <div
-                    className="p-6 cursor-pointer hover:bg-gray-50"
+                    className="p-6 cursor-pointer hover:bg-muted"
                     onClick={() =>
                       setExpandedUser(expandedUser === user.id ? null : user.id)
                     }
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-foreground">
                           {user.firstName} {user.lastName}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
                         {user.phone && (
-                          <p className="text-sm text-gray-500">{user.phone}</p>
+                          <p className="text-sm text-muted-foreground">{user.phone}</p>
                         )}
                       </div>
 
@@ -284,7 +284,7 @@ export default function AdminUsers() {
                               user.status.slice(1)}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           Joined{' '}
                           {new Date(user.createdAt).toLocaleDateString()}
                         </p>
@@ -293,23 +293,23 @@ export default function AdminUsers() {
                   </div>
 
                   {expandedUser === user.id && (
-                    <div className="border-t px-6 py-4 bg-gray-50">
+                    <div className="border-t px-6 py-4 bg-muted">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
-                          <p className="text-sm text-gray-500">Total Orders</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-muted-foreground">Total Orders</p>
+                          <p className="text-2xl font-bold text-foreground">
                             {user.totalOrders || 0}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Total Spent</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-muted-foreground">Total Spent</p>
+                          <p className="text-2xl font-bold text-foreground">
                             ₦{(user.totalSpent || 0).toLocaleString()}
                           </p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-sm text-gray-500">Last Login</p>
-                          <p className="text-sm text-gray-900">
+                          <p className="text-sm text-muted-foreground">Last Login</p>
+                          <p className="text-sm text-foreground">
                             {user.lastLogin
                               ? new Date(user.lastLogin).toLocaleString()
                               : 'Never'}
@@ -318,7 +318,7 @@ export default function AdminUsers() {
                       </div>
 
                       <div className="border-t pt-4">
-                        <h4 className="font-semibold text-gray-900 mb-3">
+                        <h4 className="font-semibold text-foreground mb-3">
                           Manage User
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -349,7 +349,7 @@ export default function AdminUsers() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Previous
                   </button>
@@ -361,7 +361,7 @@ export default function AdminUsers() {
                         className={`px-3 py-2 rounded-lg transition ${
                           currentPage === page
                             ? 'bg-emerald-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            : 'border border-border hover:bg-muted'
                         }`}
                       >
                         {page}
@@ -375,7 +375,7 @@ export default function AdminUsers() {
                       )
                     }
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Next
                   </button>
@@ -388,20 +388,20 @@ export default function AdminUsers() {
         {/* Edit Modal */}
         {showModal && selectedUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-card rounded-lg max-w-md w-full p-6">
+              <h3 className="text-2xl font-bold text-foreground mb-6">
                 Edit {selectedUser.firstName} {selectedUser.lastName}
               </h3>
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Role
                   </label>
                   <select
                     value={editingRole}
                     onChange={(e) => setEditingRole(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
                     <option value="user">Customer</option>
                     <option value="admin">Admin</option>
@@ -410,13 +410,13 @@ export default function AdminUsers() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Status
                   </label>
                   <select
                     value={editingStatus}
                     onChange={(e) => setEditingStatus(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -430,7 +430,7 @@ export default function AdminUsers() {
                     setShowModal(false);
                     setSelectedUser(null);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                  className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted transition font-medium"
                 >
                   Cancel
                 </button>

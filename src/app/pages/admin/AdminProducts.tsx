@@ -1,20 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
-import { Plus, Edit2, Trash2, Search, AlertCircle, MoreVertical } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, AlertCircle } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
-
-interface Product {
-  id: string;
-  backendId?: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  stock?: number;
-  category: string;
-  featured?: boolean;
-}
 
 interface AdminProduct {
   id: string;
@@ -30,7 +17,6 @@ interface AdminProduct {
 }
 
 export default function AdminProducts() {
-  const navigate = useNavigate();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +25,8 @@ export default function AdminProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -64,6 +52,17 @@ export default function AdminProducts() {
     setFilteredProducts(filtered);
     setCurrentPage(1);
   }, [searchTerm, products]);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl('');
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [imageFile]);
 
   const loadProductsAndCategories = async () => {
     try {
@@ -92,11 +91,21 @@ export default function AdminProducts() {
         return;
       }
 
+      let imageUrl = formData.imageUrl;
+      if (imageFile) {
+        imageUrl = await api.uploadAdminProductImage(imageFile);
+      }
+
+      if (!imageUrl) {
+        setError('Please choose a product image');
+        return;
+      }
+
       const payload = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        imageUrl: formData.imageUrl,
+        imageUrl,
         categoryId: formData.categoryId,
         stock: parseInt(formData.stock) || 0,
         isFeatured: formData.isFeatured,
@@ -126,6 +135,8 @@ export default function AdminProducts() {
       isFeatured: product.isFeatured,
     });
     setEditingId(product.id);
+    setImageFile(null);
+    setImagePreviewUrl('');
     setIsFormOpen(true);
   };
 
@@ -143,6 +154,8 @@ export default function AdminProducts() {
   const handleCancel = () => {
     setIsFormOpen(false);
     setEditingId(null);
+    setImageFile(null);
+    setImagePreviewUrl('');
     setFormData({
       name: '',
       description: '',
@@ -166,19 +179,19 @@ export default function AdminProducts() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading products...</p>
+          <p className="text-muted-foreground">Loading products...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-            <p className="text-gray-600 mt-2">Manage your product catalog</p>
+            <h1 className="text-3xl font-bold text-foreground">Products</h1>
+            <p className="text-muted-foreground mt-2">Manage your product catalog</p>
           </div>
           {!isFormOpen && (
             <button
@@ -200,39 +213,39 @@ export default function AdminProducts() {
 
         {/* Add/Edit Form */}
         {isFormOpen && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <div className="bg-card rounded-lg border border-border shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-foreground mb-6">
               {editingId ? 'Edit Product' : 'Add New Product'}
             </h2>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Product Name *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Price (₦) *
                 </label>
                 <input
@@ -240,19 +253,19 @@ export default function AdminProducts() {
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Category *
                 </label>
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   required
                 >
                   <option value="">Select a category</option>
@@ -265,27 +278,42 @@ export default function AdminProducts() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Stock
                 </label>
                 <input
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image URL
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                  Product Image
                 </label>
                 <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Upload JPG, PNG, WEBP, or GIF up to 20MB.
+                </p>
+                {(imagePreviewUrl || formData.imageUrl) && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img
+                      src={imagePreviewUrl || formData.imageUrl}
+                      alt="Product preview"
+                      className="h-16 w-16 rounded object-cover border border-border"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      {imageFile ? imageFile.name : 'Current product image'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -295,7 +323,7 @@ export default function AdminProducts() {
                   onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                   className="w-4 h-4 rounded"
                 />
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-muted-foreground">
                   Featured Product
                 </label>
               </div>
@@ -310,7 +338,7 @@ export default function AdminProducts() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg transition"
+                  className="flex-1 bg-muted hover:bg-accent text-muted-foreground py-2 rounded-lg transition"
                 >
                   Cancel
                 </button>
@@ -320,9 +348,9 @@ export default function AdminProducts() {
         )}
 
         {/* Search */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-4 py-2">
-            <Search className="w-5 h-5 text-gray-400" />
+        <div className="bg-card rounded-lg border border-border shadow p-4 mb-6">
+          <div className="flex items-center gap-2 bg-background rounded-lg px-4 py-2">
+            <Search className="w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search products..."
@@ -334,29 +362,29 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-card rounded-lg border border-border shadow overflow-hidden">
           {filteredProducts.length === 0 ? (
             <div className="p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No products found</p>
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No products found</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted border-b border-border">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Product</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Category</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Price</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Stock</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Featured</th>
-                      <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Product</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Category</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Price</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Stock</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Featured</th>
+                      <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-border">
                     {paginatedProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-gray-50">
+                      <tr key={product.id} className="hover:bg-muted">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             {product.imageUrl && (
@@ -367,20 +395,20 @@ export default function AdminProducts() {
                               />
                             )}
                             <div>
-                              <p className="font-medium text-gray-900">{product.name}</p>
-                              <p className="text-sm text-gray-500 line-clamp-1">
+                              <p className="font-medium text-foreground">{product.name}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-1">
                                 {product.description}
                               </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
                           {product.categoryName}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 text-sm font-medium text-foreground">
                           ₦{product.price.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
                           {product.stock}
                         </td>
                         <td className="px-6 py-4 text-sm">
@@ -389,7 +417,7 @@ export default function AdminProducts() {
                               Yes
                             </span>
                           ) : (
-                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                            <span className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs">
                               No
                             </span>
                           )}
@@ -417,11 +445,11 @@ export default function AdminProducts() {
               </div>
 
               {totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-center gap-2">
+                <div className="px-6 py-4 border-t border-border flex items-center justify-center gap-2">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
@@ -432,7 +460,7 @@ export default function AdminProducts() {
                       className={`px-3 py-2 rounded-lg ${
                         currentPage === page
                           ? 'bg-emerald-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          : 'border border-border hover:bg-muted'
                       }`}
                     >
                       {page}
@@ -441,7 +469,7 @@ export default function AdminProducts() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>

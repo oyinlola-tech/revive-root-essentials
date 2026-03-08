@@ -29,7 +29,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/30 bg-white p-1 shadow-sm">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary-foreground/30 bg-card p-1 shadow-sm">
                 <img
                   src={BRAND_LOGO_SRC}
                   alt={BRAND_NAME}

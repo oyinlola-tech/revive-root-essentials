@@ -3,10 +3,17 @@ import { Heart, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useState } from "react";
 import { BRAND_LOGO_SRC, BRAND_NAME } from "../constants/branding";
 import { useCommerce } from "../contexts/CommerceContext";
+import { getAuthSession } from "../services/api";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { cartCount, wishlistCount } = useCommerce();
+  const session = getAuthSession();
+  const accountPath = session?.user.role === "superadmin"
+    ? "/super-admin"
+    : session?.user.role === "admin"
+      ? "/admin"
+      : "/account";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -21,7 +28,7 @@ export function Header() {
           </button>
 
           <Link to="/" className="flex items-center gap-2">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-white p-1 shadow-sm">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-card p-1 shadow-sm">
               <img
                 src={BRAND_LOGO_SRC}
                 alt={BRAND_NAME}
@@ -58,7 +65,7 @@ export function Header() {
                 </span>
               )}
             </Link>
-            <Link to="/account" className="p-2">
+            <Link to={accountPath} className="p-2">
               <User className="h-5 w-5" />
             </Link>
             <Link to="/cart" className="p-2 relative" aria-label="Shopping bag">

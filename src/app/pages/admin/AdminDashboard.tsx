@@ -21,6 +21,7 @@ import {
   getContactSubmissions,
   getNewsletterSubscribers,
   logout,
+  uploadAdminProductImage,
   updateAdminProduct,
   updateCategory,
   updateOrderStatus,
@@ -59,6 +60,8 @@ export function AdminDashboard() {
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string; subject: string; message: string; createdAt: string }>>([]);
   const [subscribers, setSubscribers] = useState<Array<{ id: string; email: string; createdAt: string }>>([]);
   const [productForm, setProductForm] = useState(initialProductForm);
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreviewUrl, setProductImagePreviewUrl] = useState("");
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -71,8 +74,8 @@ export function AdminDashboard() {
       productForm.name.trim().length > 0 &&
       productForm.description.trim().length > 0 &&
       Number(productForm.price) > 0 &&
-      productForm.imageUrl.trim().length > 0,
-    [productForm],
+      (productForm.imageUrl.trim().length > 0 || Boolean(productImageFile)),
+    [productForm, productImageFile],
   );
 
   const loadDashboardData = async () => {
@@ -114,8 +117,21 @@ export function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!productImageFile) {
+      setProductImagePreviewUrl("");
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(productImageFile);
+    setProductImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [productImageFile]);
+
   const resetProductForm = () => {
     setProductForm(initialProductForm);
+    setProductImageFile(null);
+    setProductImagePreviewUrl("");
   };
 
   const resetCategoryForm = () => {
@@ -136,21 +152,26 @@ export function AdminDashboard() {
     setStatusMessage("");
     setErrorMessage("");
 
-    const payload = {
-      name: productForm.name.trim(),
-      description: productForm.description.trim(),
-      price: Number(productForm.price),
-      imageUrl: productForm.imageUrl.trim(),
-      categoryId: productForm.categoryId || undefined,
-      ingredients: parseLines(productForm.ingredients),
-      benefits: parseLines(productForm.benefits),
-      howToUse: productForm.howToUse.trim() || undefined,
-      size: productForm.size.trim() || undefined,
-      stock: Number(productForm.stock || 0),
-      isFeatured: productForm.isFeatured,
-    };
-
     try {
+      let imageUrl = productForm.imageUrl.trim();
+      if (productImageFile) {
+        imageUrl = await uploadAdminProductImage(productImageFile);
+      }
+
+      const payload = {
+        name: productForm.name.trim(),
+        description: productForm.description.trim(),
+        price: Number(productForm.price),
+        imageUrl,
+        categoryId: productForm.categoryId || undefined,
+        ingredients: parseLines(productForm.ingredients),
+        benefits: parseLines(productForm.benefits),
+        howToUse: productForm.howToUse.trim() || undefined,
+        size: productForm.size.trim() || undefined,
+        stock: Number(productForm.stock || 0),
+        isFeatured: productForm.isFeatured,
+      };
+
       if (editingProduct) {
         await updateAdminProduct(productForm.id, payload);
         setStatusMessage("Product updated.");
@@ -196,6 +217,8 @@ export function AdminDashboard() {
       stock: String(product.stock),
       isFeatured: product.isFeatured,
     });
+    setProductImageFile(null);
+    setProductImagePreviewUrl("");
   };
 
   const handleCategorySubmit = async (event: React.FormEvent) => {
@@ -328,11 +351,25 @@ export function AdminDashboard() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Image URL</Label>
+                    <Label>Product Image</Label>
                     <Input
-                      value={productForm.imageUrl}
-                      onChange={(event) => setProductForm({ ...productForm, imageUrl: event.target.value })}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(event) => setProductImageFile(event.target.files?.[0] || null)}
                     />
+                    <p className="mt-2 text-xs opacity-70">Upload JPG, PNG, WEBP, or GIF up to 20MB.</p>
+                    {(productImagePreviewUrl || productForm.imageUrl) && (
+                      <div className="mt-3 flex items-center gap-3">
+                        <img
+                          src={productImagePreviewUrl || productForm.imageUrl}
+                          alt="Product preview"
+                          className="h-16 w-16 rounded object-cover border border-border"
+                        />
+                        <p className="text-sm opacity-70">
+                          {productImageFile ? productImageFile.name : "Current product image"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label>Category</Label>

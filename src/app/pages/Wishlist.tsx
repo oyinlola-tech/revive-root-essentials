@@ -30,7 +30,7 @@ export function Wishlist() {
             <div key={product.id} className="relative">
               <button
                 onClick={() => toggleWishlist(product)}
-                className="absolute top-3 right-3 z-10 rounded-full bg-white/95 p-2 border border-border"
+                className="absolute top-3 right-3 z-10 rounded-full bg-background/95 p-2 border border-border"
                 aria-label="Remove from wishlist"
               >
                 <HeartOff className="h-4 w-4" />

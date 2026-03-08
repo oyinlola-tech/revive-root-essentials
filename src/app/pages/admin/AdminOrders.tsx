@@ -101,7 +101,7 @@ export default function AdminOrders() {
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -116,7 +116,7 @@ export default function AdminOrders() {
       case 'refunded':
         return 'bg-blue-50 text-blue-700';
       default:
-        return 'bg-gray-50 text-gray-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -131,18 +131,18 @@ export default function AdminOrders() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading orders...</p>
+          <p className="text-muted-foreground">Loading orders...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600 mt-2">Manage customer orders and track shipments</p>
+          <h1 className="text-3xl font-bold text-foreground">Orders</h1>
+          <p className="text-muted-foreground mt-2">Manage customer orders and track shipments</p>
         </div>
 
         {error && (
@@ -153,32 +153,32 @@ export default function AdminOrders() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Order #, Email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Order Status
               </label>
               <select
                 value={statusFilter || ''}
                 onChange={(e) => setStatusFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -190,13 +190,13 @@ export default function AdminOrders() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Payment Status
               </label>
               <select
                 value={paymentFilter || ''}
                 onChange={(e) => setPaymentFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Payments</option>
                 <option value="pending">Pending</option>
@@ -220,19 +220,19 @@ export default function AdminOrders() {
         {/* Orders List */}
         <div className="space-y-4">
           {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No orders found</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No orders found</p>
             </div>
           ) : (
             <>
               {paginatedOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
                 >
                   <div
-                    className="p-6 cursor-pointer hover:bg-gray-50"
+                    className="p-6 cursor-pointer hover:bg-muted"
                     onClick={() =>
                       setExpandedOrder(
                         expandedOrder === order.id ? null : order.id
@@ -241,22 +241,22 @@ export default function AdminOrders() {
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-foreground">
                           Order #{order.orderNumber}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {new Date(order.createdAt).toLocaleDateString()}{' '}
                           {new Date(order.createdAt).toLocaleTimeString()}
                         </p>
                         {order.customerEmail && (
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-muted-foreground mt-1">
                             {order.customerEmail}
                           </p>
                         )}
                       </div>
 
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-lg font-bold text-foreground">
                           {order.currency} {order.totalAmount.toLocaleString()}
                         </p>
                         <div className="flex gap-2 mt-2 justify-end">
@@ -281,9 +281,9 @@ export default function AdminOrders() {
                   </div>
 
                   {expandedOrder === order.id && (
-                    <div className="border-t px-6 py-4 bg-gray-50">
+                    <div className="border-t px-6 py-4 bg-muted">
                       <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-3">
+                        <h4 className="font-semibold text-foreground mb-3">
                           Order Items
                         </h4>
                         {order.items && order.items.length > 0 ? (
@@ -291,29 +291,29 @@ export default function AdminOrders() {
                             {order.items.map((item, idx) => (
                               <div
                                 key={idx}
-                                className="flex justify-between text-sm py-2 border-b border-gray-200"
+                                className="flex justify-between text-sm py-2 border-b border-border"
                               >
                                 <div>
-                                  <p className="text-gray-900 font-medium">
+                                  <p className="text-foreground font-medium">
                                     {item.name}
                                   </p>
-                                  <p className="text-gray-500">
+                                  <p className="text-muted-foreground">
                                     Qty: {item.quantity}
                                   </p>
                                 </div>
-                                <p className="text-gray-900 font-medium">
+                                <p className="text-foreground font-medium">
                                   ₦{(item.price * item.quantity).toLocaleString()}
                                 </p>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-sm">No items</p>
+                          <p className="text-muted-foreground text-sm">No items</p>
                         )}
                       </div>
 
                       <div className="border-t pt-4">
-                        <h4 className="font-semibold text-gray-900 mb-3">
+                        <h4 className="font-semibold text-foreground mb-3">
                           Update Status
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -326,7 +326,7 @@ export default function AdminOrders() {
                                 className={`px-4 py-2 rounded-lg font-medium transition capitalize ${
                                   order.status === status
                                     ? 'bg-emerald-600 text-white'
-                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                    : 'bg-muted hover:bg-accent text-muted-foreground'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                               >
                                 {status}
@@ -348,7 +348,7 @@ export default function AdminOrders() {
                       setCurrentPage((p) => Math.max(1, p - 1))
                     }
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Previous
                   </button>
@@ -360,7 +360,7 @@ export default function AdminOrders() {
                         className={`px-3 py-2 rounded-lg transition ${
                           currentPage === page
                             ? 'bg-emerald-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            : 'border border-border hover:bg-muted'
                         }`}
                       >
                         {page}
@@ -372,7 +372,7 @@ export default function AdminOrders() {
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Next
                   </button>

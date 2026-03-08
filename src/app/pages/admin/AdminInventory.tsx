@@ -146,7 +146,7 @@ export default function AdminInventory() {
       case 'out-of-stock':
         return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -177,18 +177,18 @@ export default function AdminInventory() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading inventory...</p>
+          <p className="text-muted-foreground">Loading inventory...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-gray-600 mt-2">Manage stock levels and adjustments</p>
+          <h1 className="text-3xl font-bold text-foreground">Inventory</h1>
+          <p className="text-muted-foreground mt-2">Manage stock levels and adjustments</p>
         </div>
 
         {error && (
@@ -225,32 +225,32 @@ export default function AdminInventory() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Product name, SKU..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Status
               </label>
               <select
                 value={statusFilter || ''}
                 onChange={(e) => setStatusFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Statuses</option>
                 <option value="in-stock">In Stock</option>
@@ -273,44 +273,44 @@ export default function AdminInventory() {
         {/* Inventory List */}
         <div className="space-y-4">
           {filteredInventory.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No inventory items found</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No inventory items found</p>
             </div>
           ) : (
             <>
               {paginatedInventory.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
                 >
                   <div
-                    className="p-6 cursor-pointer hover:bg-gray-50"
+                    className="p-6 cursor-pointer hover:bg-muted"
                     onClick={() =>
                       setExpandedItem(expandedItem === item.id ? null : item.id)
                     }
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                        <h3 className="font-semibold text-foreground text-lg">
                           {item.productName}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">SKU: {item.sku}</p>
+                        <p className="text-sm text-muted-foreground mt-1">SKU: {item.sku}</p>
                         <div className="flex items-center gap-4 mt-3">
                           <div>
-                            <p className="text-xs text-gray-500">Total Stock</p>
-                            <p className="text-xl font-bold text-gray-900">
+                            <p className="text-xs text-muted-foreground">Total Stock</p>
+                            <p className="text-xl font-bold text-foreground">
                               {item.totalStock}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Available</p>
+                            <p className="text-xs text-muted-foreground">Available</p>
                             <p className="text-xl font-bold text-green-600">
                               {item.availableStock}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500">Reserved</p>
+                            <p className="text-xs text-muted-foreground">Reserved</p>
                             <p className="text-xl font-bold text-orange-600">
                               {item.reservedStock}
                             </p>
@@ -330,7 +330,7 @@ export default function AdminInventory() {
                             ? 'Low Stock'
                             : 'Out of Stock'}
                         </span>
-                        <div className="mt-3 text-sm text-gray-500">
+                        <div className="mt-3 text-sm text-muted-foreground">
                           <p>Reorder Level: {item.reorderLevel}</p>
                           <p>Reorder Qty: {item.reorderQuantity}</p>
                         </div>
@@ -339,7 +339,7 @@ export default function AdminInventory() {
 
                     {/* Stock Level Bar */}
                     <div className="mt-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className={`h-2 rounded-full transition-all ${
                             item.status === 'in-stock'
@@ -362,45 +362,45 @@ export default function AdminInventory() {
                   </div>
 
                   {expandedItem === item.id && (
-                    <div className="border-t px-6 py-4 bg-gray-50">
+                    <div className="border-t px-6 py-4 bg-muted">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
-                          <p className="text-sm text-gray-500">Total Stock</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-muted-foreground">Total Stock</p>
+                          <p className="text-2xl font-bold text-foreground">
                             {item.totalStock}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Available</p>
+                          <p className="text-sm text-muted-foreground">Available</p>
                           <p className="text-2xl font-bold text-green-600">
                             {item.availableStock}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Reserved</p>
+                          <p className="text-sm text-muted-foreground">Reserved</p>
                           <p className="text-2xl font-bold text-orange-600">
                             {item.reservedStock}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Reorder Level</p>
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-sm text-muted-foreground">Reorder Level</p>
+                          <p className="text-2xl font-bold text-foreground">
                             {item.reorderLevel}
                           </p>
                         </div>
                       </div>
 
                       {item.lastRestocked && (
-                        <div className="mb-4 p-3 bg-white rounded border border-gray-200">
-                          <p className="text-sm text-gray-500">Last Restocked</p>
-                          <p className="text-sm text-gray-900">
+                        <div className="mb-4 p-3 bg-card rounded border border-border">
+                          <p className="text-sm text-muted-foreground">Last Restocked</p>
+                          <p className="text-sm text-foreground">
                             {new Date(item.lastRestocked).toLocaleString()}
                           </p>
                         </div>
                       )}
 
                       <div className="border-t pt-4">
-                        <h4 className="font-semibold text-gray-900 mb-3">
+                        <h4 className="font-semibold text-foreground mb-3">
                           Adjust Stock
                         </h4>
                         <button
@@ -422,7 +422,7 @@ export default function AdminInventory() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Previous
                   </button>
@@ -434,7 +434,7 @@ export default function AdminInventory() {
                         className={`px-3 py-2 rounded-lg transition ${
                           currentPage === page
                             ? 'bg-emerald-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            : 'border border-border hover:bg-muted'
                         }`}
                       >
                         {page}
@@ -448,7 +448,7 @@ export default function AdminInventory() {
                       )
                     }
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Next
                   </button>
@@ -461,21 +461,21 @@ export default function AdminInventory() {
         {/* Adjustment Modal */}
         {showAdjustmentForm && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <div className="bg-card rounded-lg max-w-md w-full p-6">
+              <h3 className="text-2xl font-bold text-foreground mb-4">
                 Adjust Stock: {selectedItem.productName}
               </h3>
 
-              <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
-                <p className="text-sm text-gray-500">Current Stock</p>
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="mb-4 p-3 bg-muted rounded border border-border">
+                <p className="text-sm text-muted-foreground">Current Stock</p>
+                <p className="text-2xl font-bold text-foreground">
                   {selectedItem.totalStock}
                 </p>
               </div>
 
               <form onSubmit={handleSubmitAdjustment} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Adjustment Type
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -490,7 +490,7 @@ export default function AdminInventory() {
                       className={`flex items-center justify-center gap-2 py-2 rounded-lg transition font-medium ${
                         adjustmentData.type === 'add'
                           ? 'bg-green-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          : 'border border-border hover:bg-muted'
                       }`}
                     >
                       <TrendingUp className="w-4 h-4" />
@@ -507,7 +507,7 @@ export default function AdminInventory() {
                       className={`flex items-center justify-center gap-2 py-2 rounded-lg transition font-medium ${
                         adjustmentData.type === 'subtract'
                           ? 'bg-red-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          : 'border border-border hover:bg-muted'
                       }`}
                     >
                       <TrendingDown className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function AdminInventory() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Quantity *
                   </label>
                   <input
@@ -529,14 +529,14 @@ export default function AdminInventory() {
                         quantity: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     placeholder="e.g., 10"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Reason *
                   </label>
                   <select
@@ -547,7 +547,7 @@ export default function AdminInventory() {
                         reason: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     required
                   >
                     <option value="">Select a reason...</option>
@@ -568,7 +568,7 @@ export default function AdminInventory() {
                       setShowAdjustmentForm(false);
                       setSelectedItem(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                    className="flex-1 px-4 py-2 border border-border text-muted-foreground rounded-lg hover:bg-muted transition font-medium"
                   >
                     Cancel
                   </button>

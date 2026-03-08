@@ -202,7 +202,7 @@ export function Account() {
           {/* Sidebar Navigation */}
           <div className="md:col-span-1">
             <div className="border border-border rounded-lg p-4 sticky top-20">
-              <h3 className="font-semibold text-sm text-gray-700 mb-4 uppercase tracking-wide">
+              <h3 className="font-semibold text-sm text-muted-foreground mb-4 uppercase tracking-wide">
                 Account Menu
               </h3>
               <nav className="space-y-2">
@@ -214,19 +214,19 @@ export function Account() {
                 </Link>
                 <Link
                   to="/order-history"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Order History
                 </Link>
                 <Link
                   to="/refund-tracking"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Refunds
                 </Link>
                 <Link
                   to="/address-management"
-                  className="block px-3 py-2 rounded text-sm hover:bg-gray-100 text-gray-700 transition"
+                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
                 >
                   Addresses
                 </Link>

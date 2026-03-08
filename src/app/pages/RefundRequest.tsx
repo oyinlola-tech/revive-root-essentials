@@ -113,7 +113,7 @@ export const RefundRequest = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error || "Order not found"}
@@ -130,7 +130,7 @@ export const RefundRequest = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate("/refund-tracking")}
@@ -139,9 +139,9 @@ export const RefundRequest = () => {
           ← Back to Refund Tracking
         </button>
 
-        <div className="bg-white rounded-lg shadow p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Request Refund</h1>
-          <p className="text-gray-600 mb-8">
+        <div className="bg-card rounded-lg border border-border shadow p-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Request Refund</h1>
+          <p className="text-muted-foreground mb-8">
             Order #{order.orderNumber} • {order.currency} {parseFloat(order.totalAmount).toFixed(2)}
           </p>
 
@@ -160,13 +160,13 @@ export const RefundRequest = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Reason */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Reason for Refund *
               </label>
               <select
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
               >
                 <option value="">Select a reason</option>
@@ -181,7 +181,7 @@ export const RefundRequest = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Additional Details
               </label>
               <textarea
@@ -189,17 +189,17 @@ export const RefundRequest = () => {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Please provide more details about your refund request..."
                 rows={5}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
             {/* Refund Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Refund Amount *
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-3 text-gray-600 font-medium">
+                <span className="absolute left-4 top-3 text-muted-foreground font-medium">
                   {order.currency}
                 </span>
                 <input
@@ -217,32 +217,32 @@ export const RefundRequest = () => {
                   min="0"
                   max={parseFloat(order.totalAmount)}
                   step="0.01"
-                  className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
                 />
               </div>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 Maximum refund amount: {order.currency} {parseFloat(order.totalAmount).toFixed(2)}
               </p>
             </div>
 
             {/* Order Items Summary */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3">Order Items</h3>
+            <div className="bg-muted p-4 rounded-lg">
+              <h3 className="font-semibold text-foreground mb-3">Order Items</h3>
               <div className="space-y-2">
                 {order.items && order.items.length > 0 ? (
                   order.items.map((item: any, index: number) => (
                     <div key={index} className="flex justify-between text-sm">
-                      <span className="text-gray-600">
+                      <span className="text-muted-foreground">
                         {item.name} x {item.quantity}
                       </span>
-                      <span className="text-gray-900 font-medium">
+                      <span className="text-foreground font-medium">
                         {order.currency} {(parseFloat(item.price) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-600 text-sm">No items in this order</p>
+                  <p className="text-muted-foreground text-sm">No items in this order</p>
                 )}
               </div>
             </div>
@@ -259,7 +259,7 @@ export const RefundRequest = () => {
               <button
                 type="button"
                 onClick={() => navigate("/order-history")}
-                className="flex-1 border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-medium"
+                className="flex-1 border border-border text-muted-foreground px-6 py-3 rounded-lg hover:bg-muted font-medium"
               >
                 Cancel
               </button>

@@ -340,6 +340,7 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
   let lastError: Error | null = null;
   const requestMethod = String(init?.method || "GET").toUpperCase();
   const retryAttempts = requestMethod === "GET" ? MAX_GET_RETRIES : 0;
+  const isFormDataBody = typeof FormData !== "undefined" && init?.body instanceof FormData;
 
   for (const baseUrl of baseUrls) {
     for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
@@ -355,10 +356,10 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
 
         const response = await fetch(`${baseUrl}${path}`, {
           headers: {
-            "Content-Type": "application/json",
             ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
             "X-Currency": getPreferredCurrency(),
             ...(csrfTokenCache[baseUrl] ? { 'X-CSRF-Token': csrfTokenCache[baseUrl] as string } : {}),
+            ...(!isFormDataBody ? { "Content-Type": "application/json" } : {}),
             ...(init?.headers || {}),
           },
           // include credentials so cookies are sent/received across origins
@@ -667,6 +668,16 @@ export const unsubscribeFromNewsletter = async (token: string): Promise<{ messag
 export const getAdminProducts = async (): Promise<AdminProduct[]> => {
   const data = await fetchJson<BackendProductListResponse>("/products?limit=100&sort=ranked", undefined, true);
   return (data.products || []).map(normalizeAdminProduct);
+};
+
+export const uploadAdminProductImage = async (file: File): Promise<string> => {
+  const body = new FormData();
+  body.append("image", file);
+  const data = await fetchJson<{ imageUrl: string }>("/products/upload-image", {
+    method: "POST",
+    body,
+  }, true);
+  return data.imageUrl;
 };
 
 export const createAdminProduct = async (payload: AdminProductInput): Promise<AdminProduct> => {

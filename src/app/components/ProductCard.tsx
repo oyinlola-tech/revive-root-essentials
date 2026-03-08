@@ -25,7 +25,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           event.preventDefault();
           toggleWishlist(product);
         }}
-        className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2 border border-border"
+        className="absolute right-3 top-3 z-10 rounded-full bg-background/95 p-2 border border-border"
         aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
       >
         <Heart className={`h-4 w-4 ${liked ? "fill-current text-primary" : ""}`} />

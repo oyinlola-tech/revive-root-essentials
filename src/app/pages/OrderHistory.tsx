@@ -35,7 +35,7 @@ export const OrderHistory = () => {
       delivered: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
     };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return colors[status] || "bg-muted text-foreground";
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -45,7 +45,7 @@ export const OrderHistory = () => {
       failed: "text-red-600",
       refunded: "text-blue-600",
     };
-    return colors[status] || "text-gray-600";
+    return colors[status] || "text-muted-foreground";
   };
 
   if (loading) {
@@ -57,9 +57,9 @@ export const OrderHistory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Order History</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">Order History</h1>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -68,8 +68,8 @@ export const OrderHistory = () => {
         )}
 
         {orders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500 text-lg mb-4">No orders yet</p>
+          <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+            <p className="text-muted-foreground text-lg mb-4">No orders yet</p>
             <button
               onClick={() => navigate("/shop")}
               className="inline-block bg-primary text-white px-6 py-2 rounded hover:opacity-90"
@@ -83,20 +83,20 @@ export const OrderHistory = () => {
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow"
+                  className="bg-card rounded-lg border border-border shadow hover:shadow-lg transition-shadow"
                 >
                   <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-foreground">
                           Order #{order.orderNumber}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           Placed on {new Date(order.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-2xl font-bold text-foreground">
                           {order.currency} {order.totalAmount.toFixed(2)}
                         </p>
                       </div>
@@ -116,7 +116,7 @@ export const OrderHistory = () => {
                     </div>
 
                     <div className="border-t pt-4 flex justify-between items-center">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {order.items?.length || 1} item(s)
                       </p>
                       <div className="flex gap-3">

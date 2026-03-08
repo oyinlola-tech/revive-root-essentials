@@ -129,7 +129,7 @@ export default function AdminAuditLogs() {
       case 'failure':
         return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -140,7 +140,7 @@ export default function AdminAuditLogs() {
       return 'text-red-600';
     if (action.includes('update') || action.includes('Update'))
       return 'text-blue-600';
-    return 'text-gray-600';
+    return 'text-muted-foreground';
   };
 
   const paginatedLogs = filteredLogs.slice(
@@ -158,19 +158,19 @@ export default function AdminAuditLogs() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading audit logs...</p>
+          <p className="text-muted-foreground">Loading audit logs...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
-            <p className="text-gray-600 mt-2">Track system activities and user actions</p>
+            <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+            <p className="text-muted-foreground mt-2">Track system activities and user actions</p>
           </div>
           <button
             onClick={handleExport}
@@ -190,37 +190,37 @@ export default function AdminAuditLogs() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
           <div className="mb-4 flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Filters</h3>
+            <Filter className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-semibold text-foreground">Filters</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Search
               </label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="User, action, resource..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Action
               </label>
               <select
                 value={actionFilter || ''}
                 onChange={(e) => setActionFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
               >
                 <option value="">All Actions</option>
                 {uniqueActions.slice(0, 20).map((action) => (
@@ -232,13 +232,13 @@ export default function AdminAuditLogs() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Resource Type
               </label>
               <select
                 value={resourceFilter || ''}
                 onChange={(e) => setResourceFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
               >
                 <option value="">All Resources</option>
                 {uniqueResources.map((resource) => (
@@ -250,13 +250,13 @@ export default function AdminAuditLogs() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Status
               </label>
               <select
                 value={statusFilter || ''}
                 onChange={(e) => setStatusFilter(e.target.value || null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="">All Statuses</option>
                 <option value="success">Success</option>
@@ -265,33 +265,33 @@ export default function AdminAuditLogs() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 From Date
               </label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 To Date
               </label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
 
             <div className="flex items-end">
               <button
                 onClick={loadLogs}
-                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition font-medium"
+                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 py-2 rounded-lg transition font-medium"
               >
                 Refresh
               </button>
@@ -307,7 +307,7 @@ export default function AdminAuditLogs() {
                   setDateFrom('');
                   setDateTo('');
                 }}
-                className="w-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 py-2 rounded-lg transition font-medium"
+                className="w-full border border-border bg-card hover:bg-muted text-muted-foreground py-2 rounded-lg transition font-medium"
               >
                 Clear Filters
               </button>
@@ -318,19 +318,19 @@ export default function AdminAuditLogs() {
         {/* Logs List */}
         <div className="space-y-2">
           {filteredLogs.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">No audit logs found</p>
+            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No audit logs found</p>
             </div>
           ) : (
             <>
               {paginatedLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
                 >
                   <div
-                    className="p-4 cursor-pointer hover:bg-gray-50"
+                    className="p-4 cursor-pointer hover:bg-muted"
                     onClick={() =>
                       setExpandedLog(expandedLog === log.id ? null : log.id)
                     }
@@ -345,20 +345,20 @@ export default function AdminAuditLogs() {
                           >
                             {log.action}
                           </span>
-                          <span className="text-sm text-gray-600">•</span>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-muted-foreground">•</span>
+                          <span className="text-sm text-muted-foreground">
                             {log.resourceType}
                           </span>
                           {log.resourceName && (
                             <>
-                              <span className="text-sm text-gray-600">•</span>
-                              <span className="text-sm text-gray-900 font-medium truncate">
+                              <span className="text-sm text-muted-foreground">•</span>
+                              <span className="text-sm text-foreground font-medium truncate">
                                 {log.resourceName}
                               </span>
                             </>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-600 flex-wrap">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                           {log.userName && (
                             <>
                               <span>{log.userName}</span>
@@ -390,35 +390,35 @@ export default function AdminAuditLogs() {
                   </div>
 
                   {expandedLog === log.id && (
-                    <div className="border-t px-4 py-4 bg-gray-50 text-sm space-y-4">
+                    <div className="border-t px-4 py-4 bg-muted text-sm space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold">
+                          <p className="text-xs text-muted-foreground uppercase font-semibold">
                             User
                           </p>
-                          <p className="text-gray-900">
+                          <p className="text-foreground">
                             {log.userName || 'Unknown'} ({log.userEmail || 'N/A'})
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold">
+                          <p className="text-xs text-muted-foreground uppercase font-semibold">
                             Resource
                           </p>
-                          <p className="text-gray-900">
+                          <p className="text-foreground">
                             {log.resourceType} - {log.resourceId}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold">
+                          <p className="text-xs text-muted-foreground uppercase font-semibold">
                             IP Address
                           </p>
-                          <p className="text-gray-900">{log.ipAddress || 'N/A'}</p>
+                          <p className="text-foreground">{log.ipAddress || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500 uppercase font-semibold">
+                          <p className="text-xs text-muted-foreground uppercase font-semibold">
                             Timestamp
                           </p>
-                          <p className="text-gray-900">
+                          <p className="text-foreground">
                             {new Date(log.createdAt).toLocaleString()}
                           </p>
                         </div>
@@ -450,7 +450,7 @@ export default function AdminAuditLogs() {
                               <p className="font-semibold text-blue-900 text-xs mb-1">
                                 Before
                               </p>
-                              <pre className="text-xs text-blue-800 bg-white p-2 rounded border border-blue-200 overflow-auto max-h-32">
+                              <pre className="text-xs text-blue-800 bg-card p-2 rounded border border-blue-200 overflow-auto max-h-32">
                                 {JSON.stringify(log.changes.before, null, 2)}
                               </pre>
                             </div>
@@ -458,7 +458,7 @@ export default function AdminAuditLogs() {
                               <p className="font-semibold text-blue-900 text-xs mb-1">
                                 After
                               </p>
-                              <pre className="text-xs text-blue-800 bg-white p-2 rounded border border-blue-200 overflow-auto max-h-32">
+                              <pre className="text-xs text-blue-800 bg-card p-2 rounded border border-blue-200 overflow-auto max-h-32">
                                 {JSON.stringify(log.changes.after, null, 2)}
                               </pre>
                             </div>
@@ -467,11 +467,11 @@ export default function AdminAuditLogs() {
                       )}
 
                       {log.userAgent && (
-                        <div className="p-2 bg-gray-100 rounded border border-gray-300">
-                          <p className="text-xs text-gray-600 uppercase font-semibold mb-1">
+                        <div className="p-2 bg-muted rounded border border-border">
+                          <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">
                             User Agent
                           </p>
-                          <p className="text-xs text-gray-900 break-all">
+                          <p className="text-xs text-foreground break-all">
                             {log.userAgent}
                           </p>
                         </div>
@@ -487,7 +487,7 @@ export default function AdminAuditLogs() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Previous
                   </button>
@@ -499,7 +499,7 @@ export default function AdminAuditLogs() {
                         className={`px-3 py-2 rounded-lg transition ${
                           currentPage === page
                             ? 'bg-emerald-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
+                            : 'border border-border hover:bg-muted'
                         }`}
                       >
                         {page}
@@ -513,7 +513,7 @@ export default function AdminAuditLogs() {
                       )
                     }
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                   >
                     Next
                   </button>
