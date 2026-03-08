@@ -1,3 +1,5 @@
+const path = require('path');
+
 // ============================================================================
 // PM2 ECOSYSTEM CONFIGURATION - PRODUCTION DEPLOYMENT
 // ============================================================================
@@ -31,7 +33,7 @@ module.exports = {
     {
       name: 'revive-backend',
       script: './backend/server.js',
-      cwd: '/home/owl-sec/Desktop/revive-root-essentials',
+      cwd: path.resolve(__dirname),
       
       // Environment variables
       env: {
@@ -102,7 +104,7 @@ module.exports = {
     {
       name: 'revive-frontend',
       script: './node_modules/vite/bin/vite.js',
-      cwd: '/home/owl-sec/Desktop/revive-root-essentials',
+      cwd: path.resolve(__dirname),
       args: 'preview --port 5173 --host 0.0.0.0',
       
       // Environment

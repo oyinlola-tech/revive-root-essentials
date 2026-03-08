@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const path = require('path');
 const rateLimit = require('./middlewares/rateLimitMiddleware');
 const requestLoggingMiddleware = require('./middlewares/requestLoggingMiddleware');
@@ -207,9 +208,10 @@ app.get('/api/version', (req, res) => {
   });
 });
 
-// Serve frontend static files in production from the `dist` folder
-if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(process.cwd(), 'dist');
+// Optionally serve the frontend bundle from the backend process for single-host deployments.
+const shouldServeFrontend = process.env.SERVE_FRONTEND_FROM_BACKEND === 'true';
+const distPath = path.join(process.cwd(), 'dist');
+if (process.env.NODE_ENV === 'production' && shouldServeFrontend && fs.existsSync(distPath)) {
   app.use(express.static(distPath, {
     setHeaders: (res, filePath) => {
       // Strong cache for static assets; index.html is served with no-cache below

@@ -61,6 +61,23 @@ npm run build
 - Backend variables: `backend/.env`
 - Frontend variables for Vite: `frontend-env/.env`
 
+## Namecheap Deployment
+
+For a split deployment with:
+
+- frontend: `https://revive-root-essentials.telente.site`
+- backend: `https://api.revive-root-essentials.telente.site`
+
+use:
+
+- `frontend-env/.env.production.example` as the frontend template
+- `backend/.env` or `.env.production.example` with:
+  - `FRONTEND_URL=https://revive-root-essentials.telente.site`
+  - `CORS_ORIGIN=https://revive-root-essentials.telente.site`
+  - `SERVE_FRONTEND_FROM_BACKEND=false`
+
+See [`docs/namecheap-deployment.md`](docs/namecheap-deployment.md) for the full setup steps.
+
 Do not commit secrets. See [`.gitignore`](.gitignore).
 
 ## Security
