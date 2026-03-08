@@ -1,5 +1,5 @@
 const APP_NAME = 'Revive Roots Essentials';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://revive-root-essentials.telente.site';
 
 const BRAND_PRIMARY = '#052012';
 const BRAND_ACCENT = '#e3e1bb';

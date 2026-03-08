@@ -52,7 +52,7 @@ const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .filter(Boolean);
 const allowedOrigins = configuredOrigins.length > 0
   ? configuredOrigins
-  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+  : ['https://revive-root-essentials.telente.site'];
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

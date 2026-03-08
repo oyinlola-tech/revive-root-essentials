@@ -26,15 +26,15 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_ORIGIN || 'http://localhost:3000',
+        target: process.env.VITE_BACKEND_ORIGIN || 'https://api.revive-root-essentials.telente.site',
         changeOrigin: true,
       },
       '/health': {
-        target: process.env.VITE_BACKEND_ORIGIN || 'http://localhost:3000',
+        target: process.env.VITE_BACKEND_ORIGIN || 'https://api.revive-root-essentials.telente.site',
         changeOrigin: true,
       },
       '/uploads': {
-        target: process.env.VITE_BACKEND_ORIGIN || 'http://localhost:3000',
+        target: process.env.VITE_BACKEND_ORIGIN || 'https://api.revive-root-essentials.telente.site',
         changeOrigin: true,
       },
     },

@@ -4,6 +4,7 @@ node_modules
 backend/.env
 frontend-env/.env
 frontend-env/.env.local
+dist
 
 # Logs
 logs

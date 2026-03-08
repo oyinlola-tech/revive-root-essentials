@@ -4,7 +4,7 @@ const { Newsletter, User, Product, NewsletterCampaignLog } = require('../models'
 const { sendEmail } = require('../utils/emailService');
 const templates = require('../utils/emailTemplates');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://revive-root-essentials.telente.site';
 const APP_NAME = process.env.APP_NAME || 'Revive Roots Essentials';
 const NEWSLETTER_DAY_UTC = Number(process.env.NEWSLETTER_WEEKLY_DAY_UTC ?? 1); // Monday
 const NEWSLETTER_HOUR_UTC = Number(process.env.NEWSLETTER_WEEKLY_HOUR_UTC ?? 9); // 09:00 UTC

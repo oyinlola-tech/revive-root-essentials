@@ -71,7 +71,7 @@ async function initializeRedis() {
       clientOptions.url = process.env.REDIS_URL;
     } else {
       clientOptions.socket = {
-        host: process.env.REDIS_HOST || '127.0.0.1',
+        host: process.env.REDIS_HOST || 'your_redis_host',
         port: Number(process.env.REDIS_PORT || 6379),
         connectTimeout: 10000,
       };

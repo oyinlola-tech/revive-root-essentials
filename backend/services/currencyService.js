@@ -31,8 +31,14 @@ const countryCache = new Map();
 const normalizeIp = (ip = '') => {
   if (!ip) return '';
   if (ip.includes(',')) return ip.split(',')[0].trim();
-  if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) return '';
-  return ip.replace('::ffff:', '');
+  const normalizedIp = ip.replace('::ffff:', '');
+  if (
+    normalizedIp === '::1'
+    || normalizedIp.startsWith('127.')
+    || normalizedIp.startsWith('192.168.')
+    || normalizedIp.startsWith('10.')
+  ) return '';
+  return normalizedIp;
 };
 
 const getCountryFromIp = async (ip) => {

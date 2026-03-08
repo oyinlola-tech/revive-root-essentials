@@ -102,7 +102,7 @@ Restart the Node.js app from cPanel after installs or env changes.
 Create the MySQL database and user in cPanel, then set:
 
 ```env
-DB_HOST=localhost
+DB_HOST=your_namecheap_db_host
 DB_PORT=3306
 DB_USER=your_db_username
 DB_PASSWORD=your_db_password
