@@ -406,13 +406,13 @@ exports.login = catchAsync(async (req, res, next) => {
       expiresAt,
     });
 
-    await notificationService.sendOtpNotification({
+    notificationService.sendOtpNotification({
       channel: 'email',
       recipient: normalizedEmail,
       name: user.name,
       code: otpCode,
       expiresMinutes: 5,
-    });
+    }).catch(() => {});
 
     return res.status(202).json({
       message: `OTP sent to ${normalizedEmail}. Please verify to complete login.`,
