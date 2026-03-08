@@ -9,6 +9,7 @@ export function OTP() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const identifier = searchParams.get("identifier") || "";
+  const challengeToken = searchParams.get("challenge") || undefined;
   const redirect = searchParams.get("redirect");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +28,7 @@ export function OTP() {
 
     setLoading(true);
     try {
-      const session = await verifyOtp({ identifier, otp });
+      const session = await verifyOtp({ identifier, otp, challengeToken });
       if (redirect && session.user.role === "user") {
         navigate(redirect);
         return;
@@ -57,7 +58,7 @@ export function OTP() {
     }
 
     try {
-      await resendOtp(identifier);
+      await resendOtp(identifier, challengeToken);
       setInfo("OTP sent again. Check your inbox.");
     } catch (err) {
       setError(getOtpResendErrorMessage(err));

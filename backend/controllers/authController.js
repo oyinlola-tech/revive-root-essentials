@@ -311,17 +311,17 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
     return sendOtpSuccess(res);
   }
 
-  const recentOtp = await hasRecentOtpRequest(normalizedIdentifier, type);
-
-  if (recentOtp) {
-    return next(new AppError('Please wait before requesting a new OTP', 429));
-  }
-
   if (user.isVerified) {
     const isPrivilegedUser = user.role === 'admin' || user.role === 'superadmin';
     if (!isPrivilegedUser || !verifyOtpLoginChallenge(challengeToken, user, normalizedIdentifier)) {
       return sendOtpSuccess(res);
     }
+  }
+
+  const recentOtp = await hasRecentOtpRequest(normalizedIdentifier, type);
+
+  if (recentOtp) {
+    return next(new AppError('Please wait before requesting a new OTP', 429));
   }
 
   const otpCode = generateOtp();

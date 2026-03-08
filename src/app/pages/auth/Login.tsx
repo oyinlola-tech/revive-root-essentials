@@ -41,7 +41,9 @@ export function Login() {
       });
 
       if ("requiresOtp" in response && response.requiresOtp && response.identifier) {
-        navigate(`/auth/otp?identifier=${encodeURIComponent(response.identifier)}&admin=true&redirect=${encodeURIComponent(searchParams.get("redirect") || "/admin")}`);
+        navigate(
+          `/auth/otp?identifier=${encodeURIComponent(response.identifier)}&challenge=${encodeURIComponent(response.challengeToken)}&admin=true&redirect=${encodeURIComponent(searchParams.get("redirect") || "/admin")}`,
+        );
         return;
       }
 
