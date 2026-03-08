@@ -1,0 +1,17 @@
+{
+  "name": "Revive Roots Essential",
+  "short_name": "Revive Roots",
+  "description": "Premium hair care and skincare products in Nigeria.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E3E1BB",
+  "theme_color": "#052012",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -84,13 +84,16 @@ export const useSeo = ({
     upsertMetaByProperty("og:title", title);
     upsertMetaByProperty("og:description", description);
     upsertMetaByProperty("og:type", type);
+    upsertMetaByProperty("og:site_name", "Revive Roots Essential");
     upsertMetaByProperty("og:url", canonical);
     upsertMetaByProperty("og:image", imageUrl);
+    upsertMetaByProperty("og:image:alt", "Revive Roots Essential product imagery");
 
     upsertMetaByName("twitter:card", "summary_large_image");
     upsertMetaByName("twitter:title", title);
     upsertMetaByName("twitter:description", description);
     upsertMetaByName("twitter:image", imageUrl);
+    upsertMetaByName("twitter:image:alt", "Revive Roots Essential product imagery");
 
     upsertCanonical(canonical);
     upsertJsonLd(jsonLd);
