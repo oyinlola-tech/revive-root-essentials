@@ -13,6 +13,9 @@ const { bruteForceProtector, tokenBlacklist } = require('../utils/securityUtils'
 
 const REFRESH_COOKIE_NAME = process.env.NODE_ENV === 'production' ? '__Host-refresh_token' : 'refresh_token';
 const LEGACY_REFRESH_COOKIE_NAME = 'refresh_token';
+const OTP_EXPIRY_MINUTES = 5;
+const OTP_RESEND_WINDOW_MS = 60 * 1000;
+const OTP_LOGIN_CHALLENGE_PURPOSE = 'otp-login';
 
 const normalizeIdentifier = (identifier, type) => {
   if (type === 'email') return String(identifier || '').toLowerCase().trim();
@@ -20,6 +23,7 @@ const normalizeIdentifier = (identifier, type) => {
 };
 
 const normalizeEmail = (email) => String(email || '').toLowerCase().trim();
+const getOtpExpiryDate = () => new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 const queueOtpNotification = ({ channel, recipient, name, code, expiresMinutes = 5 }) => {
   notificationService.sendOtpNotification({
     channel,
@@ -43,6 +47,59 @@ const signToken = (id, sessionId) => {
 const signRefreshToken = (id, sessionId) => {
   return jwt.sign({ id, sessionId }, jwtRefreshSecret, { expiresIn: jwtRefreshExpiresIn });
 };
+
+const signOtpLoginChallenge = (user, identifier) => jwt.sign(
+  {
+    id: user.id,
+    role: user.role,
+    identifier: normalizeEmail(identifier),
+    purpose: OTP_LOGIN_CHALLENGE_PURPOSE,
+  },
+  jwtSecret,
+  { expiresIn: `${OTP_EXPIRY_MINUTES}m` },
+);
+
+const verifyOtpLoginChallenge = (challengeToken, user, identifier) => {
+  if (!challengeToken) return false;
+
+  try {
+    const decoded = jwt.verify(challengeToken, jwtSecret, { algorithms: ['HS256'] });
+    return (
+      decoded.purpose === OTP_LOGIN_CHALLENGE_PURPOSE
+      && decoded.id === user.id
+      && decoded.role === user.role
+      && decoded.identifier === normalizeEmail(identifier)
+    );
+  } catch (error) {
+    return false;
+  }
+};
+
+const createOtpRecord = async ({ identifier, type, userId, code }) => {
+  const otpHash = crypto.createHash('sha256').update(code).digest('hex');
+
+  await Otp.destroy({ where: { identifier, type } });
+  await Otp.create({
+    identifier,
+    type,
+    code: otpHash,
+    userId,
+    expiresAt: getOtpExpiryDate(),
+  });
+};
+
+const hasRecentOtpRequest = async (identifier, type) => Otp.findOne({
+  where: {
+    identifier,
+    type,
+    createdAt: { [Op.gt]: new Date(Date.now() - OTP_RESEND_WINDOW_MS) },
+  },
+});
+
+const sendOtpSuccess = (res) => res.json({
+  message: 'If the request is valid, an OTP has been sent.',
+  expiresIn: OTP_EXPIRY_MINUTES * 60,
+});
 
 const createSession = async (user) => {
   user.currentSessionId = crypto.randomUUID();
@@ -111,11 +168,6 @@ const setRefreshTokenCookie = (res, refreshToken) => {
   } catch (err) {
     // Do not block auth flow if cookie setting fails.
   }
-};
-
-const allowRefreshTokenInBody = () => {
-  if (process.env.ALLOW_REFRESH_TOKEN_IN_BODY === 'true') return true;
-  return process.env.NODE_ENV !== 'production';
 };
 
 const buildAuthPayload = async (user) => {
@@ -228,16 +280,11 @@ exports.register = catchAsync(async (req, res, next) => {
   });
 
   const otpCode = generateOtp();
-  const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-  await Otp.destroy({ where: { identifier: normalizedEmail, type: 'email' } });
-  await Otp.create({
+  await createOtpRecord({
     identifier: normalizedEmail,
     type: 'email',
-    code: otpHash,
     userId: user.id,
-    expiresAt,
+    code: otpCode,
   });
 
   queueOtpNotification({
@@ -255,38 +302,34 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 exports.sendOtp = catchAsync(async (req, res, next) => {
-  const { identifier, type = 'email' } = req.body;
+  const { identifier, type = 'email', challengeToken } = req.body;
   const normalizedIdentifier = normalizeIdentifier(identifier, type);
 
   const userWhere = type === 'email' ? { email: normalizedIdentifier } : { phone: normalizedIdentifier };
   const user = await User.findOne({ where: userWhere });
   if (!user) {
-    return next(new AppError(`No account found with this ${type}`, 404));
+    return sendOtpSuccess(res);
   }
 
-  const recentOtp = await Otp.findOne({
-    where: {
-      identifier: normalizedIdentifier,
-      type,
-      createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) },
-    },
-  });
+  const recentOtp = await hasRecentOtpRequest(normalizedIdentifier, type);
 
   if (recentOtp) {
     return next(new AppError('Please wait before requesting a new OTP', 429));
   }
 
-  const otpCode = generateOtp();
-  const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  if (user.isVerified) {
+    const isPrivilegedUser = user.role === 'admin' || user.role === 'superadmin';
+    if (!isPrivilegedUser || !verifyOtpLoginChallenge(challengeToken, user, normalizedIdentifier)) {
+      return sendOtpSuccess(res);
+    }
+  }
 
-  await Otp.destroy({ where: { identifier: normalizedIdentifier, type } });
-  await Otp.create({
+  const otpCode = generateOtp();
+  await createOtpRecord({
     identifier: normalizedIdentifier,
     type,
-    code: otpHash,
     userId: user.id,
-    expiresAt,
+    code: otpCode,
   });
 
   queueOtpNotification({
@@ -297,14 +340,11 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
     expiresMinutes: 5,
   });
 
-  res.json({
-    message: `OTP sent successfully to your ${type}`,
-    expiresIn: 300,
-  });
+  return sendOtpSuccess(res);
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
-  const { identifier, otp } = req.body;
+  const { identifier, otp, challengeToken } = req.body;
   const normalizedIdentifier = String(identifier || '').trim();
   if (!/^\d{6}$/.test(String(otp || ''))) {
     return next(new AppError('Invalid OTP format', 400));
@@ -334,6 +374,16 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
     return next(new AppError('No account found for this OTP request', 404));
   }
 
+  const isPrivilegedUser = user.role === 'admin' || user.role === 'superadmin';
+  if (user.isVerified) {
+    if (!isPrivilegedUser) {
+      return next(new AppError('OTP verification is unavailable for this account.', 403));
+    }
+    if (!verifyOtpLoginChallenge(challengeToken, user, normalizedIdentifier)) {
+      return next(new AppError('Invalid or expired OTP challenge', 401));
+    }
+  }
+
   const wasUnverified = !user.isVerified;
   user.isVerified = true;
   await user.save();
@@ -347,7 +397,6 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 
   res.json({
     token,
-    refreshToken,
     user: {
       id: user.id,
       name: user.name,
@@ -407,16 +456,11 @@ exports.login = catchAsync(async (req, res, next) => {
   // Admin and superadmin users must use OTP for enhanced security
   if (user.role === 'admin' || user.role === 'superadmin') {
     const otpCode = generateOtp();
-    const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    await Otp.destroy({ where: { identifier: normalizedEmail, type: 'email' } });
-    await Otp.create({
+    await createOtpRecord({
       identifier: normalizedEmail,
       type: 'email',
-      code: otpHash,
       userId: user.id,
-      expiresAt,
+      code: otpCode,
     });
 
     queueOtpNotification({
@@ -431,6 +475,7 @@ exports.login = catchAsync(async (req, res, next) => {
       message: `OTP sent to ${normalizedEmail}. Please verify to complete login.`,
       requiresOtp: true,
       identifier: normalizedEmail,
+      challengeToken: signOtpLoginChallenge(user, normalizedEmail),
     });
   }
 
@@ -569,16 +614,11 @@ exports.getMe = catchAsync(async (req, res, next) => {
 
 exports.refreshToken = catchAsync(async (req, res, next) => {
   let refreshToken = null;
-  if (allowRefreshTokenInBody()) {
-    refreshToken = req.body.refreshToken || req.body.refresh_token || null;
-  }
 
-  if (!refreshToken) {
-    if (req.signedCookies && (req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME])) {
-      refreshToken = req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME];
-    } else if (req.cookies && (req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME])) {
-      refreshToken = req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME];
-    }
+  if (req.signedCookies && (req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME])) {
+    refreshToken = req.signedCookies[REFRESH_COOKIE_NAME] || req.signedCookies[LEGACY_REFRESH_COOKIE_NAME];
+  } else if (req.cookies && (req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME])) {
+    refreshToken = req.cookies[REFRESH_COOKIE_NAME] || req.cookies[LEGACY_REFRESH_COOKIE_NAME];
   }
 
   if (!refreshToken) {
@@ -592,7 +632,10 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
       return next(new AppError('Session expired. Please log in again.', 401));
     }
 
-    const newToken = signToken(decoded.id, decoded.sessionId);
+    const sessionId = await createSession(user);
+    const newToken = signToken(user.id, sessionId);
+    const newRefreshToken = signRefreshToken(user.id, sessionId);
+    setRefreshTokenCookie(res, newRefreshToken);
     res.json({ token: newToken });
   } catch (error) {
     return next(new AppError('Invalid or expired refresh token', 401));
@@ -611,16 +654,11 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   }
 
   const otpCode = generateOtp();
-  const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-  await Otp.destroy({ where: { identifier: normalizedEmail, type: 'email' } });
-  await Otp.create({
+  await createOtpRecord({
     identifier: normalizedEmail,
     type: 'email',
-    code: otpHash,
     userId: user.id,
-    expiresAt,
+    code: otpCode,
   });
 
   queueOtpNotification({

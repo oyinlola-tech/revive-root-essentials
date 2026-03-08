@@ -2,6 +2,8 @@ const { User } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 
+const countSuperadmins = () => User.count({ where: { role: 'superadmin' } });
+
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
@@ -73,15 +75,32 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
+  if (req.user?.role !== 'superadmin') {
+    return next(new AppError('Only superadmins can delete user accounts.', 403));
+  }
+
   const user = await User.findByPk(req.params.id);
   if (!user) {
     return next(new AppError('User not found', 404));
+  }
+  if (user.id === req.user.id) {
+    return next(new AppError('Use the self-service delete flow for your own account.', 400));
+  }
+  if (user.role === 'superadmin') {
+    const superadminCount = await countSuperadmins();
+    if (superadminCount <= 1) {
+      return next(new AppError('You cannot delete the last superadmin account.', 400));
+    }
   }
   await user.destroy();
   res.status(204).json(null);
 });
 
 exports.updateUserRole = catchAsync(async (req, res, next) => {
+  if (req.user?.role !== 'superadmin') {
+    return next(new AppError('Only superadmins can change user roles.', 403));
+  }
+
   const { role } = req.body;
   if (!['user', 'admin', 'superadmin'].includes(role)) {
     return next(new AppError('Invalid role', 400));
@@ -91,6 +110,15 @@ exports.updateUserRole = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(new AppError('User not found', 404));
   }
+  if (user.id === req.user.id && role !== req.user.role) {
+    return next(new AppError('You cannot change your own role.', 400));
+  }
+  if (user.role === 'superadmin' && role !== 'superadmin') {
+    const superadminCount = await countSuperadmins();
+    if (superadminCount <= 1) {
+      return next(new AppError('You cannot demote the last superadmin.', 400));
+    }
+  }
 
   user.role = role;
   await user.save();
@@ -98,6 +126,10 @@ exports.updateUserRole = catchAsync(async (req, res, next) => {
 });
 
 exports.createAdminAccount = catchAsync(async (req, res, next) => {
+  if (req.user?.role !== 'superadmin') {
+    return next(new AppError('Only superadmins can create admin accounts.', 403));
+  }
+
   const { name, email, password, phone } = req.body;
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -135,6 +167,12 @@ exports.deleteMyAccount = catchAsync(async (req, res, next) => {
   const user = await User.findByPk(req.user.id);
   if (!user) {
     return next(new AppError('User not found', 404));
+  }
+  if (user.role === 'superadmin') {
+    const superadminCount = await countSuperadmins();
+    if (superadminCount <= 1) {
+      return next(new AppError('You cannot delete the last superadmin account.', 400));
+    }
   }
 
   await user.destroy();

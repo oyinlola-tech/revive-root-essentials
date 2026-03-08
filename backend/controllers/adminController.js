@@ -13,6 +13,7 @@ const logger = new Logger('AdminController');
 const VALID_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const VALID_USER_ROLES = ['user', 'admin', 'superadmin'];
 const VALID_ADMIN_USER_STATUSES = ['active', 'inactive'];
+const countSuperadmins = () => User.count({ where: { role: 'superadmin' } });
 
 const applyDateRange = (where, startDate, endDate) => {
   if (!startDate && !endDate) return where;
@@ -245,6 +246,34 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   }
   if (user.id === req.user.id && role && role !== req.user.role) {
     return next(new AppError('You cannot change your own admin role.', 400));
+  }
+  if (req.user.role !== 'superadmin' && user.role !== 'user') {
+    return next(new AppError('Only superadmins can modify admin accounts.', 403));
+  }
+  if (req.user.role !== 'superadmin' && role && role !== user.role) {
+    return next(new AppError('Only superadmins can change user roles.', 403));
+  }
+  if (req.user.role !== 'superadmin' && typeof isEmailVerified === 'boolean') {
+    return next(new AppError('Only superadmins can change account verification state.', 403));
+  }
+  if (user.role === 'superadmin') {
+    const nextRole = role || user.role;
+    const nextVerifiedState = typeof isEmailVerified === 'boolean'
+      ? isEmailVerified
+      : status
+        ? status === 'active'
+        : user.isVerified;
+
+    if ((nextRole !== 'superadmin' || !nextVerifiedState) && user.id === req.user.id) {
+      return next(new AppError('You cannot reduce your own superadmin access.', 400));
+    }
+
+    if (nextRole !== 'superadmin' || !nextVerifiedState) {
+      const superadminCount = await countSuperadmins();
+      if (superadminCount <= 1) {
+        return next(new AppError('You cannot weaken the last superadmin account.', 400));
+      }
+    }
   }
 
   const oldData = {

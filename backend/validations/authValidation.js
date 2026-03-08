@@ -25,6 +25,7 @@ exports.loginValidation = [
 
 exports.sendOtpValidation = [
   body('type').optional().isIn(['email', 'phone']).withMessage('Type must be email or phone'),
+  body('challengeToken').optional().isString().isLength({ min: 20, max: 2000 }).withMessage('Invalid challenge token'),
   body('identifier').custom((value, { req }) => {
     const type = req.body.type || 'email';
     if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())) {
@@ -39,6 +40,7 @@ exports.sendOtpValidation = [
 
 exports.verifyOtpValidation = [
   body('identifier').trim().notEmpty().withMessage('Identifier is required'),
+  body('challengeToken').optional().isString().isLength({ min: 20, max: 2000 }).withMessage('Invalid challenge token'),
   body('otp').trim().isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
 

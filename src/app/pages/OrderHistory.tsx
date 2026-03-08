@@ -97,7 +97,7 @@ export const OrderHistory = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-gray-900">
-                          {order.currency} {parseFloat(order.totalAmount as string).toFixed(2)}
+                          {order.currency} {order.totalAmount.toFixed(2)}
                         </p>
                       </div>
                     </div>

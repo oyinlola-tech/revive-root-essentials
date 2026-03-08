@@ -118,7 +118,7 @@ interface BackendOrder {
 
 interface AuthResponse {
   token: string;
-  refreshToken: string;
+  refreshToken?: string;
   user: BackendUser;
 }
 
@@ -126,13 +126,14 @@ export interface AuthOtpChallenge {
   requiresOtp: true;
   identifier: string;
   message: string;
+  challengeToken: string;
 }
 
 export type LoginResponse = AuthResponse | AuthOtpChallenge;
 
 export interface AuthSession {
   token: string;
-  refreshToken: string;
+  refreshToken?: string;
   user: BackendUser;
 }
 
@@ -389,7 +390,10 @@ const sortToApi = (sortBy?: "featured" | "price-low" | "price-high"): string | u
 };
 
 export const setAuthSession = (session: AuthSession) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+    token: session.token,
+    user: session.user,
+  }));
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("revive-roots-auth-changed"));
   }
@@ -462,7 +466,7 @@ export const register = async (payload: {
   });
 };
 
-export const verifyOtp = async (payload: { identifier: string; otp: string }) => {
+export const verifyOtp = async (payload: { identifier: string; otp: string; challengeToken?: string }) => {
   const data = await fetchJson<AuthResponse>("/auth/verify-otp", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -471,10 +475,10 @@ export const verifyOtp = async (payload: { identifier: string; otp: string }) =>
   return data;
 };
 
-export const resendOtp = async (identifier: string) => {
+export const resendOtp = async (identifier: string, challengeToken?: string) => {
   return fetchJson<{ message: string; expiresIn: number }>("/auth/send-otp", {
     method: "POST",
-    body: JSON.stringify({ identifier, type: "email" }),
+    body: JSON.stringify({ identifier, type: "email", challengeToken }),
   });
 };
 
