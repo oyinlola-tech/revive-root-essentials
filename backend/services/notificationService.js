@@ -22,7 +22,6 @@ class NotificationService {
     return User.findAll({
       where: {
         role: { [Op.in]: ['admin', 'superadmin'] },
-        isVerified: true,
       },
       attributes: ['id', 'email', 'name'],
     });
@@ -93,6 +92,23 @@ class NotificationService {
     await Promise.all(recipients
       .filter((recipient) => recipient.email)
       .map((recipient) => sendEmail(recipient.email, `New order placed: ${order.orderNumber}`, html)));
+  }
+
+  async sendAdminContactAlert(contact) {
+    const recipients = await this.getAdminRecipients();
+    if (!recipients.length) return;
+
+    const html = templates.adminContactAlertTemplate({
+      name: contact.name,
+      email: contact.email,
+      subject: contact.subject,
+      message: contact.message,
+      submittedAt: new Date(contact.createdAt || Date.now()).toLocaleString(),
+    });
+
+    await Promise.all(recipients
+      .filter((recipient) => recipient.email)
+      .map((recipient) => sendEmail(recipient.email, `New contact message: ${contact.subject || 'General inquiry'}`, html)));
   }
 
   async sendReceiptEmail(user, order, items = []) {

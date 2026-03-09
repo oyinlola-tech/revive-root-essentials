@@ -110,6 +110,11 @@ export function SuperAdminDashboard() {
                   Open Admin Panel
                 </Button>
               </Link>
+              <Link to="/admin/contacts">
+                <Button variant="outline" size="sm">
+                  Contact Messages
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={loadData}>
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Refresh

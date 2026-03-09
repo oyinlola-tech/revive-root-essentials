@@ -40,6 +40,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminCoupons = lazy(() => import("./pages/admin/AdminCoupons"));
 const AdminInventory = lazy(() => import("./pages/admin/AdminInventory"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
+const AdminContacts = lazy(() => import("./pages/admin/AdminContacts"));
 const SuperAdminDashboard = lazyNamed(() => import("./pages/admin/SuperAdminDashboard"), "SuperAdminDashboard");
 const NotFound = lazyNamed(() => import("./pages/NotFound"), "NotFound");
 
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
   { path: "/admin/coupons", Component: AdminCoupons },
   { path: "/admin/inventory", Component: AdminInventory },
   { path: "/admin/audit-logs", Component: AdminAuditLogs },
+  { path: "/admin/contacts", Component: AdminContacts },
   { path: "/super-admin", Component: SuperAdminDashboard },
   { path: "*", Component: NotFound },
 ]);

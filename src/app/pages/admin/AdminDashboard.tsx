@@ -349,6 +349,11 @@ export function AdminDashboard() {
               <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             </div>
             <div className="flex items-center gap-2">
+              <Link to="/admin/contacts">
+                <Button variant="outline" size="sm">
+                  Contact Messages
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={loadDashboardData}>
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Refresh

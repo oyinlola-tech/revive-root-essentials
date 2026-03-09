@@ -332,6 +332,37 @@ exports.adminOrderAlertTemplate = ({ orderNumber, orderDate, customerName, custo
   secondaryCtaUrl: `${FRONTEND_URL}/admin`,
 });
 
+exports.adminContactAlertTemplate = ({ name, email, subject, message, submittedAt }) => baseTemplate({
+  title: `New Contact Message - ${APP_NAME}`,
+  preheader: 'A customer submitted a new message from the contact form.',
+  eyebrow: 'Admin contact alert',
+  heroTitle: 'New contact message received',
+  heroBody: 'A new customer inquiry was submitted from your website contact page. Review details below and follow up directly.',
+  accentLabel: 'Action recommended',
+  introTitle: 'A new contact request is available.',
+  introBody: 'This message has been saved in your admin contact list and was also emailed to admin recipients.',
+  content: `
+    ${infoCard('Sender details', [
+      { label: 'Name', value: name || 'Not provided' },
+      { label: 'Email', value: email || 'Not provided' },
+      { label: 'Submitted at', value: submittedAt || 'Not available' },
+      { label: 'Subject', value: subject || 'No subject' },
+    ])}
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:18px 0 0 0;background:${BRAND.white};border:1px solid ${BRAND.line};border-radius:18px;">
+      <tr>
+        <td style="padding:18px 20px;">
+          <p style="margin:0 0 10px 0;color:${BRAND.forest};font-size:12px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">Message</p>
+          <p style="margin:0;color:${BRAND.ink};font-size:14px;line-height:1.8;white-space:pre-wrap;">${e(message || 'No message content provided.')}</p>
+        </td>
+      </tr>
+    </table>
+  `,
+  ctaLabel: 'Open Contact Messages',
+  ctaUrl: `${FRONTEND_URL}/admin/contacts`,
+  secondaryCtaLabel: 'Reply to Customer',
+  secondaryCtaUrl: email ? `mailto:${email}` : `mailto:${SUPPORT_EMAIL}`,
+});
+
 exports.receiptTemplate = ({ name, orderNumber, paidAt, paymentMethod, items, total, currency = 'NGN' }) => baseTemplate({
   title: `Payment Receipt - ${orderNumber}`,
   preheader: 'Your payment was successful and your receipt is ready.',
