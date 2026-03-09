@@ -22,7 +22,7 @@ class OrderService {
 
         const basePrice = Number(product.price);
         const unitPrice = useConversion
-          ? currencyService.convertNgnToCurrencyWithBuffer(basePrice, conversionRate)
+          ? currencyService.convertNgnToCurrency(basePrice, conversionRate)
           : basePrice;
         const itemTotal = unitPrice * item.quantity;
         subtotal += itemTotal;
@@ -39,7 +39,10 @@ class OrderService {
       }
 
       const shippingQuote = await shippingService.getShippingFee(orderData.shippingAddress, pricingContext);
-      const total = subtotal + Number(shippingQuote.fee || 0);
+      const conversionBaseFee = useConversion
+        ? currencyService.getConvertedBaseFee(targetCurrency, conversionRate, 1000)
+        : 0;
+      const total = Number((subtotal + Number(shippingQuote.fee || 0) + conversionBaseFee).toFixed(2));
 
       // Create order
       const orderNumber = generateOrderNumber();

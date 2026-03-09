@@ -349,6 +349,16 @@ export function AdminDashboard() {
               <h1 className="text-2xl font-bold">Admin Dashboard</h1>
             </div>
             <div className="flex items-center gap-2">
+              <Link to="/admin/shipping-fees">
+                <Button variant="outline" size="sm">
+                  Shipping Fees
+                </Button>
+              </Link>
+              <Link to="/admin/coupons">
+                <Button variant="outline" size="sm">
+                  Coupons
+                </Button>
+              </Link>
               <Link to="/admin/contacts">
                 <Button variant="outline" size="sm">
                   Contact Messages

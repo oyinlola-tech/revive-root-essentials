@@ -68,6 +68,8 @@ interface BackendCartItem {
 
 interface BackendCartResponse {
   items: BackendCartItem[];
+  subtotal?: number;
+  conversionBaseFee?: number;
   total: number;
   currency: string;
 }
@@ -242,6 +244,25 @@ export interface DashboardStats {
   products: number;
   orders: number;
   revenue: number;
+}
+
+export interface ShippingQuote {
+  fee: number;
+  currency: string;
+  matchedRuleId?: string | null;
+  countryCode?: string | null;
+}
+
+export interface ShippingFeeRule {
+  id: string;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  fee: number;
+  currency: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateOrderPayload {
@@ -718,6 +739,88 @@ export const subscribeToNewsletter = async (email: string): Promise<void> => {
 export const unsubscribeFromNewsletter = async (token: string): Promise<{ message: string }> => {
   const query = new URLSearchParams({ token });
   return fetchJson<{ message: string }>(`/newsletter/unsubscribe?${query.toString()}`);
+};
+
+export const quoteShippingFee = async (shippingAddress: {
+  country: string;
+  state: string;
+  city: string;
+  line1?: string;
+  postalCode?: string;
+}): Promise<ShippingQuote> => {
+  return fetchJson<ShippingQuote>("/shipping-fees/quote", {
+    method: "POST",
+    body: JSON.stringify({ shippingAddress }),
+  }, true);
+};
+
+export const getAdminShippingFees = async (): Promise<ShippingFeeRule[]> => {
+  const data = await fetchJson<Array<any>>("/shipping-fees", undefined, true);
+  return (data || []).map((item) => ({
+    id: String(item.id),
+    country: item.country ? String(item.country) : null,
+    state: item.state ? String(item.state) : null,
+    city: item.city ? String(item.city) : null,
+    fee: Number(item.fee || 0),
+    currency: String(item.currency || "NGN").toUpperCase(),
+    isActive: Boolean(item.isActive),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }));
+};
+
+export const createAdminShippingFee = async (payload: {
+  country?: string;
+  state?: string;
+  city?: string;
+  fee: number;
+  currency?: string;
+  isActive?: boolean;
+}): Promise<ShippingFeeRule> => {
+  const data = await fetchJson<any>("/shipping-fees", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, true);
+  return {
+    id: String(data.id),
+    country: data.country ? String(data.country) : null,
+    state: data.state ? String(data.state) : null,
+    city: data.city ? String(data.city) : null,
+    fee: Number(data.fee || 0),
+    currency: String(data.currency || "NGN").toUpperCase(),
+    isActive: Boolean(data.isActive),
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+};
+
+export const updateAdminShippingFee = async (id: string, payload: {
+  country?: string;
+  state?: string;
+  city?: string;
+  fee?: number;
+  currency?: string;
+  isActive?: boolean;
+}): Promise<ShippingFeeRule> => {
+  const data = await fetchJson<any>(`/shipping-fees/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }, true);
+  return {
+    id: String(data.id),
+    country: data.country ? String(data.country) : null,
+    state: data.state ? String(data.state) : null,
+    city: data.city ? String(data.city) : null,
+    fee: Number(data.fee || 0),
+    currency: String(data.currency || "NGN").toUpperCase(),
+    isActive: Boolean(data.isActive),
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+};
+
+export const deleteAdminShippingFee = async (id: string): Promise<void> => {
+  await fetchJson<void>(`/shipping-fees/${encodeURIComponent(id)}`, { method: "DELETE" }, true);
 };
 
 export const getAdminProducts = async (): Promise<AdminProduct[]> => {

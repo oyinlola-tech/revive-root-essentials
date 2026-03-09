@@ -20,16 +20,26 @@ exports.getCart = catchAsync(async (req, res, next) => {
     productId: item.productId,
     name: item.Product.name,
     price: useConversion
-      ? currencyService.convertNgnToCurrencyWithBuffer(Number(item.Product.price), conversionRate)
+      ? currencyService.convertNgnToCurrency(Number(item.Product.price), conversionRate)
       : Number(item.Product.price),
     quantity: item.quantity,
     image: item.Product.imageUrl,
     currency: targetCurrency,
   }));
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const conversionBaseFee = useConversion
+    ? currencyService.getConvertedBaseFee(targetCurrency, conversionRate, 1000)
+    : 0;
+  const total = Number((subtotal + conversionBaseFee).toFixed(2));
 
-  res.json({ items, total, currency: targetCurrency });
+  res.json({
+    items,
+    subtotal: Number(subtotal.toFixed(2)),
+    conversionBaseFee,
+    total,
+    currency: targetCurrency,
+  });
 });
 
 exports.addToCart = catchAsync(async (req, res, next) => {

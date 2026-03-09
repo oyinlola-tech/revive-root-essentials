@@ -24,6 +24,7 @@ interface CommerceContextValue {
   cartCount: number;
   wishlistCount: number;
   subtotal: number;
+  conversionBaseFee: number;
   addToCart: (product: Product, quantity?: number) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
@@ -72,6 +73,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<Product[]>(() =>
     readStorage<Product[]>(WISHLIST_KEY, []).map((item) => normalizeProductShape(item)),
   );
+  const [conversionBaseFee, setConversionBaseFee] = useState(0);
   const [authToken, setAuthToken] = useState(() => getAuthSession()?.token || "");
 
   const isAuthenticated = Boolean(authToken);
@@ -103,6 +105,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       }));
 
       setCartItems(mappedCart);
+      setConversionBaseFee(Number(remoteCart.conversionBaseFee || 0));
       setWishlist(remoteWishlist.map((item) => normalizeProductShape(item)));
     } catch {
       // Keep current in-memory data if sync fails.
@@ -129,6 +132,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      setConversionBaseFee(0);
       localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
     }
   }, [cartItems, isAuthenticated]);
@@ -201,6 +205,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setCartItems([]);
+    setConversionBaseFee(0);
     if (isAuthenticated) {
       void clearMyCart()
         .then(() => syncRemoteCommerce())
@@ -238,6 +243,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       cartCount,
       wishlistCount: wishlist.length,
       subtotal,
+      conversionBaseFee,
       addToCart,
       updateCartQuantity,
       removeFromCart,
@@ -245,7 +251,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
       toggleWishlist,
       isWishlisted,
     };
-  }, [cartItems, wishlist]);
+  }, [cartItems, wishlist, conversionBaseFee]);
 
   return <CommerceContext.Provider value={value}>{children}</CommerceContext.Provider>;
 }

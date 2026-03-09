@@ -119,12 +119,23 @@ const convertNgnToUsdWithBuffer = (ngnValue, rate) => {
   return convertNgnToCurrencyWithBuffer(ngnValue, rate);
 };
 
-const convertNgnToCurrencyWithBuffer = (ngnValue, rate) => {
+const convertNgnToCurrency = (ngnValue, rate) => {
   const base = Number(ngnValue);
-  if (!rate || Number.isNaN(base)) return 0;
-  const addNgnBuffer = rate !== 1 ? 1000 : 0;
-  const converted = (base + addNgnBuffer) * rate;
-  return Number(converted.toFixed(2));
+  const conversionRate = Number(rate);
+  if (!conversionRate || Number.isNaN(base) || Number.isNaN(conversionRate)) return 0;
+  return Number((base * conversionRate).toFixed(2));
+};
+
+const convertNgnToCurrencyWithBuffer = (ngnValue, rate) => {
+  const conversionRate = Number(rate);
+  const addNgnBuffer = conversionRate !== 1 ? 1000 : 0;
+  return convertNgnToCurrency(Number(ngnValue) + addNgnBuffer, conversionRate);
+};
+
+const getConvertedBaseFee = (currency, rate, ngnBaseFee = 1000) => {
+  const normalized = String(currency || 'NGN').toUpperCase();
+  if (normalized === 'NGN') return 0;
+  return convertNgnToCurrency(ngnBaseFee, rate);
 };
 
 const isSupportedChargeCurrency = (currency) => SUPPORTED_CHARGE_CURRENCIES.has(currency);
@@ -163,8 +174,10 @@ module.exports = {
   getPricingContext,
   getNgnToUsdRate: async () => getNgnToCurrencyRate('USD'),
   getNgnToCurrencyRate,
+  convertNgnToCurrency,
   convertNgnToUsdWithBuffer,
   convertNgnToCurrencyWithBuffer,
+  getConvertedBaseFee,
   isSupportedChargeCurrency,
   SUPPORTED_CHARGE_CURRENCIES,
 };

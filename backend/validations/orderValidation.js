@@ -27,7 +27,16 @@ exports.createOrderValidation = [
   body('items.*.quantity').isInt({ min: 1, max: 100 }).withMessage('Quantity must be between 1 and 100'),
   body('shippingAddress').isObject().withMessage('Shipping address is required'),
   body('shippingAddress.country').trim().notEmpty().withMessage('Shipping country is required'),
-  body('shippingAddress.state').trim().notEmpty().withMessage('Shipping state is required'),
+  body('shippingAddress.state')
+    .optional({ checkFalsy: true })
+    .trim()
+    .custom((value, { req }) => {
+      const country = String(req.body?.shippingAddress?.country || '').trim().toLowerCase();
+      if (country === 'nigeria' && !String(value || '').trim()) {
+        throw new Error('Shipping state is required for Nigeria');
+      }
+      return true;
+    }),
   body('shippingAddress.city').trim().notEmpty().withMessage('Shipping city is required'),
   body('shippingAddress.line1').trim().notEmpty().withMessage('Address line is required'),
   body('shippingAddress.postalCode').optional({ checkFalsy: true }).trim().isLength({ min: 3, max: 15 }).withMessage('Postal code is invalid'),

@@ -115,6 +115,16 @@ export function SuperAdminDashboard() {
                   Contact Messages
                 </Button>
               </Link>
+              <Link to="/admin/shipping-fees">
+                <Button variant="outline" size="sm">
+                  Shipping Fees
+                </Button>
+              </Link>
+              <Link to="/admin/coupons">
+                <Button variant="outline" size="sm">
+                  Coupons
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={loadData}>
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Refresh

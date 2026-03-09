@@ -13,7 +13,7 @@ const applyPricingContext = (product, pricingContext) => {
   }
 
   const basePrice = Number(product.price);
-  const convertedPrice = currencyService.convertNgnToCurrencyWithBuffer(basePrice, pricingContext.rate);
+  const convertedPrice = currencyService.convertNgnToCurrency(basePrice, pricingContext.rate);
   product.setDataValue('price', convertedPrice);
   product.setDataValue('currency', targetCurrency);
 };

@@ -3,6 +3,8 @@ const { ShippingFee } = require('../models');
 const currencyService = require('./currencyService');
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
+const INTERNATIONAL_RULE_TOKEN = '__international__';
+const NIGERIA = 'nigeria';
 
 class ShippingService {
   async getShippingFee(shippingAddress, pricingContext = { currency: 'NGN', rate: 1 }) {
@@ -15,16 +17,35 @@ class ShippingService {
       order: [['createdAt', 'DESC']],
     });
 
-    const bestRule = allRules.find((rule) => {
+    // 1) Most specific country rule (city > state > country)
+    const countryRules = allRules.filter((rule) => {
       const rc = normalize(rule.country);
+      if (!rc || rc === INTERNATIONAL_RULE_TOKEN) return false;
+      if (rc !== country) return false;
+      return true;
+    });
+
+    const bestCountryRule = countryRules.find((rule) => {
       const rs = normalize(rule.state);
       const rcity = normalize(rule.city);
 
       if (rcity && rcity !== city) return false;
-      if (rs && rs !== state) return false;
-      if (rc && rc !== country) return false;
+      if (country === NIGERIA && rs && rs !== state) return false;
       return true;
     });
+
+    // 2) Fallback rule for countries not explicitly configured
+    const bestInternationalRule = allRules.find((rule) => {
+      const rc = normalize(rule.country);
+      if (rc !== INTERNATIONAL_RULE_TOKEN) return false;
+      const rs = normalize(rule.state);
+      const rcity = normalize(rule.city);
+      if (rcity && rcity !== city) return false;
+      if (rs && rs !== state) return false;
+      return true;
+    });
+
+    const bestRule = bestCountryRule || bestInternationalRule;
 
     const baseFee = Number(bestRule?.fee || 0);
     let fee = baseFee;

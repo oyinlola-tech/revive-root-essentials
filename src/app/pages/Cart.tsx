@@ -1,15 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Separator } from "../components/ui/separator";
 import { useCommerce } from "../contexts/CommerceContext";
-import { createOrder, getAuthSession } from "../services/api";
+import { createOrder, getAuthSession, quoteShippingFee } from "../services/api";
 import { formatMoney } from "../utils/formatMoney";
 import { PRODUCT_FALLBACK_IMAGES, getProductImageByCategory } from "../utils/productImages";
 import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
+import { SUPPORTED_COUNTRIES, STATES_BY_COUNTRY } from "../constants/countries";
 
 const initialCheckout = {
   country: "Nigeria",
@@ -22,16 +31,66 @@ const initialCheckout = {
 
 export function Cart() {
   const navigate = useNavigate();
-  const { cartItems, subtotal, updateCartQuantity, removeFromCart, clearCart } = useCommerce();
+  const { cartItems, subtotal, conversionBaseFee, updateCartQuantity, removeFromCart, clearCart } = useCommerce();
   const [checkout, setCheckout] = useState(initialCheckout);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [shippingFee, setShippingFee] = useState(0);
+  const [isShippingFeeLoading, setIsShippingFeeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const activeCurrency = cartItems[0]?.product.currency || "NGN";
+  const stateOptions = checkout.country === "Nigeria" ? (STATES_BY_COUNTRY.Nigeria || []) : [];
 
-  const shipping = useMemo(() => (subtotal > 100 ? 0 : 10), [subtotal]);
-  const tax = useMemo(() => subtotal * 0.02, [subtotal]);
-  const total = subtotal + shipping + tax;
+  const total = useMemo(
+    () => Number((subtotal + conversionBaseFee + shippingFee).toFixed(2)),
+    [subtotal, conversionBaseFee, shippingFee],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadShippingQuote = async () => {
+      const session = getAuthSession();
+      if (!session || cartItems.length === 0) {
+        setShippingFee(0);
+        return;
+      }
+
+      if (!checkout.country.trim() || !checkout.state.trim() || !checkout.city.trim()) {
+        setShippingFee(0);
+        return;
+      }
+
+      setIsShippingFeeLoading(true);
+      try {
+        const quote = await quoteShippingFee({
+          country: checkout.country.trim(),
+          state: checkout.state.trim(),
+          city: checkout.city.trim(),
+          line1: checkout.line1.trim() || undefined,
+          postalCode: checkout.postalCode.trim() || undefined,
+        });
+        if (!cancelled) {
+          setShippingFee(Number(quote.fee || 0));
+        }
+      } catch {
+        if (!cancelled) {
+          setShippingFee(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsShippingFeeLoading(false);
+        }
+      }
+    };
+
+    void loadShippingQuote();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartItems.length, checkout.country, checkout.state, checkout.city, checkout.line1, checkout.postalCode]);
 
   const handleCheckout = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -44,8 +103,8 @@ export function Cart() {
     }
 
     // Validate shipping address
-    if (!checkout.state.trim()) {
-      setErrorMessage("State/Province is required.");
+    if (checkout.country === "Nigeria" && !checkout.state.trim()) {
+      setErrorMessage("State is required for deliveries in Nigeria.");
       return;
     }
     if (!checkout.city.trim()) {
@@ -77,7 +136,7 @@ export function Cart() {
         })),
         shippingAddress: {
           country: checkout.country,
-          state: checkout.state.trim(),
+          state: checkout.country === "Nigeria" ? checkout.state.trim() : "",
           city: checkout.city.trim(),
           line1: checkout.line1.trim(),
           postalCode: checkout.postalCode?.trim() || undefined,
@@ -88,6 +147,8 @@ export function Cart() {
 
       clearCart();
       setCheckout(initialCheckout);
+      setShippingFee(0);
+      setIsCheckoutModalOpen(false);
       setSuccessMessage(`Order ${response.orderNumber} created successfully.`);
 
       const paymentUrl = response.paymentUrl;
@@ -175,109 +236,182 @@ export function Cart() {
             <h2 className="text-2xl font-semibold mb-4">Checkout</h2>
             <div className="space-y-2 text-sm mb-4">
               <div className="flex justify-between">
-                <span>Subtotal</span>
+                <span>Items Subtotal</span>
                 <span>{formatMoney(subtotal, activeCurrency)}</span>
               </div>
+              {conversionBaseFee > 0 && (
+                <div className="flex justify-between">
+                  <span>Currency Base Fee (₦1000)</span>
+                  <span>{formatMoney(conversionBaseFee, activeCurrency)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? "FREE" : formatMoney(shipping, activeCurrency)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tax</span>
-                <span>{formatMoney(tax, activeCurrency)}</span>
+                <span>Estimated Shipping</span>
+                <span>{isShippingFeeLoading ? "Calculating..." : formatMoney(shippingFee, activeCurrency)}</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between text-base font-semibold">
-                <span>Total</span>
+                <span>Estimated Total</span>
                 <span>{formatMoney(total, activeCurrency)}</span>
               </div>
             </div>
 
-            <form onSubmit={handleCheckout} className="space-y-3">
-              <div>
-                <Label>Country</Label>
-                <Input
-                  value={checkout.country}
-                  readOnly
-                  required
-                />
-              </div>
-              <div>
-                <Label>State/Province</Label>
-                <Input
-                  value={checkout.state}
-                  onChange={(event) => setCheckout({ ...checkout, state: event.target.value })}
-                  placeholder="e.g. Lagos"
-                  required
-                />
-              </div>
-              <div>
-                <Label>City</Label>
-                <Input
-                  value={checkout.city}
-                  onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
-                  placeholder="e.g. Lekki"
-                  required
-                />
-              </div>
-              <div>
-                <Label>Street Address</Label>
-                <Input
-                  value={checkout.line1}
-                  onChange={(event) => setCheckout({ ...checkout, line1: event.target.value })}
-                  placeholder="e.g. 123 Main Street"
-                  required
-                />
-              </div>
-              <div>
-                <Label>Postal Code (Optional)</Label>
-                <Input
-                  value={checkout.postalCode}
-                  onChange={(event) => setCheckout({ ...checkout, postalCode: event.target.value })}
-                  placeholder="e.g. 100001"
-                />
-              </div>
-              <fieldset className="space-y-3" aria-label="Choose payment method">
-                <legend className="text-sm font-medium">Payment Method</legend>
-                {[
-                  { value: "card", label: "Card", helper: "Pay securely with Visa, MasterCard, Verve." },
-                  { value: "ussd", label: "USSD", helper: "Dial a short code from your bank to confirm." },
-                  { value: "transfer", label: "Bank Transfer", helper: "Instant bank transfer with auto verification." },
-                ].map((method) => (
-                  <label
-                    key={method.value}
-                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition hover:border-primary ${
-                      checkout.paymentMethod === method.value ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method.value}
-                      checked={checkout.paymentMethod === method.value}
-                      onChange={() => setCheckout({ ...checkout, paymentMethod: method.value as typeof checkout.paymentMethod })}
-                      className="mt-1"
-                      aria-describedby={`${method.value}-helper`}
-                    />
+            <Dialog open={isCheckoutModalOpen} onOpenChange={setIsCheckoutModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full">Open Checkout</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Secure Checkout</DialogTitle>
+                  <DialogDescription>
+                    Confirm your address and payment method. We will redirect you to a secure payment page.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCheckout} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <div className="font-semibold">{method.label}</div>
-                      <p id={`${method.value}-helper`} className="text-sm text-muted-foreground">
-                        {method.helper}
-                      </p>
+                      <Label>Country</Label>
+                      <select
+                        value={checkout.country}
+                        onChange={(event) => setCheckout({
+                          ...checkout,
+                          country: event.target.value,
+                          state: "",
+                        })}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg"
+                        required
+                      >
+                        {SUPPORTED_COUNTRIES.map((country) => (
+                          <option key={country} value={country}>{country}</option>
+                        ))}
+                      </select>
                     </div>
-                  </label>
-                ))}
-              </fieldset>
-              {errorMessage && (
-                <p className="text-sm text-red-600" role="alert" aria-live="assertive">
-                  {errorMessage}
-                </p>
-              )}
-              {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Processing..." : `Pay ${formatMoney(total, activeCurrency)}`}
-              </Button>
-            </form>
+                    <div>
+                      <Label>State/Province</Label>
+                      {checkout.country === "Nigeria" ? (
+                        <select
+                          value={checkout.state}
+                          onChange={(event) => setCheckout({ ...checkout, state: event.target.value })}
+                          className="w-full px-3 py-2 bg-background border border-border rounded-lg"
+                          required
+                        >
+                          <option value="">Select state</option>
+                          {stateOptions.map((state) => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          value={checkout.state}
+                          onChange={(event) => setCheckout({ ...checkout, state: event.target.value })}
+                          placeholder="Not required outside Nigeria"
+                          disabled
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <Label>City</Label>
+                      <Input
+                        value={checkout.city}
+                        onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
+                        placeholder="e.g. Lekki"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Postal Code (Optional)</Label>
+                      <Input
+                        value={checkout.postalCode}
+                        onChange={(event) => setCheckout({ ...checkout, postalCode: event.target.value })}
+                        placeholder="e.g. 100001"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Street Address</Label>
+                    <Input
+                      value={checkout.line1}
+                      onChange={(event) => setCheckout({ ...checkout, line1: event.target.value })}
+                      placeholder="e.g. 123 Main Street"
+                      required
+                    />
+                  </div>
+
+                  <fieldset className="space-y-3" aria-label="Choose payment method">
+                    <legend className="text-sm font-medium">Payment Method</legend>
+                    {[
+                      { value: "card", label: "Card", helper: "Pay securely with Visa, MasterCard, Verve." },
+                      { value: "ussd", label: "USSD", helper: "Dial a short code from your bank to confirm." },
+                      { value: "transfer", label: "Bank Transfer", helper: "Instant bank transfer with auto verification." },
+                    ].map((method) => (
+                      <label
+                        key={method.value}
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition hover:border-primary ${
+                          checkout.paymentMethod === method.value ? "border-primary bg-primary/5" : "border-border"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value={method.value}
+                          checked={checkout.paymentMethod === method.value}
+                          onChange={() => setCheckout({ ...checkout, paymentMethod: method.value as typeof checkout.paymentMethod })}
+                          className="mt-1"
+                          aria-describedby={`${method.value}-helper`}
+                        />
+                        <div>
+                          <div className="font-semibold">{method.label}</div>
+                          <p id={`${method.value}-helper`} className="text-sm text-muted-foreground">
+                            {method.helper}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </fieldset>
+
+                  <div className="rounded-lg border border-border p-4 text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span>Items Subtotal</span>
+                      <span>{formatMoney(subtotal, activeCurrency)}</span>
+                    </div>
+                    {conversionBaseFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Currency Base Fee (₦1000)</span>
+                        <span>{formatMoney(conversionBaseFee, activeCurrency)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Shipping</span>
+                      <span>
+                        {isShippingFeeLoading ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Calculating
+                          </span>
+                        ) : formatMoney(shippingFee, activeCurrency)}
+                      </span>
+                    </div>
+                    <Separator className="my-2" />
+                    <div className="flex justify-between font-semibold text-base">
+                      <span>Total</span>
+                      <span>{formatMoney(total, activeCurrency)}</span>
+                    </div>
+                  </div>
+
+                  {errorMessage && (
+                    <p className="text-sm text-red-600" role="alert" aria-live="assertive">
+                      {errorMessage}
+                    </p>
+                  )}
+                  {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
+
+                  <Button type="submit" className="w-full" disabled={submitting || isShippingFeeLoading}>
+                    {submitting ? "Processing..." : `Pay ${formatMoney(total, activeCurrency)}`}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
