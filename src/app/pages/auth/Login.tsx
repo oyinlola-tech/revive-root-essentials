@@ -47,6 +47,15 @@ export function Login() {
         return;
       }
 
+      if ("verificationRequired" in response && response.verificationRequired && response.identifier) {
+        const redirect = searchParams.get("redirect");
+        const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
+        navigate(`/auth/otp?identifier=${encodeURIComponent(response.identifier)}${redirectQuery}`, {
+          state: { message: response.message },
+        });
+        return;
+      }
+
       if (!("token" in response)) {
         setError("Unable to complete login. Please try again.");
         return;

@@ -36,6 +36,40 @@ const queueOtpNotification = ({ channel, recipient, name, code, expiresMinutes =
     verificationUrl,
   }).catch(() => {});
 };
+
+const sendVerificationContinuation = async (res, user, identifier) => {
+  const normalizedIdentifier = normalizeEmail(identifier || user.email);
+  const recentOtp = await hasRecentOtpRequest(normalizedIdentifier, 'email');
+
+  if (!recentOtp) {
+    const otpCode = generateOtp();
+    const verificationUrl = getEmailVerificationUrl(signEmailVerificationToken(user));
+
+    await createOtpRecord({
+      identifier: normalizedIdentifier,
+      type: 'email',
+      userId: user.id,
+      code: otpCode,
+    });
+
+    queueOtpNotification({
+      channel: 'email',
+      recipient: normalizedIdentifier,
+      name: user.name,
+      code: otpCode,
+      expiresMinutes: OTP_EXPIRY_MINUTES,
+      verificationUrl,
+    });
+  }
+
+  return res.status(202).json({
+    message: recentOtp
+      ? 'Verification is still pending. Check your email for the code or verification link.'
+      : 'We sent a fresh verification email. Use the OTP or the link to continue.',
+    verificationRequired: true,
+    identifier: normalizedIdentifier,
+  });
+};
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 const appleKeysClient = jwksClient({
   jwksUri: 'https://appleid.apple.com/auth/keys',
@@ -541,7 +575,7 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   if (!user.isVerified) {
-    return next(new AppError('Please verify your email before logging in', 403));
+    return sendVerificationContinuation(res, user, normalizedEmail);
   }
 
   // Reset attempts on successful login

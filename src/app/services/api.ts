@@ -129,7 +129,13 @@ export interface AuthOtpChallenge {
   challengeToken: string;
 }
 
-export type LoginResponse = AuthResponse | AuthOtpChallenge;
+export interface AuthVerificationRequired {
+  verificationRequired: true;
+  identifier: string;
+  message: string;
+}
+
+export type LoginResponse = AuthResponse | AuthOtpChallenge | AuthVerificationRequired;
 
 export interface AuthSession {
   token: string;
