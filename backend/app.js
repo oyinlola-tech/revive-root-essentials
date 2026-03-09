@@ -50,15 +50,30 @@ const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
-const allowedOrigins = configuredOrigins.length > 0
-  ? configuredOrigins
-  : [
-    'https://revive-root-essentials.telente.site',
-    'https://www.revive-root-essentials.telente.site',
-    /.*\\.revive-root-essentials\\.telente\\.site$/,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ];
+const defaultOrigins = [
+  'https://revive-root-essentials.telente.site',
+  'https://www.revive-root-essentials.telente.site',
+  /.*\\.revive-root-essentials\\.telente\\.site$/,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+const allowedOrigins = [...configuredOrigins, ...defaultOrigins];
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // allow same-origin/non-browser requests
+  return allowedOrigins.some((entry) => {
+    if (entry instanceof RegExp) return entry.test(origin);
+    if (entry === origin) return true;
+    try {
+      // compare by host to ignore trailing slashes and schema changes (http/https) when needed
+      const entryHost = new URL(entry).host;
+      const originHost = new URL(origin).host;
+      return entryHost && entryHost === originHost;
+    } catch {
+      return false;
+    }
+  });
+};
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -131,12 +146,7 @@ app.use(globalLimiter);
 app.use(suspiciousActivityDetectionMiddleware);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-    // Allow regex origins (e.g., subdomains)
-    if (allowedOrigins.some((entry) => entry instanceof RegExp && entry.test(origin))) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
       return;
     }
