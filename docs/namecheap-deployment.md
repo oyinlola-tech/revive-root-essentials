@@ -1,135 +1,38 @@
-# Namecheap Deployment
+# Namecheap / LiteSpeed deployment notes
 
-This project can be deployed on Namecheap with:
+The current production failure is not an application CORS bug alone. The live host is returning a LiteSpeed `503 Service Unavailable` page before the Node app responds.
 
-- frontend: `https://revive-root-essentials.telente.site`
-- backend: `https://api.revive-root-essentials.telente.site`
+## What the browser error means
 
-## Target layout
+When the browser sends a preflight `OPTIONS` request and receives a `503` HTML page without `Access-Control-Allow-Origin`, it reports a CORS failure. In this state the real issue is upstream availability or proxy routing, not only Express middleware.
 
-- `revive-root-essentials.telente.site` serves the built Vite frontend from static files.
-- `api.revive-root-essentials.telente.site` runs the Node.js backend from `backend/server.js`.
+## Required hosting checks
 
-## 1. Create the subdomains in cPanel
+1. Ensure the Node app is actually running and listening on the port Namecheap assigned.
+2. Ensure the LiteSpeed / Passenger / reverse-proxy layer forwards:
+   - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`
+   - `OPTIONS`
+3. Ensure the proxy does not intercept `OPTIONS` and return its own 503 page.
+4. Set `TRUST_PROXY=true` in production so Express respects forwarded headers.
+5. Set `NODE_ENV=production`, `COOKIE_SECRET`, and all DB/JWT/payment env vars before boot.
 
-Create these two subdomains in cPanel:
+## Required verification before release
 
-- `revive-root-essentials.telente.site`
-- `api.revive-root-essentials.telente.site`
-
-Use separate document roots for them.
-
-Suggested directories:
-
-- frontend document root: `~/revive-root-essentials-frontend`
-- backend app root: `~/revive-root-essentials`
-
-## 2. Frontend environment
-
-Create `frontend-env/.env.production` from the template:
+Run:
 
 ```bash
-cp frontend-env/.env.production.example frontend-env/.env.production
+npm run check:deployment
 ```
 
-Required values:
+Expected result:
 
-```env
-VITE_API_URL=https://api.revive-root-essentials.telente.site/api
-VITE_BACKEND_ORIGIN=https://api.revive-root-essentials.telente.site
-VITE_SITE_URL=https://revive-root-essentials.telente.site
-VITE_OAUTH_CALLBACK_URI=https://revive-root-essentials.telente.site/auth/oauth-callback
-VITE_APPLE_REDIRECT_URI=https://revive-root-essentials.telente.site/auth/oauth-callback
-```
+- `/health` returns `200`
+- `/api/version` returns `200`
+- `OPTIONS /api/products/featured` returns `204` or `200`
+- `Access-Control-Allow-Origin` is present for `https://revive-root-essentials.telente.site`
 
-Build the frontend:
+## Important behavior
 
-```bash
-npm ci
-npm run build
-```
-
-Upload the contents of `dist/` to the frontend document root for `revive-root-essentials.telente.site`.
-
-## 3. Backend environment
-
-Configure `backend/.env` with production values.
-
-The hostname-related settings should be:
-
-```env
-NODE_ENV=production
-PORT=3000
-TRUST_PROXY=true
-CORS_ORIGIN=https://revive-root-essentials.telente.site
-FRONTEND_URL=https://revive-root-essentials.telente.site
-SERVE_FRONTEND_FROM_BACKEND=false
-```
-
-Also fill in the real values for:
-
-- MySQL credentials
-- JWT secrets
-- Flutterwave keys
-- email credentials
-- Twilio credentials if used
-
-## 4. Create the Node.js app in Namecheap cPanel
-
-In cPanel:
-
-1. Open `Setup Node.js App`.
-2. Create a new application.
-3. Use:
-   - Node.js version: `20.x` if available, otherwise the latest LTS available in your panel
-   - Application mode: `Production`
-   - Application root: the repo directory
-   - Application URL: `api.revive-root-essentials.telente.site`
-   - Application startup file: `backend/server.js`
-4. Save the app.
-
-Then open the app dashboard, enter the virtual environment command shown there, and install dependencies:
-
-```bash
-npm ci
-cd backend && npm ci
-```
-
-Restart the Node.js app from cPanel after installs or env changes.
-
-## 5. Database
-
-Create the MySQL database and user in cPanel, then set:
-
-```env
-DB_HOST=your_namecheap_db_host
-DB_PORT=3306
-DB_USER=your_db_username
-DB_PASSWORD=your_db_password
-DB_NAME=revive_roots
-```
-
-The backend already runs `sequelize.sync()`, so it will create missing tables on startup.
-
-## 6. SSL
-
-Enable SSL for both subdomains in cPanel:
-
-- `revive-root-essentials.telente.site`
-- `api.revive-root-essentials.telente.site`
-
-If AutoSSL does not attach automatically, run it manually from `SSL/TLS Status`.
-
-## 7. Verification
-
-Verify these URLs after deployment:
-
-- frontend: `https://revive-root-essentials.telente.site`
-- backend health: `https://api.revive-root-essentials.telente.site/health`
-- backend version: `https://api.revive-root-essentials.telente.site/api/version`
-
-## Notes
-
-- The backend is now configured to serve the frontend only when `SERVE_FRONTEND_FROM_BACKEND=true`.
-- For your split-domain setup, keep `SERVE_FRONTEND_FROM_BACKEND=false`.
-- If your Namecheap plan does not expose `Setup Node.js App`, that plan cannot run this backend directly; use a Namecheap VPS or another Node-capable host for the API.
+- Public GET endpoints should avoid unnecessary custom headers to reduce preflights.
+- Authenticated endpoints using `Authorization` will still preflight. That is normal and must be supported by the host.
+- If `npm run check:deployment` fails with `503 allow-origin=missing`, fix hosting/proxy routing before debugging application code further.

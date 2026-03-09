@@ -348,6 +348,17 @@ const getSession = (): AuthSession | null => {
 
 let csrfTokenCache: Record<string, string | null> = {};
 
+const appendQueryParam = (path: string, key: string, value: string) => {
+  if (!value) return path;
+  const [pathname, queryString = ""] = path.split("?");
+  const query = new URLSearchParams(queryString);
+  if (!query.has(key)) {
+    query.set(key, value);
+  }
+  const nextQuery = query.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+};
+
 const refreshCsrfToken = async (baseUrl: string) => {
   try {
     const csrfResp = await fetch(`${baseUrl}/version`, {
@@ -370,6 +381,8 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
   const requestMethod = String(init?.method || "GET").toUpperCase();
   const retryAttempts = requestMethod === "GET" ? MAX_GET_RETRIES : 0;
   const isFormDataBody = typeof FormData !== "undefined" && init?.body instanceof FormData;
+  const isUnsafeMethod = ["POST", "PUT", "PATCH", "DELETE"].includes(requestMethod);
+  const preferredCurrency = getPreferredCurrency();
 
   for (const baseUrl of baseUrls) {
     for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
@@ -379,20 +392,24 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
       try {
         // The backend invalidates CSRF tokens after each unsafe request,
         // so refresh before every POST/PUT/PATCH/DELETE instead of reusing a cached token.
-        if (requestMethod !== 'GET') {
+        if (isUnsafeMethod) {
           await refreshCsrfToken(baseUrl);
         }
 
-        const response = await fetch(`${baseUrl}${path}`, {
+        const requestPath = requestMethod === "GET"
+          ? appendQueryParam(path, "currency", preferredCurrency)
+          : path;
+        const response = await fetch(`${baseUrl}${requestPath}`, {
           headers: {
             ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-            "X-Currency": getPreferredCurrency(),
-            ...(csrfTokenCache[baseUrl] ? { 'X-CSRF-Token': csrfTokenCache[baseUrl] as string } : {}),
-            ...(!isFormDataBody ? { "Content-Type": "application/json" } : {}),
+            ...(isUnsafeMethod ? { "X-Currency": preferredCurrency } : {}),
+            ...(isUnsafeMethod && csrfTokenCache[baseUrl] ? { "X-CSRF-Token": csrfTokenCache[baseUrl] as string } : {}),
+            ...(!isFormDataBody && init?.body ? { "Content-Type": "application/json" } : {}),
             ...(init?.headers || {}),
           },
           // include credentials so cookies are sent/received across origins
-          credentials: 'include',
+          credentials: "include",
+          mode: "cors",
           ...init,
           signal: controller.signal,
         });

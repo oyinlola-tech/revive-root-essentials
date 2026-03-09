@@ -10,7 +10,8 @@
     "build": "vite build",
     "start": "node scripts/run-both.js start",
     "check:version": "node scripts/check-version-bump.cjs",
-    "bump:patch": "node scripts/auto-bump-version.cjs"
+    "bump:patch": "node scripts/auto-bump-version.cjs",
+    "check:deployment": "node scripts/check-deployment-cors.cjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
