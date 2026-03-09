@@ -9,6 +9,22 @@ class PaymentService {
     this.secretKey = config.secretKey;
     this.publicKey = config.publicKey;
     this.webhookSecretHash = String(process.env.FLW_WEBHOOK_SECRET_HASH || '').trim();
+    const defaultCurrencies = [
+      'GBP', 'CAD', 'XAF', 'COP', 'EGP', 'EUR', 'GHS', 'KES', 'IRN', 'NGN',
+      'RWF', 'SLL', 'ZAR', 'TZS', 'UGX', 'USD', 'XOF', 'ZMW',
+    ];
+    this.allowedCurrencies = (process.env.ALLOWED_PAYMENT_CURRENCIES || defaultCurrencies.join(','))
+      .split(',')
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
+    this.allowedRedirectHosts = new Set(
+      [process.env.FRONTEND_URL]
+        .filter(Boolean)
+        .map((url) => {
+          try { return new URL(url).host; } catch { return null; }
+        })
+        .filter(Boolean),
+    );
     this.flw = this.publicKey && this.secretKey
       ? new Flutterwave(this.publicKey, this.secretKey)
       : null;
@@ -16,20 +32,48 @@ class PaymentService {
 
   // Initialize a transaction (charge)
   async initiateTransaction({ amount, email, currency, reference, callbackUrl, paymentMethod }) {
+    if (!this.secretKey || !this.publicKey) {
+      throw new Error('Payment keys are not configured');
+    }
+
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      throw new Error('Invalid amount for payment');
+    }
+
+    const normalizedCurrency = String(currency || 'NGN').toUpperCase();
+    if (!this.allowedCurrencies.includes(normalizedCurrency)) {
+      throw new Error(`Currency ${normalizedCurrency} is not allowed for payments`);
+    }
+
+    if (callbackUrl) {
+      try {
+        const callbackHost = new URL(callbackUrl).host;
+        if (this.allowedRedirectHosts.size && !this.allowedRedirectHosts.has(callbackHost)) {
+          throw new Error(`Callback host ${callbackHost} not allowed`);
+        }
+      } catch (error) {
+        throw new Error('Invalid payment callback URL');
+      }
+    }
+
     try {
       const paymentOptionMap = {
         card: 'card',
         ussd: 'ussd',
         transfer: 'banktransfer',
       };
-      const paymentOptions = paymentOptionMap[paymentMethod] || undefined;
+      const paymentOptions = paymentOptionMap[paymentMethod];
+      if (!paymentOptions) {
+        throw new Error('Unsupported payment method');
+      }
 
       const response = await axios.post(
         `${this.baseURL}/payments`,
         {
           tx_ref: reference,
-          amount: Number(amount),
-          currency: currency || 'NGN',
+          amount: numericAmount,
+          currency: normalizedCurrency,
           redirect_url: callbackUrl,
           customer: {
             email,

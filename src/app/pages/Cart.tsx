@@ -237,24 +237,42 @@ export function Cart() {
                   placeholder="e.g. 100001"
                 />
               </div>
-              <div>
-                <Label>Payment Method</Label>
-                <select
-                  value={checkout.paymentMethod}
-                  onChange={(event) =>
-                    setCheckout({
-                      ...checkout,
-                      paymentMethod: event.target.value as "card" | "ussd" | "transfer",
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg"
-                >
-                  <option value="card">Card</option>
-                  <option value="ussd">USSD</option>
-                  <option value="transfer">Bank Transfer</option>
-                </select>
-              </div>
-              {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+              <fieldset className="space-y-3" aria-label="Choose payment method">
+                <legend className="text-sm font-medium">Payment Method</legend>
+                {[
+                  { value: "card", label: "Card", helper: "Pay securely with Visa, MasterCard, Verve." },
+                  { value: "ussd", label: "USSD", helper: "Dial a short code from your bank to confirm." },
+                  { value: "transfer", label: "Bank Transfer", helper: "Instant bank transfer with auto verification." },
+                ].map((method) => (
+                  <label
+                    key={method.value}
+                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition hover:border-primary ${
+                      checkout.paymentMethod === method.value ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method.value}
+                      checked={checkout.paymentMethod === method.value}
+                      onChange={() => setCheckout({ ...checkout, paymentMethod: method.value as typeof checkout.paymentMethod })}
+                      className="mt-1"
+                      aria-describedby={`${method.value}-helper`}
+                    />
+                    <div>
+                      <div className="font-semibold">{method.label}</div>
+                      <p id={`${method.value}-helper`} className="text-sm text-muted-foreground">
+                        {method.helper}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </fieldset>
+              {errorMessage && (
+                <p className="text-sm text-red-600" role="alert" aria-live="assertive">
+                  {errorMessage}
+                </p>
+              )}
               {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Processing..." : `Pay ${formatMoney(total, activeCurrency)}`}

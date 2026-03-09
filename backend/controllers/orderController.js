@@ -113,12 +113,14 @@ exports.createOrder = catchAsync(async (req, res, next) => {
 
   let paymentResponse = null;
   try {
+    const callbackBase = process.env.FRONTEND_URL;
+    const callbackUrl = callbackBase ? `${callbackBase.replace(/\\/$/, '')}/orders/${order.id}` : undefined;
     paymentResponse = await paymentService.initiateTransaction({
       amount: order.totalAmount,
       email: req.user.email,
       currency: order.currency,
       reference: order.orderNumber,
-      callbackUrl: `${process.env.FRONTEND_URL || ''}/orders/${order.id}`,
+      callbackUrl,
       paymentMethod: normalizedPaymentMethod,
     });
   } catch (error) {
