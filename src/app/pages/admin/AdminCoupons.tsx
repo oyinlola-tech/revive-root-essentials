@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+﻿import { useState, useEffect } from 'react';
 import * as api from '../../services/api';
-import { Search, AlertCircle, Plus, Edit2, Trash2, Copy, Eye } from 'lucide-react';
+import { Search, AlertCircle, Plus, Edit2, Trash2, Copy, X } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 type AdminCoupon = {
@@ -35,7 +34,6 @@ interface Coupon {
 }
 
 export default function AdminCoupons() {
-  const navigate = useNavigate();
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [filteredCoupons, setFilteredCoupons] = useState<AdminCoupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +59,18 @@ export default function AdminCoupons() {
     isActive: true,
     description: '',
   });
+
+  const toNumberOrZero = (value: string) => {
+    if (value.trim() === '') return 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const toIntOrZero = (value: string) => {
+    if (value.trim() === '') return 0;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
 
   useEffect(() => {
     loadCoupons();
@@ -106,7 +116,7 @@ export default function AdminCoupons() {
         maxUses: coupon.maxUses,
         minOrderAmount: coupon.minOrderAmount || 0,
         maxDiscountAmount: coupon.maxDiscountAmount || 0,
-        expiresAt: coupon.expiresAt || '',
+        expiresAt: coupon.expiresAt ? coupon.expiresAt.slice(0, 10) : '',
         isActive: coupon.isActive,
         description: coupon.description || '',
       });
@@ -173,8 +183,8 @@ export default function AdminCoupons() {
   };
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    alert(`Copied: ${code}`);
+    if (!navigator?.clipboard?.writeText) return;
+    navigator.clipboard.writeText(code).catch(() => {});
   };
 
   const getStatusColor = (isActive: boolean) => {
@@ -316,7 +326,7 @@ export default function AdminCoupons() {
                           <span>
                             {coupon.discountType === 'percentage'
                               ? `${coupon.discountValue}% off`
-                              : `₦${coupon.discountValue.toLocaleString()} off`}
+                              : `NGN ${coupon.discountValue.toLocaleString()} off`}
                           </span>
                           <span>•</span>
                           <span>
@@ -357,20 +367,20 @@ export default function AdminCoupons() {
                           <p className="text-lg font-semibold text-foreground">
                             {coupon.discountType === 'percentage'
                               ? `${coupon.discountValue}%`
-                              : `₦${coupon.discountValue.toLocaleString()}`}
+                              : `NGN ${coupon.discountValue.toLocaleString()}`}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Min Order</p>
                           <p className="text-lg font-semibold text-foreground">
-                            ₦{(coupon.minOrderAmount || 0).toLocaleString()}
+                            NGN {(coupon.minOrderAmount || 0).toLocaleString()}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Max Discount</p>
                           <p className="text-lg font-semibold text-foreground">
                             {coupon.maxDiscountAmount
-                              ? `₦${coupon.maxDiscountAmount.toLocaleString()}`
+                              ? `NGN ${coupon.maxDiscountAmount.toLocaleString()}`
                               : 'Unlimited'}
                           </p>
                         </div>
@@ -446,14 +456,39 @@ export default function AdminCoupons() {
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-lg max-w-2xl w-full p-6 max-h-96 overflow-y-auto">
-              <h3 className="text-2xl font-bold text-foreground mb-6">
-                {editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}
-              </h3>
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              onClick={handleCloseForm}
+              className="absolute inset-0 bg-background/40 backdrop-blur-[2px]"
+              aria-label="Close coupon form"
+            />
+            <div className="absolute inset-y-0 right-0 w-full max-w-2xl border-l border-border bg-card shadow-2xl">
+              <div className="h-full overflow-y-auto p-6 sm:p-8">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      Coupon Management
+                    </p>
+                    <h3 className="mt-2 text-2xl font-bold text-foreground">
+                      {editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Create discount rules without leaving this page.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseForm}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Coupon Code *
@@ -502,7 +537,7 @@ export default function AdminCoupons() {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          discountValue: parseFloat(e.target.value),
+                          discountValue: toNumberOrZero(e.target.value),
                         })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -521,7 +556,7 @@ export default function AdminCoupons() {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          maxUses: parseInt(e.target.value),
+                          maxUses: toIntOrZero(e.target.value),
                         })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -539,7 +574,7 @@ export default function AdminCoupons() {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          minOrderAmount: parseFloat(e.target.value),
+                          minOrderAmount: toNumberOrZero(e.target.value),
                         })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -557,7 +592,7 @@ export default function AdminCoupons() {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          maxDiscountAmount: parseFloat(e.target.value),
+                          maxDiscountAmount: toNumberOrZero(e.target.value),
                         })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -635,8 +670,9 @@ export default function AdminCoupons() {
                   >
                     {submitting ? 'Saving...' : 'Save Coupon'}
                   </button>
-                </div>
+                  </div>
               </form>
+              </div>
             </div>
           </div>
         )}
@@ -644,3 +680,5 @@ export default function AdminCoupons() {
     </div>
   );
 }
+
+

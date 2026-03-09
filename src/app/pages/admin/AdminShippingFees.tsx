@@ -142,7 +142,7 @@ export default function AdminShippingFees() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this shipping fee rule?")) return;
+    if (!window.confirm("Delete this shipping fee rule?")) return;
     setStatusMessage("");
     setErrorMessage("");
     try {

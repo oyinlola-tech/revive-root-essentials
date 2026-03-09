@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
@@ -19,7 +18,6 @@ interface Order {
 }
 
 export default function AdminOrders() {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +40,7 @@ export default function AdminOrders() {
     const filtered = orders.filter((order) => {
       const matchesSearch =
         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || order.status === statusFilter;
       const matchesPayment = !paymentFilter || order.paymentStatus === paymentFilter;
@@ -58,7 +57,7 @@ export default function AdminOrders() {
       const response = await api.adminGetOrders();
       const ordersList = (response.data || []).map(o => ({
         ...o,
-        totalAmount: typeof o.totalAmount === 'string' ? parseFloat(o.totalAmount) : o.totalAmount,
+        totalAmount: Number(o.totalAmount || 0),
         customerName: o.User?.name || o.customerName,
         customerEmail: o.User?.email || o.customerEmail,
         customerNote: typeof o.shippingAddress === 'object' && o.shippingAddress
@@ -159,6 +158,13 @@ export default function AdminOrders() {
     currentPage * itemsPerPage
   );
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const pageWindow = 5;
+  const pageStart = Math.max(1, currentPage - Math.floor(pageWindow / 2));
+  const pageEnd = Math.min(totalPages, pageStart + pageWindow - 1);
+  const visiblePages = Array.from(
+    { length: Math.max(0, pageEnd - pageStart + 1) },
+    (_, i) => pageStart + i,
+  );
 
   if (loading && orders.length === 0) {
     return (
@@ -404,7 +410,7 @@ export default function AdminOrders() {
                   >
                     Previous
                   </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(
+                  {visiblePages.map(
                     (page) => (
                       <button
                         key={page}

@@ -29,6 +29,20 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState<any[]>([]);
   const itemsPerPage = 10;
 
+  const toNumberOrNull = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const toIntOrZero = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+    const parsed = Number.parseInt(trimmed, 10);
+    return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0;
+  };
+
   useEffect(() => {
     loadProductsAndCategories();
   }, []);
@@ -79,6 +93,11 @@ export default function AdminProducts() {
         setError('Please fill in all required fields');
         return;
       }
+      const price = toNumberOrNull(formData.price);
+      if (price == null || price <= 0) {
+        setError('Price must be greater than 0');
+        return;
+      }
 
       let imageUrls = [...formData.imageUrls];
       if (imageFiles.length > 0) {
@@ -94,11 +113,11 @@ export default function AdminProducts() {
       const payload = {
         name: formData.name,
         description: formData.description,
-        price: parseFloat(formData.price),
+        price,
         imageUrl: imageUrls[0],
         imageUrls,
         categoryId: formData.categoryId,
-        stock: parseInt(formData.stock) || 0,
+        stock: toIntOrZero(formData.stock),
         isFeatured: formData.isFeatured,
       };
 
@@ -254,7 +273,7 @@ export default function AdminProducts() {
 
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Price (₦) *
+                  Price (NGN) *
                 </label>
                 <input
                   type="number"
@@ -452,7 +471,7 @@ export default function AdminProducts() {
                           {product.categoryName}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-foreground">
-                          ₦{product.price.toLocaleString()}
+                          NGN {product.price.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           {product.stock}
