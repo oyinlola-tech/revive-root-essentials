@@ -1,108 +1,58 @@
-const app = require('./app');
-const { sequelize } = require('./models');
-const seedSuperadmin = require('./utils/seedSuperadmin');
-const { startNewsletterScheduler } = require('./services/newsletterScheduler');
-const redisProductCacheService = require('./services/redisProductCacheService');
-const { startOrderAutomation } = require('./services/orderAutomationService');
+const express = require('express');
+const cors = require('cors');
+// Make sure to import other necessary modules like dotenv, morgan, etc.
 
-const PORT = Number(process.env.PORT) || 3000;
-const requiredEnvVars = [
-  'DB_HOST',
-  'DB_USER',
-  'DB_NAME',
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'FLW_PUBLIC_KEY',
-  'FLW_SECRET_KEY',
+// Import your route handlers
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const authRoutes = require('./routes/authRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const productRoutes = require('./routes/productRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const userRoutes = require('./routes/userRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+// ... import all other routes
+
+const app = express();
+
+// --- CORS Configuration ---
+// Define the whitelist of allowed origins. This is more secure than allowing all origins.
+const allowedOrigins = [
+  'https://revive-root-essentials.telente.site',
+  // You can add your local development origin here as well
+  'http://localhost:3000',
 ];
-const optionalEnvVars = ['EMAIL_HOST', 'EMAIL_USER', 'EMAIL_PASS', 'REDIS_URL', 'FLW_WEBHOOK_SECRET_HASH'];
-const shouldSyncDatabase = process.env.DB_SYNC_ON_BOOT === 'true' || process.env.NODE_ENV !== 'production';
-const shouldStartNewsletterScheduler = process.env.ENABLE_NEWSLETTER_SCHEDULER === 'true';
 
-// COOKIE_SECRET is optional but recommended when signing cookies
-optionalEnvVars.push('COOKIE_SECRET');
-let server;
-
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
-if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  process.exit(1);
-}
-
-const missingOptionalVars = optionalEnvVars.filter((key) => !process.env[key]);
-if (missingOptionalVars.length > 0) {
-  console.warn(`Missing optional environment variables (email notifications may be disabled): ${missingOptionalVars.join(', ')}`);
-}
-
-if (process.env.NODE_ENV === 'production' && !process.env.COOKIE_SECRET) {
-  console.error('COOKIE_SECRET is required in production to sign auth and CSRF cookies.');
-  process.exit(1);
-}
-
-// Initialize Redis caching
-const initializeRedisCache = async () => {
-  try {
-    await redisProductCacheService.initializeRedis();
-    if (redisProductCacheService.isRedisEnabled()) {
-      console.log('✅ Redis caching initialized successfully');
-      const stats = await redisProductCacheService.getCacheStats();
-      console.log('Cache Stats:', stats);
-    } else {
-      console.warn('⚠️  Redis caching disabled - using database queries only');
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
     }
-  } catch (error) {
-    console.error('⚠️  Failed to initialize Redis:', error.message);
-    console.warn('Continuing without Redis caching...');
-  }
+    return callback(null, true);
+  },
+  credentials: true, // Allow cookies and authorization headers
+  optionsSuccessStatus: 200 // For legacy browser support
 };
 
-if (process.env.SKIP_DB === 'true') {
-  console.warn('SKIP_DB is true - skipping database initialization (development/test mode)');
-  initializeRedisCache().then(() => {
-    server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} (DB skipped)`);
-    });
-  });
-} else {
-  sequelize
-    .ensureDatabase()
-    .then(() => sequelize.authenticate())
-    .then(() => {
-      console.log('Database connected...');
-      if (!shouldSyncDatabase) {
-        console.log('Database sync skipped in production. Set DB_SYNC_ON_BOOT=true to enable it.');
-        return null;
-      }
-      // Create tables if they don't exist. Do not alter existing schema.
-      return sequelize.sync();
-    })
-    .then(() => seedSuperadmin())
-    .then(() => initializeRedisCache())
-    .then(() => {
-      server = app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        startOrderAutomation();
-        if (shouldStartNewsletterScheduler) {
-          startNewsletterScheduler();
-        }
-      });
-    })
-    .catch((err) => {
-      console.error('Unable to connect to the database:', err);
-      process.exit(1);
-    });
-}
+// Enable CORS for all routes with the specified options.
+// This middleware MUST be placed before your route definitions.
+app.use(cors(corsOptions));
 
-process.on('unhandledRejection', (error) => {
-  console.error('UNHANDLED_REJECTION', error);
-  if (server) {
-    server.close(() => process.exit(1));
-  } else {
-    process.exit(1);
-  }
-});
+// --- Other Middleware ---
+app.use(express.json()); // for parsing application/json
 
-process.on('uncaughtException', (error) => {
-  console.error('UNCAUGHT_EXCEPTION', error);
-  process.exit(1);
+// --- API Routes ---
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/cart', cartRoutes);
+// ... and so on for all your other routes
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
