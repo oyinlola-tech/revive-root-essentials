@@ -156,8 +156,14 @@ export default function AdminShippingFees() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-border bg-card p-10 text-center shadow-sm">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-emerald-600" />
+            <p className="text-foreground font-medium">Loading shipping rules...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait while we fetch your configuration.</p>
+          </div>
+        </div>
       </div>
     );
   }

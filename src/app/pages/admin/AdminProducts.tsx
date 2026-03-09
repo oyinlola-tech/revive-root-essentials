@@ -14,6 +14,7 @@ export default function AdminProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState({
@@ -89,6 +90,7 @@ export default function AdminProducts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSavingProduct(true);
       if (!formData.name || !formData.price || !formData.categoryId) {
         setError('Please fill in all required fields');
         return;
@@ -131,6 +133,8 @@ export default function AdminProducts() {
       handleCancel();
     } catch (err) {
       setError(getDisplayErrorMessage(err, 'Failed to save product'));
+    } finally {
+      setSavingProduct(false);
     }
   };
 
@@ -203,10 +207,13 @@ export default function AdminProducts() {
 
   if (loading && products.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading products...</p>
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-border bg-card p-10 text-center shadow-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+            <p className="text-foreground font-medium">Loading products...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait while we fetch the catalog.</p>
+          </div>
         </div>
       </div>
     );
@@ -240,7 +247,7 @@ export default function AdminProducts() {
 
         {/* Add/Edit Form */}
         {isFormOpen && (
-          <div className="bg-card rounded-lg border border-border shadow-lg p-6 mb-8">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-6">
               {editingId ? 'Edit Product' : 'Add New Product'}
             </h2>
@@ -393,14 +400,16 @@ export default function AdminProducts() {
               <div className="md:col-span-2 flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition"
+                  disabled={savingProduct}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {editingId ? 'Update Product' : 'Add Product'}
+                  {savingProduct ? 'Saving...' : editingId ? 'Update Product' : 'Add Product'}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex-1 bg-muted hover:bg-accent text-muted-foreground py-2 rounded-lg transition"
+                  disabled={savingProduct}
+                  className="flex-1 bg-muted hover:bg-accent text-muted-foreground py-2 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -410,7 +419,7 @@ export default function AdminProducts() {
         )}
 
         {/* Search */}
-        <div className="bg-card rounded-lg border border-border shadow p-4 mb-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-4 mb-6">
           <div className="flex items-center gap-2 bg-background rounded-lg px-4 py-2">
             <Search className="w-5 h-5 text-muted-foreground" />
             <input
@@ -424,11 +433,12 @@ export default function AdminProducts() {
         </div>
 
         {/* Products Table */}
-        <div className="bg-card rounded-lg border border-border shadow overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
           {filteredProducts.length === 0 ? (
-            <div className="p-8 text-center">
+            <div className="p-10 text-center">
               <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">No products found</p>
+              <p className="text-foreground text-lg font-medium">No products found</p>
+              <p className="text-muted-foreground text-sm mt-1">Try a different search term or add a new product.</p>
             </div>
           ) : (
             <>

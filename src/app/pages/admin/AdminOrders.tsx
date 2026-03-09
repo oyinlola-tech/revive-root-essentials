@@ -168,10 +168,13 @@ export default function AdminOrders() {
 
   if (loading && orders.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading orders...</p>
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-border bg-card p-10 text-center shadow-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+            <p className="text-foreground font-medium">Loading orders...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait while we fetch the latest data.</p>
+          </div>
         </div>
       </div>
     );
@@ -180,7 +183,7 @@ export default function AdminOrders() {
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-8 sm:mb-10">
           <h1 className="text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground mt-2">Manage customer orders and track shipments</p>
         </div>
@@ -193,7 +196,7 @@ export default function AdminOrders() {
         )}
 
         {/* Filters */}
-        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-2">
@@ -249,27 +252,29 @@ export default function AdminOrders() {
             <div className="flex items-end">
               <button
                 onClick={loadOrders}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition font-medium"
+                disabled={loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg transition font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Refresh
+                {loading ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
           </div>
         </div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <div className={`space-y-4 transition-opacity ${loading ? 'opacity-80' : 'opacity-100'}`}>
           {filteredOrders.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+            <div className="bg-card rounded-xl border border-border shadow-sm p-10 text-center">
               <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">No orders found</p>
+              <p className="text-foreground text-lg font-medium">No orders found</p>
+              <p className="text-muted-foreground text-sm mt-1">Try adjusting search terms or filters.</p>
             </div>
           ) : (
             <>
               {paginatedOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-xl border border-border shadow-sm overflow-hidden hover:shadow-md transition"
                 >
                   <div
                     className="p-6 cursor-pointer hover:bg-muted"
@@ -321,7 +326,7 @@ export default function AdminOrders() {
                   </div>
 
                   {expandedOrder === order.id && (
-                    <div className="border-t px-6 py-4 bg-muted">
+                    <div className="border-t px-6 py-5 bg-muted/60">
                       <div className="mb-6">
                         {order.customerNote && (
                           <div className="mb-4 p-3 rounded-lg border border-border bg-card">
