@@ -29,6 +29,16 @@ const isSuccessfulTransaction = (txn = {}) => {
   return ['success', 'successful', 'paid', 'completed'].includes(status);
 };
 
+const markOrderFailedFromTransaction = async (order) => {
+  if (!order || order.paymentStatus === 'paid' || order.paymentStatus === 'refunded') {
+    return;
+  }
+  if (order.paymentStatus !== 'failed') {
+    order.paymentStatus = 'failed';
+    await order.save();
+  }
+};
+
 const markOrderPaidFromTransaction = async (order, txn) => {
   if (txn?.tx_ref && String(txn.tx_ref) !== String(order.orderNumber)) {
     throw new AppError('Transaction reference does not match this order', 400);
@@ -124,6 +134,13 @@ exports.createOrder = catchAsync(async (req, res, next) => {
       paymentMethod: normalizedPaymentMethod,
     });
   } catch (error) {
+    await markOrderFailedFromTransaction(order);
+    notificationService.sendPaymentFailedEmail(
+      req.user,
+      fullOrder,
+      mapOrderItems(fullOrder.OrderItems),
+      'We could not initialize payment with the processor. Please retry shortly.',
+    ).catch(() => {});
     return next(new AppError('Unable to initialize payment. Please try again.', 502));
   }
 
@@ -231,6 +248,16 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
   const txn = paymentData?.data || paymentData;
 
   if (!isSuccessfulTransaction(txn)) {
+    await markOrderFailedFromTransaction(order);
+    const user = await User.findByPk(order.userId);
+    if (user) {
+      notificationService.sendPaymentFailedEmail(
+        user,
+        order,
+        mapOrderItems(order.OrderItems),
+        'Payment could not be confirmed. Please retry with the same order.',
+      ).catch(() => {});
+    }
     return next(new AppError('Payment has not been confirmed yet', 400));
   }
 
@@ -274,6 +301,25 @@ exports.handleFlutterwaveWebhook = catchAsync(async (req, res, next) => {
 
   const txn = payload?.data || {};
   if (!isSuccessfulTransaction(txn)) {
+    const txRef = String(txn.tx_ref || '').trim();
+    if (txRef) {
+      const failedOrder = await Order.findOne({
+        where: { orderNumber: txRef },
+        include: [{ model: OrderItem, include: [Product] }],
+      });
+      if (failedOrder) {
+        await markOrderFailedFromTransaction(failedOrder);
+        const user = await User.findByPk(failedOrder.userId);
+        if (user) {
+          notificationService.sendPaymentFailedEmail(
+            user,
+            failedOrder,
+            mapOrderItems(failedOrder.OrderItems),
+            'Payment webhook reported a failed or incomplete transaction.',
+          ).catch(() => {});
+        }
+      }
+    }
     return res.status(200).json({ message: 'Payment not successful, no update applied' });
   }
 

@@ -125,6 +125,21 @@ class NotificationService {
     await sendEmail(user.email, `Payment receipt: ${order.orderNumber}`, html);
   }
 
+  async sendPaymentFailedEmail(user, order, items = [], reason = '') {
+    if (!user?.email) return;
+    const html = templates.paymentFailedTemplate({
+      name: user.name,
+      orderNumber: order.orderNumber,
+      attemptedAt: new Date().toLocaleString(),
+      paymentMethod: order.paymentMethod,
+      items,
+      total: order.totalAmount,
+      reason: reason || 'Payment was not confirmed by the processor.',
+      currency: order.currency || 'NGN',
+    });
+    await sendEmail(user.email, `Payment attempt failed: ${order.orderNumber}`, html);
+  }
+
   async sendRefundEmail(user, order, reason) {
     if (!user?.email) return;
     const html = templates.refundTemplate({
