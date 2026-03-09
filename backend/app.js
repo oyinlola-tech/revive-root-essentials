@@ -52,7 +52,13 @@ const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .filter(Boolean);
 const allowedOrigins = configuredOrigins.length > 0
   ? configuredOrigins
-  : ['https://revive-root-essentials.telente.site'];
+  : [
+    'https://revive-root-essentials.telente.site',
+    'https://www.revive-root-essentials.telente.site',
+    /.*\\.revive-root-essentials\\.telente\\.site$/,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ];
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -129,6 +135,11 @@ app.use(cors({
       callback(null, true);
       return;
     }
+    // Allow regex origins (e.g., subdomains)
+    if (allowedOrigins.some((entry) => entry instanceof RegExp && entry.test(origin))) {
+      callback(null, true);
+      return;
+    }
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -137,6 +148,8 @@ app.use(cors({
   exposedHeaders: ['X-CSRF-Token'],
   // Allow credentials so signed cookies and CSRF tokens can be used from the frontend
   credentials: true,
+  optionsSuccessStatus: 200,
+  maxAge: 86400,
 }));
 // Use compression with moderate level and threshold to avoid compressing tiny responses
 app.use(compression({ level: 6, threshold: 1024 }));
