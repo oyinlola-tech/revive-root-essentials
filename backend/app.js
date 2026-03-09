@@ -54,6 +54,7 @@ const defaultOrigins = [
   'https://revive-root-essentials.telente.site',
   'https://www.revive-root-essentials.telente.site',
   /.*\\.revive-root-essentials\\.telente\\.site$/,
+  /.*\\.telente\\.site$/,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ];
@@ -150,6 +151,7 @@ app.use(cors({
       callback(null, true);
       return;
     }
+    logger.warn(`Blocked CORS origin: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
