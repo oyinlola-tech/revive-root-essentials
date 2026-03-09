@@ -66,7 +66,7 @@ npm run build
 For a split deployment with:
 
 - frontend: `https://revive-root-essentials.telente.site`
-- backend: `https://api.revive-root-essentials.telente.site`
+- backend: `https://revive-api.telente.site`
 
 use:
 
