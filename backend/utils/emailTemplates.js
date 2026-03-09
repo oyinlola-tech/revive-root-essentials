@@ -45,7 +45,7 @@ const featureList = (items = []) => {
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:18px 0 0 0;">
       ${items.map((item) => `
         <tr>
-          <td width="20" valign="top" style="padding:0 0 10px 0;color:${BRAND.success};font-size:16px;line-height:1.5;">●</td>
+          <td width="20" valign="top" style="padding:0 0 10px 0;color:${BRAND.success};font-size:16px;line-height:1.5;">&bull;</td>
           <td valign="top" style="padding:0 0 10px 0;color:${BRAND.ink};font-size:14px;line-height:1.7;">${e(item)}</td>
         </tr>
       `).join('')}
@@ -560,7 +560,8 @@ exports.refundStatusTemplate = ({
 
 exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeUrl }) => {
   const intro = recipientName ? `Hello ${e(recipientName)},` : 'Hello there,';
-  const cards = products.map((product) => `
+  const safeProducts = Array.isArray(products) ? products.slice(0, 6) : [];
+  const cards = safeProducts.map((product) => `
     <tr>
       <td style="padding:0 0 18px 0;">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND.white};border:1px solid ${BRAND.line};border-radius:22px;overflow:hidden;">
@@ -569,17 +570,36 @@ exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeU
               <img src="${e(product.imageUrl || LOGO_URL)}" alt="${e(product.name)}" width="144" style="display:block;width:144px;height:144px;object-fit:cover;border:0;border-radius:16px;background:${BRAND.cream};" />
             </td>
             <td valign="top" style="padding:18px 18px 18px 0;">
-              <p style="margin:0 0 8px 0;color:${BRAND.forest};font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">This week's edit</p>
+              <p style="margin:0 0 8px 0;color:${BRAND.forest};font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">This week's highlighted pick</p>
               <h3 style="margin:0 0 10px 0;color:${BRAND.ink};font-size:22px;line-height:1.3;">${e(product.name)}</h3>
               <p style="margin:0 0 12px 0;color:${BRAND.muted};font-size:14px;line-height:1.8;">${e(product.description || 'Premium hair and skincare support for a more intentional routine.')}</p>
               <p style="margin:0 0 16px 0;color:${BRAND.ink};font-size:18px;font-weight:800;">${formatMoney(product.price, 'NGN')}</p>
-              <a href="${e(product.url)}" style="display:inline-block;background:${BRAND.ink};color:${BRAND.cream};text-decoration:none;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:700;">View Product</a>
+              <a href="${e(product.url || `${FRONTEND_URL}/shop`)}" style="display:inline-block;background:${BRAND.ink};color:${BRAND.cream};text-decoration:none;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:700;">View Product</a>
             </td>
           </tr>
         </table>
       </td>
     </tr>
   `).join('');
+
+  const fallbackCard = safeProducts.length ? '' : `
+    <tr>
+      <td style="padding:0 0 18px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND.white};border:1px solid ${BRAND.line};border-radius:22px;overflow:hidden;">
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin:0 0 8px 0;color:${BRAND.forest};font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">New this week</p>
+              <h3 style="margin:0 0 10px 0;color:${BRAND.ink};font-size:24px;line-height:1.25;">Fresh additions are live in the shop</h3>
+              <p style="margin:0 0 16px 0;color:${BRAND.muted};font-size:14px;line-height:1.8;">
+                We are curating new essentials for stronger routines. Explore the latest arrivals and bestselling staples in one place.
+              </p>
+              <a href="${FRONTEND_URL}/shop" style="display:inline-block;background:${BRAND.ink};color:${BRAND.cream};text-decoration:none;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:700;">Explore New Arrivals</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `;
 
   return `
 <!doctype html>
@@ -598,28 +618,43 @@ exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeU
               <td style="padding:28px 30px;background:linear-gradient(135deg, ${BRAND.ink} 0%, ${BRAND.forest} 60%, ${BRAND.moss} 100%);text-align:center;">
                 <img src="${e(LOGO_URL)}" alt="${e(APP_NAME)}" width="64" height="64" style="display:block;margin:0 auto 14px auto;width:64px;height:64px;border-radius:18px;background:${BRAND.cream};padding:6px;" />
                 <p style="margin:0;color:${BRAND.gold};font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">Weekly luxury edit</p>
-                <h1 style="margin:10px 0 12px 0;color:${BRAND.white};font-size:34px;line-height:1.15;">Fresh product picks for your routine</h1>
-                <p style="margin:0 auto;color:rgba(255,255,255,0.84);font-size:15px;line-height:1.8;max-width:520px;">
-                  ${intro} We pulled together our latest launches and standout essentials so your next routine refresh feels easy and elevated.
+                <h1 style="margin:10px 0 12px 0;color:${BRAND.white};font-size:34px;line-height:1.15;">Elevate your routine this week</h1>
+                <p style="margin:0 auto;color:rgba(255,255,255,0.84);font-size:15px;line-height:1.8;max-width:560px;">
+                  ${intro} Discover high-performance essentials for healthy hair, calm skin, and results you can feel from the first use.
                 </p>
               </td>
             </tr>
             <tr>
-              <td style="padding:28px 30px 10px 30px;background:#fbf8ef;">
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-                  ${cards}
+              <td style="padding:24px 30px 0 30px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND.cream};border:1px solid ${BRAND.line};border-radius:20px;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <p style="margin:0 0 10px 0;color:${BRAND.forest};font-size:12px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">Why customers love this edit</p>
+                      <p style="margin:0;color:${BRAND.ink};font-size:14px;line-height:1.8;">
+                        Thoughtful formulas, quality ingredients, and practical routines designed to deliver visible progress without overwhelm.
+                      </p>
+                    </td>
+                  </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td style="padding:12px 30px 30px 30px;">
+              <td style="padding:20px 30px 10px 30px;background:#fbf8ef;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  ${cards}
+                  ${fallbackCard}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 30px 30px 30px;">
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:${BRAND.cream};border:1px solid ${BRAND.line};border-radius:20px;">
                   <tr>
                     <td style="padding:18px 20px;">
                       <p style="margin:0 0 10px 0;color:${BRAND.forest};font-size:12px;letter-spacing:1.6px;text-transform:uppercase;font-weight:700;">Stay in control</p>
                       <p style="margin:0;color:${BRAND.muted};font-size:13px;line-height:1.8;">
                         You are receiving this because you subscribed to updates from ${e(APP_NAME)}.
-                        <a href="${e(unsubscribeUrl)}" style="color:${BRAND.forest};font-weight:700;text-decoration:none;">Unsubscribe</a>
+                        <a href="${e(unsubscribeUrl || `${FRONTEND_URL}/newsletter/unsubscribe`)}" style="color:${BRAND.forest};font-weight:700;text-decoration:none;">Unsubscribe</a>
                         at any time.
                       </p>
                     </td>
@@ -635,3 +670,4 @@ exports.weeklyNewsletterTemplate = ({ recipientName, products = [], unsubscribeU
 </html>
   `;
 };
+

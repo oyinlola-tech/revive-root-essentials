@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
-import { Search, AlertCircle, Download, MoreVertical } from 'lucide-react';
+import { Search, AlertCircle } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface Order {
@@ -307,7 +307,7 @@ export default function AdminOrders() {
                               order.paymentStatus
                             )}`}
                           >
-                            {order.paymentStatus === 'paid' ? '✓ Paid' : order.paymentStatus}
+                            {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus}
                           </span>
                         </div>
                       </div>
@@ -342,7 +342,7 @@ export default function AdminOrders() {
                                   </p>
                                 </div>
                                 <p className="text-foreground font-medium">
-                                  ₦{(item.price * item.quantity).toLocaleString()}
+                                  {order.currency} {(item.price * item.quantity).toLocaleString()}
                                 </p>
                               </div>
                             ))}

@@ -96,6 +96,17 @@ interface BackendOrder {
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   createdAt: string;
+  customerName?: string;
+  customerEmail?: string;
+  items?: Array<{
+    name?: string;
+    quantity?: number;
+    price?: number | string;
+    Product?: {
+      id?: string;
+      name?: string;
+    };
+  }>;
   User?: {
     id?: string;
     email?: string;
@@ -116,6 +127,7 @@ interface BackendOrder {
     city?: string;
     line1?: string;
     postalCode?: string;
+    note?: string;
   } | null;
 }
 
