@@ -132,6 +132,10 @@ exports.createRefundValidation = [
     .trim()
     .notEmpty().withMessage('Refund reason is required')
     .isLength({ min: 10, max: 500 }).withMessage('Reason must be between 10 and 500 characters'),
+  body('requestedAmount')
+    .optional()
+    .isFloat({ gt: 0 }).withMessage('Requested amount must be greater than 0')
+    .toFloat(),
   body('itemIds')
     .optional()
     .isArray().withMessage('itemIds must be an array')
@@ -141,6 +145,41 @@ exports.createRefundValidation = [
       }
       return true;
     }).withMessage('All item IDs must be strings'),
+];
+
+exports.approveRefundValidation = [
+  param('id').isUUID().withMessage('Invalid refund ID'),
+  body('approvedAmount')
+    .optional()
+    .isFloat({ gt: 0 }).withMessage('Approved amount must be greater than 0')
+    .toFloat(),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Notes are too long'),
+];
+
+exports.rejectRefundValidation = [
+  param('id').isUUID().withMessage('Invalid refund ID'),
+  body('reason')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Reason is too long'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Notes are too long'),
+];
+
+exports.completeRefundValidation = [
+  param('id').isUUID().withMessage('Invalid refund ID'),
+  body('transactionRef')
+    .optional()
+    .trim()
+    .isLength({ max: 255 }).withMessage('Transaction reference is too long'),
+  body('completedAt')
+    .optional()
+    .isISO8601().withMessage('completedAt must be a valid date'),
 ];
 
 exports.updateRefundValidation = [

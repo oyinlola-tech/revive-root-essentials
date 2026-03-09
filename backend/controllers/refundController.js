@@ -63,9 +63,9 @@ exports.getMyRefunds = catchAsync(async (req, res, next) => {
  */
 exports.getRefund = catchAsync(async (req, res, next) => {
   const refundId = req.params.id;
-  const userId = req.user ? req.user.id : null;
+  const currentUser = req.user || null;
 
-  const refund = await refundService.getRefund(refundId, userId);
+  const refund = await refundService.getRefund(refundId, currentUser);
 
   res.status(200).json({
     success: true,
@@ -113,6 +113,10 @@ exports.getAllRefunds = catchAsync(async (req, res, next) => {
  * PATCH /api/admin/refunds/:id/approve
  */
 exports.approveRefund = catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError(errors.array()[0].msg, 400));
+  }
   const refundId = req.params.id;
   const adminId = req.user.id;
   const { approvedAmount, notes } = req.body;
@@ -134,6 +138,10 @@ exports.approveRefund = catchAsync(async (req, res, next) => {
  * PATCH /api/admin/refunds/:id/reject
  */
 exports.rejectRefund = catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError(errors.array()[0].msg, 400));
+  }
   const refundId = req.params.id;
   const adminId = req.user.id;
   const { reason, notes } = req.body;
@@ -155,6 +163,10 @@ exports.rejectRefund = catchAsync(async (req, res, next) => {
  * PATCH /api/admin/refunds/:id/complete
  */
 exports.completeRefund = catchAsync(async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new AppError(errors.array()[0].msg, 400));
+  }
   const refundId = req.params.id;
   const adminId = req.user.id;
   const { transactionRef, completedAt } = req.body;

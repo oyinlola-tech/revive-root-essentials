@@ -1,7 +1,12 @@
 const express = require('express');
 const refundController = require('../controllers/refundController');
 const { authenticate, authorize, requireAdmin } = require('../middlewares/authMiddlewareEnhanced');
-const { createRefundValidation } = require('../validations/advancedValidation');
+const {
+  createRefundValidation,
+  approveRefundValidation,
+  rejectRefundValidation,
+  completeRefundValidation,
+} = require('../validations/advancedValidation');
 
 const router = express.Router();
 
@@ -13,7 +18,6 @@ const router = express.Router();
 router.post(
   '/',
   authenticate,
-  requireAdmin,
   createRefundValidation,
   refundController.createRefund,
 );
@@ -46,6 +50,7 @@ router.patch(
   '/:id/approve',
   authenticate,
   requireAdmin,
+  approveRefundValidation,
   refundController.approveRefund,
 );
 
@@ -54,6 +59,7 @@ router.patch(
   '/:id/reject',
   authenticate,
   requireAdmin,
+  rejectRefundValidation,
   refundController.rejectRefund,
 );
 
@@ -62,6 +68,7 @@ router.patch(
   '/:id/complete',
   authenticate,
   requireAdmin,
+  completeRefundValidation,
   refundController.completeRefund,
 );
 

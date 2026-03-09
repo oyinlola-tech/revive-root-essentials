@@ -89,10 +89,10 @@ class RefundService {
   /**
    * Get refund by ID
    * @param {string} refundId - Refund request ID
-   * @param {string} userId - Current user ID (for permission check)
+   * @param {object|null} currentUser - Current user (for permission check)
    * @returns {object} Refund request
    */
-  async getRefund(refundId, userId = null) {
+  async getRefund(refundId, currentUser = null) {
     const refund = await RefundRequest.findByPk(refundId, {
       include: [
         { model: Order, attributes: ['id', 'orderNumber', 'totalAmount', 'status', 'paymentStatus'] },
@@ -105,7 +105,8 @@ class RefundService {
       throw new AppError('Refund request not found', 404);
     }
 
-    if (userId && refund.userId !== userId) {
+    const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
+    if (currentUser?.id && !isAdmin && refund.userId !== currentUser.id) {
       throw new AppError('You can only view your own refund requests', 403);
     }
 
