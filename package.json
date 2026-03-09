@@ -1,14 +1,16 @@
 {
   "name": "@figma/my-make-file",
   "private": true,
-  "version": "0.0.1",
+  "version": "5.3.2",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "node backend/server.js",
     "dev": "node scripts/run-both.js",
     "build": "vite build",
-    "start": "node scripts/run-both.js start"
+    "start": "node scripts/run-both.js start",
+    "check:version": "node scripts/check-version-bump.cjs",
+    "bump:patch": "node scripts/auto-bump-version.cjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -46,6 +46,16 @@ if (process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', 1);
 }
 
+// Enforce HTTPS when behind a proxy (common on Namecheap/cPanel)
+app.use((req, res, next) => {
+  const forwardedProto = req.get('x-forwarded-proto');
+  if (process.env.NODE_ENV === 'production' && forwardedProto && forwardedProto !== 'https') {
+    const host = req.get('host');
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+  return next();
+});
+
 const configuredOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -146,27 +156,47 @@ app.use(additionalSecurityHeadersMiddleware);
 app.use(globalLimiter);
 app.use(suspiciousActivityDetectionMiddleware);
 const corsConfig = {
-  origin(origin, callback) {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
-      return;
-    }
-    logger.warn(`Blocked CORS origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
-  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Currency', 'X-Country-Code', 'X-CSRF-Token'],
-  // Expose the CSRF token header so frontend JS can read it after preflight
+  allowedHeaders: ['Origin', 'Content-Type', 'Accept', 'Authorization', 'X-Currency', 'X-Country-Code', 'X-CSRF-Token'],
   exposedHeaders: ['X-CSRF-Token'],
-  // Allow credentials so signed cookies and CSRF tokens can be used from the frontend
   credentials: true,
-  optionsSuccessStatus: 200,
   maxAge: 86400,
 };
 
-app.use(cors(corsConfig));
-// Ensure preflight requests return CORS headers before other middleware runs.
-app.options('*', cors(corsConfig));
+// Manual CORS/preflight handler to guarantee headers on every response path
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const originAllowed = isOriginAllowed(origin);
+
+  if (originAllowed && origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', corsConfig.methods.join(','));
+  res.header('Access-Control-Allow-Headers', corsConfig.allowedHeaders.join(','));
+  res.header('Access-Control-Expose-Headers', corsConfig.exposedHeaders.join(','));
+
+  if (req.method === 'OPTIONS') {
+    if (!originAllowed) {
+      logger.warn(`Blocked CORS origin (preflight): ${origin}`);
+      return res.sendStatus(403);
+    }
+    return res.sendStatus(204);
+  }
+
+  return next();
+});
+
+// Also register express-cors to handle edge cases and set vary headers consistently
+app.use(cors({
+  origin(origin, callback) {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    logger.warn(`Blocked CORS origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  ...corsConfig,
+}));
 // Use compression with moderate level and threshold to avoid compressing tiny responses
 app.use(compression({ level: 6, threshold: 1024 }));
 app.use('/api', paymentWebhookRoutes);
@@ -231,7 +261,7 @@ app.get('/health', (req, res) => {
 // API version endpoint
 app.get('/api/version', (req, res) => {
   res.status(200).json({
-    version: '1.0.0',
+    version: '5.3.1',
     api: 'v1',
     timestamp: new Date().toISOString(),
   });
