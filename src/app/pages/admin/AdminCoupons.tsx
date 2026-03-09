@@ -169,7 +169,7 @@ export default function AdminCoupons() {
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
-    if (!confirm('Are you sure you want to delete this coupon?')) {
+    if (!window.confirm('Are you sure you want to delete this coupon?')) {
       return;
     }
 
@@ -201,10 +201,13 @@ export default function AdminCoupons() {
 
   if (loading && coupons.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading coupons...</p>
+      <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-xl border border-border bg-card p-10 text-center shadow-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+            <p className="text-foreground font-medium">Loading coupons...</p>
+            <p className="text-sm text-muted-foreground mt-1">Please wait while we fetch discount rules.</p>
+          </div>
         </div>
       </div>
     );
@@ -220,7 +223,8 @@ export default function AdminCoupons() {
           </div>
           <button
             onClick={() => handleOpenForm()}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition font-medium"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition font-medium disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5" />
             New Coupon
@@ -235,7 +239,7 @@ export default function AdminCoupons() {
         )}
 
         {/* Filters */}
-        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-2">
@@ -271,9 +275,10 @@ export default function AdminCoupons() {
             <div className="flex items-end">
               <button
                 onClick={loadCoupons}
-                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 py-2 rounded-lg transition font-medium"
+                disabled={loading}
+                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 py-2 rounded-lg transition font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Refresh
+                {loading ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
           </div>
@@ -282,16 +287,17 @@ export default function AdminCoupons() {
         {/* Coupons List */}
         <div className="space-y-4">
           {filteredCoupons.length === 0 ? (
-            <div className="bg-card rounded-lg border border-border shadow p-8 text-center">
+            <div className="bg-card rounded-xl border border-border shadow-sm p-10 text-center">
               <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">No coupons found</p>
+              <p className="text-foreground text-lg font-medium">No coupons found</p>
+              <p className="text-sm text-muted-foreground mt-1">Create one with the button above to start offering discounts.</p>
             </div>
           ) : (
             <>
               {paginatedCoupons.map((coupon) => (
                 <div
                   key={coupon.id}
-                  className="bg-card rounded-lg border border-border shadow overflow-hidden hover:shadow-lg transition"
+                  className="bg-card rounded-xl border border-border shadow-sm overflow-hidden hover:shadow-md transition"
                 >
                   <div
                     className="p-6 cursor-pointer hover:bg-muted"
@@ -354,7 +360,7 @@ export default function AdminCoupons() {
                   </div>
 
                   {expandedCoupon === coupon.id && (
-                    <div className="border-t px-6 py-4 bg-muted">
+                    <div className="border-t px-6 py-5 bg-muted/60">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div>
                           <p className="text-sm text-muted-foreground">Discount Type</p>

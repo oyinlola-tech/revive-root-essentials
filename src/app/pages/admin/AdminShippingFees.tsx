@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowLeft, Loader2, RefreshCcw, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -182,9 +182,9 @@ export default function AdminShippingFees() {
               </Link>
               <h1 className="text-2xl font-bold">Shipping Fees</h1>
             </div>
-            <Button variant="outline" size="sm" onClick={loadRules}>
+            <Button variant="outline" size="sm" onClick={loadRules} disabled={loading}>
               <RefreshCcw className="h-4 w-4 mr-2" />
-              Refresh
+              {loading ? "Refreshing..." : "Refresh"}
             </Button>
           </div>
           {statusMessage && <p className="text-sm text-green-700 mt-3">{statusMessage}</p>}
@@ -193,7 +193,7 @@ export default function AdminShippingFees() {
       </div>
 
       <div className="container mx-auto px-4 py-8 space-y-6">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>{editing ? "Edit Fee Rule" : "Create Fee Rule"}</CardTitle>
           </CardHeader>
@@ -282,7 +282,7 @@ export default function AdminShippingFees() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader>
             <CardTitle>Shipping Rules ({filteredRules.length})</CardTitle>
           </CardHeader>
@@ -300,7 +300,7 @@ export default function AdminShippingFees() {
                       {(rule.country || "Any country").toLowerCase() === "__international__" ? "International fallback" : (rule.country || "Any country")} / {rule.state || "Any state"} / {rule.city || "Any city"}
                     </p>
                     <p className="text-sm opacity-70">
-                      Fee: NGN {Number(rule.fee || 0).toLocaleString()} • {rule.isActive ? "Active" : "Inactive"}
+                      Fee: NGN {Number(rule.fee || 0).toLocaleString()} | {rule.isActive ? "Active" : "Inactive"}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => handleEdit(rule)}>
@@ -312,8 +312,9 @@ export default function AdminShippingFees() {
                 </div>
               ))}
               {filteredRules.length === 0 && (
-                <div className="p-4 border border-border rounded-lg text-sm text-muted-foreground">
-                  No shipping fee rules found.
+                <div className="p-8 border border-border rounded-lg text-center">
+                  <p className="text-foreground font-medium">No shipping fee rules found.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Create a rule above to start calculating shipping fees.</p>
                 </div>
               )}
             </div>
@@ -323,3 +324,4 @@ export default function AdminShippingFees() {
     </div>
   );
 }
+
