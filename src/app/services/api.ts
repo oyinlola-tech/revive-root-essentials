@@ -205,6 +205,7 @@ export interface AdminOrder {
   status: BackendOrder["status"];
   paymentStatus: BackendOrder["paymentStatus"];
   createdAt: string;
+  customerNote?: string;
 }
 
 export interface UserOrder {
@@ -274,6 +275,7 @@ export interface CreateOrderPayload {
     line1: string;
     postalCode?: string;
   };
+  note?: string;
   paymentMethod: "card" | "ussd" | "transfer";
   currency?: string;
 }
@@ -915,6 +917,9 @@ export const getAdminOrders = async (): Promise<AdminOrder[]> => {
     status: order.status,
     paymentStatus: order.paymentStatus,
     createdAt: order.createdAt,
+    customerNote: typeof order.shippingAddress === "object" && order.shippingAddress
+      ? String((order.shippingAddress as any).note || "").trim() || undefined
+      : undefined,
   }));
 };
 

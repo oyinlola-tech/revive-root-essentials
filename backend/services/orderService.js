@@ -43,6 +43,11 @@ class OrderService {
         ? currencyService.getConvertedBaseFee(targetCurrency, conversionRate, 1000)
         : 0;
       const total = Number((subtotal + Number(shippingQuote.fee || 0) + conversionBaseFee).toFixed(2));
+      const orderNote = String(orderData.note || '').trim();
+      const shippingAddressPayload = {
+        ...orderData.shippingAddress,
+        ...(orderNote ? { note: orderNote } : {}),
+      };
 
       // Create order
       const orderNumber = generateOrderNumber();
@@ -53,7 +58,7 @@ class OrderService {
         shippingFee: shippingQuote.fee,
         currency: targetCurrency,
         paymentMethod: orderData.paymentMethod,
-        shippingAddress: orderData.shippingAddress,
+        shippingAddress: shippingAddressPayload,
         status: 'pending',
         paymentStatus: 'pending',
       }, { transaction });

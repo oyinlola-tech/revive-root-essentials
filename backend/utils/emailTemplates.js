@@ -387,6 +387,36 @@ exports.receiptTemplate = ({ name, orderNumber, paidAt, paymentMethod, items, to
   secondaryCtaUrl: `${FRONTEND_URL}/shop`,
 });
 
+exports.paymentFailedTemplate = ({ name, orderNumber, attemptedAt, paymentMethod, items, total, reason, currency = 'NGN' }) => baseTemplate({
+  title: `Payment Attempt Failed - ${orderNumber}`,
+  preheader: 'Your payment attempt was not completed. You can retry securely.',
+  eyebrow: 'Payment update',
+  heroTitle: 'Payment was not completed',
+  heroBody: 'Your payment attempt did not go through. No worries, your order is still available for retry.',
+  accentLabel: 'Action needed',
+  introTitle: `Hi ${name || 'there'},`,
+  introBody: 'We could not complete payment for your order. Review the details below and try again when ready.',
+  content: `
+    ${renderOrderItems(items, currency)}
+    ${infoCard('Payment attempt summary', [
+      { label: 'Order number', value: orderNumber },
+      { label: 'Attempted at', value: attemptedAt || 'Not available' },
+      { label: 'Payment method', value: paymentMethod || 'Not specified' },
+      { label: 'Order total', value: formatMoney(total, currency) },
+      { label: 'Reason', value: reason || 'Payment attempt failed or was not confirmed.' },
+    ])}
+    ${featureList([
+      'You can retry payment safely from your order history page.',
+      'No successful charge is recorded until payment is confirmed.',
+      'Contact support if you continue to see payment issues.',
+    ])}
+  `,
+  ctaLabel: 'Retry Payment',
+  ctaUrl: `${FRONTEND_URL}/order-history`,
+  secondaryCtaLabel: 'Contact Support',
+  secondaryCtaUrl: `${FRONTEND_URL}/contact`,
+});
+
 exports.orderStatusTemplate = ({ name, orderNumber, status, note }) => baseTemplate({
   title: `Order Status Updated - ${orderNumber}`,
   preheader: `Your order status is now ${formatStatus(status)}.`,

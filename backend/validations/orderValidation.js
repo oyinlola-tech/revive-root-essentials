@@ -40,6 +40,7 @@ exports.createOrderValidation = [
   body('shippingAddress.city').trim().notEmpty().withMessage('Shipping city is required'),
   body('shippingAddress.line1').trim().notEmpty().withMessage('Address line is required'),
   body('shippingAddress.postalCode').optional({ checkFalsy: true }).trim().isLength({ min: 3, max: 15 }).withMessage('Postal code is invalid'),
+  body('note').optional({ checkFalsy: true }).trim().isLength({ max: 1000 }).withMessage('Order note is too long'),
   body('paymentMethod').trim().isIn(['card', 'ussd', 'transfer']).withMessage('Payment method must be one of: card, ussd, transfer'),
   body('currency').optional({ checkFalsy: true }).trim().toUpperCase().isIn(SUPPORTED_CHARGE_CURRENCIES).withMessage(`Currency must be one of: ${SUPPORTED_CHARGE_CURRENCIES.join(', ')}`),
 ];

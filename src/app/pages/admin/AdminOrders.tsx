@@ -14,6 +14,7 @@ interface Order {
   createdAt: string;
   customerName?: string;
   customerEmail?: string;
+  customerNote?: string;
   items?: Array<{ name: string; quantity: number; price: number }>;
 }
 
@@ -60,6 +61,9 @@ export default function AdminOrders() {
         totalAmount: typeof o.totalAmount === 'string' ? parseFloat(o.totalAmount) : o.totalAmount,
         customerName: o.User?.name || o.customerName,
         customerEmail: o.User?.email || o.customerEmail,
+        customerNote: typeof o.shippingAddress === 'object' && o.shippingAddress
+          ? String((o.shippingAddress as any).note || '').trim() || undefined
+          : undefined,
         items: (o.OrderItems || o.items || []).map((item: any) => ({
           name: item.Product?.name || item.name || 'Product',
           quantity: Number(item.quantity || 0),
@@ -313,6 +317,12 @@ export default function AdminOrders() {
                   {expandedOrder === order.id && (
                     <div className="border-t px-6 py-4 bg-muted">
                       <div className="mb-6">
+                        {order.customerNote && (
+                          <div className="mb-4 p-3 rounded-lg border border-border bg-card">
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Customer Note</p>
+                            <p className="text-sm text-foreground">{order.customerNote}</p>
+                          </div>
+                        )}
                         <h4 className="font-semibold text-foreground mb-3">
                           Order Items
                         </h4>

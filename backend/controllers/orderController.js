@@ -85,7 +85,7 @@ exports.getOrderById = catchAsync(async (req, res, next) => {
 
 exports.createOrder = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
-  const { items, shippingAddress, paymentMethod, currency } = req.body;
+  const { items, shippingAddress, paymentMethod, currency, note } = req.body;
   const normalizedPaymentMethod = String(paymentMethod || '').trim().toLowerCase();
 
   if (!allowedPaymentMethods.has(normalizedPaymentMethod)) {
@@ -103,7 +103,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   // Charge in the selected/display currency so the user pays the exact shown amount.
   const order = await orderService.createOrder(
     userId,
-    { paymentMethod: normalizedPaymentMethod, shippingAddress },
+    { paymentMethod: normalizedPaymentMethod, shippingAddress, note },
     items,
     pricingContext,
   );

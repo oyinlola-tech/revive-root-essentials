@@ -662,6 +662,11 @@ export function AdminDashboard() {
                           <p className="text-sm opacity-70">
                             {new Date(order.createdAt).toLocaleString()} | {order.currency} {order.totalAmount.toFixed(2)}
                           </p>
+                          {order.customerNote && (
+                            <p className="text-sm mt-1">
+                              Note: <span className="opacity-80">{order.customerNote}</span>
+                            </p>
+                          )}
                         </div>
                         <div className="text-sm">Payment: {order.paymentStatus}</div>
                       </div>

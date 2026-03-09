@@ -26,6 +26,7 @@ const initialCheckout = {
   city: "",
   line1: "",
   postalCode: "",
+  note: "",
   paymentMethod: "card" as "card" | "ussd" | "transfer",
 };
 
@@ -141,6 +142,7 @@ export function Cart() {
           line1: checkout.line1.trim(),
           postalCode: checkout.postalCode?.trim() || undefined,
         },
+        note: checkout.note.trim() || undefined,
         paymentMethod: checkout.paymentMethod,
         currency: activeCurrency,
       });
@@ -281,6 +283,7 @@ export function Cart() {
                         className="w-full px-3 py-2 bg-background border border-border rounded-lg"
                         required
                       >
+                        <option value="International">International</option>
                         {SUPPORTED_COUNTRIES.map((country) => (
                           <option key={country} value={country}>{country}</option>
                         ))}
@@ -335,6 +338,18 @@ export function Cart() {
                       onChange={(event) => setCheckout({ ...checkout, line1: event.target.value })}
                       placeholder="e.g. 123 Main Street"
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Order Note (Optional)</Label>
+                    <textarea
+                      value={checkout.note}
+                      onChange={(event) => setCheckout({ ...checkout, note: event.target.value })}
+                      placeholder="Any special instruction for this order (e.g. fragrance preference, gift note, delivery instruction)"
+                      rows={3}
+                      maxLength={1000}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg"
                     />
                   </div>
 
