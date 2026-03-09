@@ -16,6 +16,8 @@ const LEGACY_REFRESH_COOKIE_NAME = 'refresh_token';
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_RESEND_WINDOW_MS = 60 * 1000;
 const OTP_LOGIN_CHALLENGE_PURPOSE = 'otp-login';
+const EMAIL_VERIFICATION_PURPOSE = 'email-verification';
+const EMAIL_VERIFICATION_EXPIRY_HOURS = 24;
 
 const normalizeIdentifier = (identifier, type) => {
   if (type === 'email') return String(identifier || '').toLowerCase().trim();
@@ -24,13 +26,14 @@ const normalizeIdentifier = (identifier, type) => {
 
 const normalizeEmail = (email) => String(email || '').toLowerCase().trim();
 const getOtpExpiryDate = () => new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-const queueOtpNotification = ({ channel, recipient, name, code, expiresMinutes = 5 }) => {
+const queueOtpNotification = ({ channel, recipient, name, code, expiresMinutes = 5, verificationUrl }) => {
   notificationService.sendOtpNotification({
     channel,
     recipient,
     name,
     code,
     expiresMinutes,
+    verificationUrl,
   }).catch(() => {});
 };
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
@@ -59,6 +62,16 @@ const signOtpLoginChallenge = (user, identifier) => jwt.sign(
   { expiresIn: `${OTP_EXPIRY_MINUTES}m` },
 );
 
+const signEmailVerificationToken = (user) => jwt.sign(
+  {
+    id: user.id,
+    email: normalizeEmail(user.email),
+    purpose: EMAIL_VERIFICATION_PURPOSE,
+  },
+  jwtSecret,
+  { expiresIn: `${EMAIL_VERIFICATION_EXPIRY_HOURS}h` },
+);
+
 const verifyOtpLoginChallenge = (challengeToken, user, identifier) => {
   if (!challengeToken) return false;
 
@@ -69,6 +82,21 @@ const verifyOtpLoginChallenge = (challengeToken, user, identifier) => {
       && decoded.id === user.id
       && decoded.role === user.role
       && decoded.identifier === normalizeEmail(identifier)
+    );
+  } catch (error) {
+    return false;
+  }
+};
+
+const verifyEmailVerificationToken = (token, user) => {
+  if (!token) return false;
+
+  try {
+    const decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
+    return (
+      decoded.purpose === EMAIL_VERIFICATION_PURPOSE
+      && decoded.id === user.id
+      && decoded.email === normalizeEmail(user.email)
     );
   } catch (error) {
     return false;
@@ -100,6 +128,11 @@ const sendOtpSuccess = (res) => res.json({
   message: 'If the request is valid, an OTP has been sent.',
   expiresIn: OTP_EXPIRY_MINUTES * 60,
 });
+
+const getEmailVerificationUrl = (token) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  return `${frontendUrl.replace(/\/$/, '')}/auth/verify-email?token=${encodeURIComponent(token)}`;
+};
 
 const createSession = async (user) => {
   user.currentSessionId = crypto.randomUUID();
@@ -185,6 +218,26 @@ const buildAuthPayload = async (user) => {
   };
 };
 
+const completeVerifiedAuth = async (req, res, user, { wasUnverified = false } = {}) => {
+  const authPayload = await buildAuthPayload(user);
+  setRefreshTokenCookie(res, authPayload.refreshToken);
+
+  res.json({
+    token: authPayload.token,
+    user: authPayload.user,
+  });
+
+  if (wasUnverified) {
+    notificationService.sendWelcomeEmail(user).catch(() => {});
+  }
+
+  notificationService.sendLoginAlert(user, {
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+    time: new Date().toLocaleString(),
+  }).catch(() => {});
+};
+
 const findOrCreateOAuthUser = async ({
   provider,
   subject,
@@ -260,43 +313,70 @@ exports.register = catchAsync(async (req, res, next) => {
   } = req.body;
   const normalizedEmail = String(email || '').toLowerCase().trim();
 
-  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
-  if (existingUser) {
+  let user = await User.findOne({ where: { email: normalizedEmail } });
+  const isNewUser = !user;
+  if (user?.isVerified) {
     return next(new AppError('User already exists with this email', 400));
   }
+  if (user && user.authProvider !== 'local') {
+    return next(new AppError(`This email is linked to ${user.authProvider} sign-in. Use that login method instead.`, 400));
+  }
 
-  const user = await User.create({
-    name,
-    email: normalizedEmail,
-    phone,
-    passwordHash: password,
-    isVerified: false,
-    authProvider: 'local',
-    acceptedTerms: Boolean(acceptedTerms),
-    termsAcceptedAt: acceptedTerms ? new Date() : null,
-    acceptedMarketing: Boolean(acceptedMarketing),
-    acceptedNewsletter: Boolean(acceptedNewsletter),
-    newsletterUnsubscribedAt: acceptedNewsletter ? null : new Date(),
-  });
+  const newsletterOptIn = Boolean(acceptedNewsletter);
 
-  const otpCode = generateOtp();
-  await createOtpRecord({
-    identifier: normalizedEmail,
-    type: 'email',
-    userId: user.id,
-    code: otpCode,
-  });
+  if (!user) {
+    user = await User.create({
+      name,
+      email: normalizedEmail,
+      phone,
+      passwordHash: password,
+      isVerified: false,
+      authProvider: 'local',
+      acceptedTerms: Boolean(acceptedTerms),
+      termsAcceptedAt: acceptedTerms ? new Date() : null,
+      acceptedMarketing: Boolean(acceptedMarketing),
+      acceptedNewsletter: newsletterOptIn,
+      newsletterUnsubscribedAt: newsletterOptIn ? null : new Date(),
+    });
+  } else {
+    user.name = name;
+    user.phone = phone || user.phone;
+    user.passwordHash = password;
+    user.authProvider = 'local';
+    user.acceptedTerms = Boolean(acceptedTerms);
+    user.termsAcceptedAt = acceptedTerms ? (user.termsAcceptedAt || new Date()) : null;
+    user.acceptedMarketing = Boolean(acceptedMarketing);
+    user.acceptedNewsletter = newsletterOptIn;
+    user.newsletterUnsubscribedAt = newsletterOptIn ? null : new Date();
+    await user.save();
+  }
 
-  queueOtpNotification({
-    channel: 'email',
-    recipient: normalizedEmail,
-    name,
-    code: otpCode,
-    expiresMinutes: 5,
-  });
+  const recentOtp = await hasRecentOtpRequest(normalizedEmail, 'email');
+  if (!recentOtp) {
+    const otpCode = generateOtp();
+    const verificationUrl = getEmailVerificationUrl(signEmailVerificationToken(user));
 
-  res.status(201).json({
-    message: 'Registration successful. OTP sent to your email.',
+    await createOtpRecord({
+      identifier: normalizedEmail,
+      type: 'email',
+      userId: user.id,
+      code: otpCode,
+    });
+
+    queueOtpNotification({
+      channel: 'email',
+      recipient: normalizedEmail,
+      name: user.name,
+      code: otpCode,
+      expiresMinutes: OTP_EXPIRY_MINUTES,
+      verificationUrl,
+    });
+  }
+
+  res.status(isNewUser ? 201 : 200).json({
+    message: recentOtp
+      ? 'Verification is still pending. Check your email for the code or verification link.'
+      : 'Registration successful. Check your email for a verification code or link.',
     verificationRequired: true,
   });
 });
@@ -325,6 +405,9 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
   }
 
   const otpCode = generateOtp();
+  const verificationUrl = !user.isVerified && type === 'email'
+    ? getEmailVerificationUrl(signEmailVerificationToken(user))
+    : undefined;
   await createOtpRecord({
     identifier: normalizedIdentifier,
     type,
@@ -338,6 +421,7 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
     name: user.name,
     code: otpCode,
     expiresMinutes: 5,
+    verificationUrl,
   });
 
   return sendOtpSuccess(res);
@@ -389,31 +473,41 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   await user.save();
 
   await otpRecord.destroy(); // remove used OTP
+  await completeVerifiedAuth(req, res, user, { wasUnverified });
+});
 
-  const sessionId = await createSession(user);
-  const token = signToken(user.id, sessionId);
-  const refreshToken = signRefreshToken(user.id, sessionId);
-  setRefreshTokenCookie(res, refreshToken);
+exports.verifyEmail = catchAsync(async (req, res, next) => {
+  const { token } = req.body;
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  });
-
-  if (wasUnverified) {
-    notificationService.sendWelcomeEmail(user).catch(() => {});
+  let decoded;
+  try {
+    decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
+  } catch (error) {
+    return next(new AppError('Invalid or expired verification link', 400));
   }
 
-  notificationService.sendLoginAlert(user, {
-    ipAddress: req.ip,
-    userAgent: req.headers['user-agent'],
-    time: new Date().toLocaleString(),
-  }).catch(() => {});
+  if (decoded.purpose !== EMAIL_VERIFICATION_PURPOSE || !decoded.id || !decoded.email) {
+    return next(new AppError('Invalid or expired verification link', 400));
+  }
+
+  const user = await User.findOne({ where: { id: decoded.id, email: normalizeEmail(decoded.email) } });
+  if (!user) {
+    return next(new AppError('No account found for this verification link', 404));
+  }
+
+  if (!verifyEmailVerificationToken(token, user)) {
+    return next(new AppError('Invalid or expired verification link', 400));
+  }
+
+  if (user.isVerified) {
+    return next(new AppError('This verification link has already been used. Please sign in.', 400));
+  }
+
+  user.isVerified = true;
+  await user.save();
+  await Otp.destroy({ where: { userId: user.id, type: 'email' } });
+
+  await completeVerifiedAuth(req, res, user, { wasUnverified: true });
 });
 
 exports.login = catchAsync(async (req, res, next) => {

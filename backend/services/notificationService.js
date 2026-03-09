@@ -16,7 +16,7 @@ const formatAddress = (address) => {
 };
 
 class NotificationService {
-  async sendOtpNotification({ channel, recipient, name, code, expiresMinutes = 5 }) {
+  async sendOtpNotification({ channel, recipient, name, code, expiresMinutes = 5, verificationUrl }) {
     if (channel === 'phone') {
       await sendSms(recipient, `${code} is your ${process.env.APP_NAME || 'Revive Roots Essentials'} OTP. Expires in ${expiresMinutes} minutes. Do not share this code.`);
       return;
@@ -27,6 +27,7 @@ class NotificationService {
       code,
       channel: 'email',
       expiresMinutes,
+      verificationUrl,
     });
     await sendEmail(recipient, 'Your verification code', html);
   }

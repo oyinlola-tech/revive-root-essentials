@@ -8,6 +8,7 @@ const {
   loginValidation,
   sendOtpValidation,
   verifyOtpValidation,
+  verifyEmailValidation,
   changePasswordValidation,
   resetPasswordValidation,
   resetPasswordConfirmValidation,
@@ -16,6 +17,7 @@ const {
 router.post('/register', validate(registerValidation), authController.register);
 router.post('/send-otp', validate(sendOtpValidation), authController.sendOtp);
 router.post('/verify-otp', validate(verifyOtpValidation), authController.verifyOtp);
+router.post('/verify-email', validate(verifyEmailValidation), authController.verifyEmail);
 router.post('/login', validate(loginValidation), authController.login);
 router.post('/oauth/google', authController.oauthGoogle);
 router.post('/oauth/apple', authController.oauthApple);

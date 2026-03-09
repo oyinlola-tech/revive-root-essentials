@@ -58,7 +58,7 @@ export function Signup() {
 
     setLoading(true);
     try {
-      await register({
+      const response = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -66,7 +66,9 @@ export function Signup() {
       });
       const redirect = searchParams.get("redirect");
       const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
-      navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}${redirectQuery}`);
+      navigate(`/auth/otp?identifier=${encodeURIComponent(formData.email)}${redirectQuery}`, {
+        state: { message: response.message },
+      });
     } catch (err) {
       setError(getDisplayErrorMessage(err, "Unable to create account."));
     } finally {

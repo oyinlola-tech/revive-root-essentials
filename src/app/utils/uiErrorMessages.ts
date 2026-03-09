@@ -22,6 +22,14 @@ export const sanitizeApiErrorMessage = ({
     return "That code is invalid or has expired. Request a new code and try again.";
   }
 
+  if (hasAny(normalizedMessage, ["invalid or expired verification link"])) {
+    return "That verification link is invalid or has expired. Request a new code and try again.";
+  }
+
+  if (hasAny(normalizedMessage, ["verification link has already been used"])) {
+    return "That verification link has already been used. Sign in instead.";
+  }
+
   if (hasAny(normalizedMessage, ["incorrect email or password"])) {
     return "Incorrect email or password.";
   }

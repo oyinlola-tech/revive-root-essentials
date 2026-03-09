@@ -481,6 +481,15 @@ export const verifyOtp = async (payload: { identifier: string; otp: string; chal
   return data;
 };
 
+export const verifyEmailLink = async (token: string) => {
+  const data = await fetchJson<AuthResponse>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  setAuthSession(data);
+  return data;
+};
+
 export const resendOtp = async (identifier: string, challengeToken?: string) => {
   return fetchJson<{ message: string; expiresIn: number }>("/auth/send-otp", {
     method: "POST",

@@ -44,6 +44,10 @@ exports.verifyOtpValidation = [
   body('otp').trim().isNumeric().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
 
+exports.verifyEmailValidation = [
+  body('token').trim().isString().isLength({ min: 20, max: 4000 }).withMessage('Verification token is required'),
+];
+
 exports.changePasswordValidation = [
   body('currentPassword').notEmpty().withMessage('Current password is required'),
   body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),

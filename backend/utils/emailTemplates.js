@@ -86,7 +86,7 @@ const renderOrderItems = (items = [], currency = 'NGN') => {
   `;
 };
 
-exports.otpTemplate = ({ name, code, channel = 'email', expiresMinutes = 5 }) => baseTemplate({
+exports.otpTemplate = ({ name, code, channel = 'email', expiresMinutes = 5, verificationUrl }) => baseTemplate({
   title: `Your ${APP_NAME} Verification Code`,
   preheader: 'Use this one-time code to complete your request.',
   content: `
@@ -95,8 +95,11 @@ exports.otpTemplate = ({ name, code, channel = 'email', expiresMinutes = 5 }) =>
     <div style="margin:12px 0 18px 0;padding:18px;border:1px dashed ${BRAND_PRIMARY};border-radius:10px;background:${BRAND_ACCENT};text-align:center;">
       <span style="font-size:34px;font-weight:800;letter-spacing:8px;color:${BRAND_PRIMARY};">${e(code)}</span>
     </div>
-    <p style="margin:0;font-size:14px;color:#4b5a51;">This code expires in ${expiresMinutes} minutes. Do not share it with anyone.</p>
+    <p style="margin:0 0 12px 0;font-size:14px;color:#4b5a51;">This code expires in ${expiresMinutes} minutes. Do not share it with anyone.</p>
+    ${verificationUrl ? '<p style="margin:0;font-size:14px;color:#4b5a51;">If the code does not work or you prefer not to type it, use the verification button below.</p>' : ''}
   `,
+  ctaLabel: verificationUrl ? 'Verify My Email' : undefined,
+  ctaUrl: verificationUrl,
 });
 
 exports.welcomeTemplate = ({ name }) => baseTemplate({

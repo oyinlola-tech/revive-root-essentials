@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../../components/ui/input-otp";
 import { resendOtp, verifyOtp } from "../../services/api";
@@ -7,13 +7,19 @@ import { getOtpResendErrorMessage, getOtpVerificationErrorMessage } from "../../
 
 export function OTP() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const identifier = searchParams.get("identifier") || "";
   const challengeToken = searchParams.get("challenge") || undefined;
   const redirect = searchParams.get("redirect");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
+  const [info, setInfo] = useState(() => {
+    const message = location.state && typeof location.state === "object" && "message" in location.state
+      ? location.state.message
+      : "";
+    return typeof message === "string" ? message : "";
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -59,7 +65,7 @@ export function OTP() {
 
     try {
       await resendOtp(identifier, challengeToken);
-      setInfo("OTP sent again. Check your inbox.");
+      setInfo("Verification email sent again. Check your inbox for the code or link.");
     } catch (err) {
       setError(getOtpResendErrorMessage(err));
     }
@@ -70,7 +76,7 @@ export function OTP() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Verify Your Account</h1>
         <p className="opacity-70">
-          We&apos;ve sent a 6-digit code to your email address. Please enter it below.
+          We&apos;ve sent a 6-digit code and a verification link to your email address. You can use either one.
         </p>
       </div>
 
@@ -96,9 +102,9 @@ export function OTP() {
         </Button>
 
         <div className="text-center text-sm">
-          <p className="opacity-70 mb-2">Didn&apos;t receive the code?</p>
+          <p className="opacity-70 mb-2">Didn&apos;t receive the code or link?</p>
           <button type="button" className="font-semibold hover:opacity-70" onClick={handleResend}>
-            Resend Code
+            Resend Verification Email
           </button>
         </div>
       </form>

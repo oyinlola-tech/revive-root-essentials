@@ -31,6 +31,7 @@ const AddressManagement = lazy(() => import("./pages/AddressManagement"));
 const Login = lazyNamed(() => import("./pages/auth/Login"), "Login");
 const Signup = lazyNamed(() => import("./pages/auth/Signup"), "Signup");
 const OTP = lazyNamed(() => import("./pages/auth/OTP"), "OTP");
+const VerifyEmail = lazyNamed(() => import("./pages/auth/VerifyEmail"), "VerifyEmail");
 const ForgotPassword = lazyNamed(() => import("./pages/auth/ForgotPassword"), "ForgotPassword");
 const ResetPassword = lazyNamed(() => import("./pages/auth/ResetPassword"), "ResetPassword");
 
@@ -73,6 +74,7 @@ export const router = createBrowserRouter([
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
       { path: "otp", Component: OTP },
+      { path: "verify-email", Component: VerifyEmail },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "reset-password", Component: ResetPassword },
     ],
