@@ -1,6 +1,29 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
+  const normalizeImageCollection = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+    }
+
+    const rawValue = String(value || '').trim();
+    if (!rawValue) return [];
+
+    if (rawValue.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) {
+          return parsed.map((entry) => String(entry || '').trim()).filter(Boolean);
+        }
+      } catch (error) {
+        // Fall back to treating the stored value as a single URL.
+      }
+    }
+
+    return [rawValue];
+  };
+
   const Product = sequelize.define('Product', {
     id: {
       type: DataTypes.UUID,
@@ -26,6 +49,24 @@ module.exports = (sequelize) => {
     imageUrl: {
       type: DataTypes.TEXT,
       field: 'image_url',
+      get() {
+        const images = normalizeImageCollection(this.getDataValue('imageUrl'));
+        return images[0] || null;
+      },
+      set(value) {
+        const images = normalizeImageCollection(value);
+        this.setDataValue('imageUrl', images.length <= 1 ? (images[0] || null) : JSON.stringify(images));
+      },
+    },
+    imageUrls: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return normalizeImageCollection(this.getDataValue('imageUrl'));
+      },
+      set(value) {
+        const images = normalizeImageCollection(value);
+        this.setDataValue('imageUrl', images.length <= 1 ? (images[0] || null) : JSON.stringify(images));
+      },
     },
     slug: {
       type: DataTypes.STRING(255),

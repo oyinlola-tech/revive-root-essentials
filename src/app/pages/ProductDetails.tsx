@@ -18,6 +18,7 @@ export function ProductDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState("");
   const { addToCart } = useCommerce();
 
   useEffect(() => {
@@ -63,9 +64,17 @@ export function ProductDetails() {
   const safeIngredients = useMemo(() => product?.ingredients || [], [product]);
   const safeBenefits = useMemo(() => product?.benefits || [], [product]);
   const productImage = useMemo(
-    () => (product ? getProductImageByCategory(product) : PRODUCT_FALLBACK_IMAGES.hair),
+    () => selectedImage || (product ? product.images[0] || getProductImageByCategory(product) : PRODUCT_FALLBACK_IMAGES.hair),
+    [product, selectedImage],
+  );
+  const productImages = useMemo(
+    () => (product ? (product.images.length > 0 ? product.images : [getProductImageByCategory(product)]) : [PRODUCT_FALLBACK_IMAGES.hair]),
     [product],
   );
+  useEffect(() => {
+    if (!product) return;
+    setSelectedImage(product.images[0] || getProductImageByCategory(product));
+  }, [product]);
   const productJsonLd = useMemo(() => {
     if (!product) return null;
     return {
@@ -142,16 +151,32 @@ export function ProductDetails() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-16">
-          <div className="aspect-square overflow-hidden rounded-lg bg-muted">
-            <img
-              src={productImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(event) => {
-                event.currentTarget.onerror = null;
-                event.currentTarget.src = PRODUCT_FALLBACK_IMAGES[product.category];
-              }}
-            />
+          <div className="space-y-4">
+            <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+              <img
+                src={productImage}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = PRODUCT_FALLBACK_IMAGES[product.category];
+                }}
+              />
+            </div>
+            {productImages.length > 1 && (
+              <div className="grid grid-cols-5 gap-3">
+                {productImages.map((imageUrl) => (
+                  <button
+                    key={imageUrl}
+                    type="button"
+                    onClick={() => setSelectedImage(imageUrl)}
+                    className={`aspect-square overflow-hidden rounded-lg border ${productImage === imageUrl ? "border-foreground" : "border-border"}`}
+                  >
+                    <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">

@@ -35,6 +35,7 @@ interface BackendProduct {
   description?: string | null;
   price: number | string;
   imageUrl?: string | null;
+  imageUrls?: unknown;
   ingredients?: unknown;
   benefits?: unknown;
   howToUse?: string | null;
@@ -155,6 +156,7 @@ export interface AdminProductInput {
   description: string;
   price: number;
   imageUrl: string;
+  imageUrls?: string[];
   categoryId?: string;
   ingredients?: string[];
   benefits?: string[];
@@ -171,6 +173,7 @@ export interface AdminProduct {
   description: string;
   price: number;
   imageUrl: string;
+  imageUrls: string[];
   categoryId: string;
   categoryName: string;
   ingredients: string[];
@@ -264,8 +267,23 @@ const inferCategory = (value?: string | null): ProductCategory => {
   return normalized.includes("hair") ? "hair" : "skincare";
 };
 
+const normalizeImageUrls = (product: BackendProduct): string[] => {
+  const fromArray = Array.isArray(product.imageUrls)
+    ? product.imageUrls
+    : [];
+  const urls = fromArray
+    .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    .map((entry) => entry.trim());
+
+  if (urls.length > 0) return urls;
+
+  const primaryImage = String(product.imageUrl || "").trim();
+  return primaryImage ? [primaryImage] : [];
+};
+
 const normalizeProduct = (product: BackendProduct): Product => {
   const categoryName = product.Category?.name || product.category?.name || "";
+  const imageUrls = normalizeImageUrls(product);
   return {
     id: product.slug || product.id,
     backendId: product.id,
@@ -273,7 +291,8 @@ const normalizeProduct = (product: BackendProduct): Product => {
     currency: product.currency || "NGN",
     category: inferCategory(categoryName || product.name),
     price: Number(product.price || 0),
-    image: product.imageUrl || "/assets/logo/revive_roots_essential.png",
+    image: imageUrls[0] || "/assets/logo/revive_roots_essential.png",
+    images: imageUrls,
     description: product.description || "No product description available yet.",
     ingredients: toStringArray(product.ingredients),
     benefits: toStringArray(product.benefits),
@@ -283,22 +302,26 @@ const normalizeProduct = (product: BackendProduct): Product => {
   };
 };
 
-const normalizeAdminProduct = (product: BackendProduct): AdminProduct => ({
-  id: product.id,
-  slug: product.slug || product.id,
-  name: product.name,
-  description: product.description || "",
-  price: Number(product.price || 0),
-  imageUrl: product.imageUrl || "",
-  categoryId: product.categoryId || product.Category?.id || "",
-  categoryName: product.Category?.name || product.category?.name || "Uncategorized",
-  ingredients: toStringArray(product.ingredients),
-  benefits: toStringArray(product.benefits),
-  howToUse: product.howToUse || "",
-  size: product.size || "",
-  stock: Number(product.stock || 0),
-  isFeatured: Boolean(product.isFeatured),
-});
+const normalizeAdminProduct = (product: BackendProduct): AdminProduct => {
+  const imageUrls = normalizeImageUrls(product);
+  return {
+    id: product.id,
+    slug: product.slug || product.id,
+    name: product.name,
+    description: product.description || "",
+    price: Number(product.price || 0),
+    imageUrl: imageUrls[0] || "",
+    imageUrls,
+    categoryId: product.categoryId || product.Category?.id || "",
+    categoryName: product.Category?.name || product.category?.name || "Uncategorized",
+    ingredients: toStringArray(product.ingredients),
+    benefits: toStringArray(product.benefits),
+    howToUse: product.howToUse || "",
+    size: product.size || "",
+    stock: Number(product.stock || 0),
+    isFeatured: Boolean(product.isFeatured),
+  };
+};
 
 const getErrorMessage = async (response: Response, path?: string): Promise<string> => {
   try {
@@ -695,6 +718,16 @@ export const uploadAdminProductImage = async (file: File): Promise<string> => {
   return data.imageUrl;
 };
 
+export const uploadAdminProductImages = async (files: File[]): Promise<string[]> => {
+  const body = new FormData();
+  files.forEach((file) => body.append("images", file));
+  const data = await fetchJson<{ imageUrls: string[] }>("/products/upload-images", {
+    method: "POST",
+    body,
+  }, true);
+  return Array.isArray(data.imageUrls) ? data.imageUrls : [];
+};
+
 export const createAdminProduct = async (payload: AdminProductInput): Promise<AdminProduct> => {
   const product = await fetchJson<BackendProduct>("/products", {
     method: "POST",
@@ -797,13 +830,6 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 export const getUsers = async (): Promise<BackendUser[]> => {
   const data = await fetchJson<{ users: BackendUser[] }>("/users?limit=100", undefined, true);
   return data.users || [];
-};
-
-export const updateUserRole = async (id: string, role: "user" | "admin" | "superadmin") => {
-  return fetchJson(`/users/${id}/role`, {
-    method: "PUT",
-    body: JSON.stringify({ role }),
-  }, true);
 };
 
 export const createAdminAccount = async (payload: { name: string; email: string; password: string; phone?: string }) => {

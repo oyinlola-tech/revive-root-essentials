@@ -3,35 +3,24 @@ import * as api from '../../services/api';
 import { Plus, Edit2, Trash2, Search, AlertCircle } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
-interface AdminProduct {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  categoryId: string;
-  categoryName: string;
-  stock: number;
-  isFeatured: boolean;
-}
+const MAX_PRODUCT_IMAGES = 10;
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<AdminProduct[]>([]);
+  const [products, setProducts] = useState<api.AdminProduct[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<api.AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
-    imageUrl: '',
+    imageUrls: [] as string[],
     categoryId: '',
     stock: '',
     isFeatured: false,
@@ -54,15 +43,15 @@ export default function AdminProducts() {
   }, [searchTerm, products]);
 
   useEffect(() => {
-    if (!imageFile) {
-      setImagePreviewUrl('');
+    if (imageFiles.length === 0) {
+      setImagePreviewUrls([]);
       return undefined;
     }
 
-    const previewUrl = URL.createObjectURL(imageFile);
-    setImagePreviewUrl(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [imageFile]);
+    const previewUrls = imageFiles.map((file) => URL.createObjectURL(file));
+    setImagePreviewUrls(previewUrls);
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [imageFiles]);
 
   const loadProductsAndCategories = async () => {
     try {
@@ -91,13 +80,14 @@ export default function AdminProducts() {
         return;
       }
 
-      let imageUrl = formData.imageUrl;
-      if (imageFile) {
-        imageUrl = await api.uploadAdminProductImage(imageFile);
+      let imageUrls = [...formData.imageUrls];
+      if (imageFiles.length > 0) {
+        const uploadedImages = await api.uploadAdminProductImages(imageFiles);
+        imageUrls = [...imageUrls, ...uploadedImages].slice(0, MAX_PRODUCT_IMAGES);
       }
 
-      if (!imageUrl) {
-        setError('Please choose a product image');
+      if (imageUrls.length === 0) {
+        setError('Please choose at least one product image');
         return;
       }
 
@@ -105,7 +95,8 @@ export default function AdminProducts() {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         categoryId: formData.categoryId,
         stock: parseInt(formData.stock) || 0,
         isFeatured: formData.isFeatured,
@@ -124,19 +115,19 @@ export default function AdminProducts() {
     }
   };
 
-  const handleEdit = (product: AdminProduct) => {
+  const handleEdit = (product: api.AdminProduct) => {
     setFormData({
       name: product.name,
       description: product.description,
       price: product.price.toString(),
-      imageUrl: product.imageUrl,
+      imageUrls: product.imageUrls,
       categoryId: product.categoryId,
       stock: product.stock.toString(),
       isFeatured: product.isFeatured,
     });
     setEditingId(product.id);
-    setImageFile(null);
-    setImagePreviewUrl('');
+    setImageFiles([]);
+    setImagePreviewUrls([]);
     setIsFormOpen(true);
   };
 
@@ -154,18 +145,35 @@ export default function AdminProducts() {
   const handleCancel = () => {
     setIsFormOpen(false);
     setEditingId(null);
-    setImageFile(null);
-    setImagePreviewUrl('');
+    setImageFiles([]);
+    setImagePreviewUrls([]);
     setFormData({
       name: '',
       description: '',
       price: '',
-      imageUrl: '',
+      imageUrls: [],
       categoryId: '',
       stock: '',
       isFeatured: false,
     });
     setError(null);
+  };
+
+  const handleImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    const remainingSlots = Math.max(MAX_PRODUCT_IMAGES - formData.imageUrls.length, 0);
+    setImageFiles(selectedFiles.slice(0, remainingSlots));
+  };
+
+  const removeSavedImage = (index: number) => {
+    setFormData((current) => ({
+      ...current,
+      imageUrls: current.imageUrls.filter((_, imageIndex) => imageIndex !== index),
+    }));
+  };
+
+  const removeQueuedImage = (index: number) => {
+    setImageFiles((current) => current.filter((_, imageIndex) => imageIndex !== index));
   };
 
   const paginatedProducts = filteredProducts.slice(
@@ -291,27 +299,62 @@ export default function AdminProducts() {
 
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Product Image
+                  Product Images
                 </label>
                 <input
                   type="file"
+                  multiple
                   accept="image/png,image/jpeg,image/webp,image/gif"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  onChange={handleImageSelection}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Upload JPG, PNG, WEBP, or GIF up to 20MB.
+                  Upload up to 10 JPG, PNG, WEBP, or GIF images up to 20MB each. The first image is the primary product image.
                 </p>
-                {(imagePreviewUrl || formData.imageUrl) && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <img
-                      src={imagePreviewUrl || formData.imageUrl}
-                      alt="Product preview"
-                      className="h-16 w-16 rounded object-cover border border-border"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      {imageFile ? imageFile.name : 'Current product image'}
-                    </p>
+                {formData.imageUrls.length > 0 && (
+                  <div className="mt-3">
+                    <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Saved images</p>
+                    <div className="flex flex-wrap gap-3">
+                      {formData.imageUrls.map((imageUrl, index) => (
+                        <div key={imageUrl} className="relative">
+                          <img
+                            src={imageUrl}
+                            alt={`Saved product ${index + 1}`}
+                            className="h-16 w-16 rounded object-cover border border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSavedImage(index)}
+                            className="absolute -right-2 -top-2 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {imagePreviewUrls.length > 0 && (
+                  <div className="mt-3">
+                    <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">New uploads</p>
+                    <div className="flex flex-wrap gap-3">
+                      {imagePreviewUrls.map((previewUrl, index) => (
+                        <div key={previewUrl} className="relative">
+                          <img
+                            src={previewUrl}
+                            alt={`Queued product ${index + 1}`}
+                            className="h-16 w-16 rounded object-cover border border-border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeQueuedImage(index)}
+                            className="absolute -right-2 -top-2 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -398,6 +441,9 @@ export default function AdminProducts() {
                               <p className="font-medium text-foreground">{product.name}</p>
                               <p className="text-sm text-muted-foreground line-clamp-1">
                                 {product.description}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {product.imageUrls.length} image{product.imageUrls.length === 1 ? '' : 's'}
                               </p>
                             </div>
                           </div>

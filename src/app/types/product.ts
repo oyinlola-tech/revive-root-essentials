@@ -6,6 +6,7 @@ export interface Product {
   category: "hair" | "skincare";
   price: number;
   image: string;
+  images: string[];
   description: string;
   ingredients: string[];
   benefits: string[];

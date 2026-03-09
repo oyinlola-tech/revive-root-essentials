@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
-import { Search, AlertCircle, Edit2, Trash2, Eye } from 'lucide-react';
+import { Search, AlertCircle, Edit2, Trash2 } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 interface User {
@@ -161,7 +161,7 @@ export default function AdminUsers() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Users</h1>
-          <p className="text-muted-foreground mt-2">Manage user accounts, roles, and permissions</p>
+          <p className="text-muted-foreground mt-2">Manage user accounts and account status. Admin access is created separately from the super admin page.</p>
         </div>
 
         {error && (

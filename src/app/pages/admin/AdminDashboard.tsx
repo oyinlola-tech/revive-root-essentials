@@ -21,19 +21,21 @@ import {
   getContactSubmissions,
   getNewsletterSubscribers,
   logout,
-  uploadAdminProductImage,
+  uploadAdminProductImages,
   updateAdminProduct,
   updateCategory,
   updateOrderStatus,
 } from "../../services/api";
 import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
+const MAX_PRODUCT_IMAGES = 10;
+
 const initialProductForm = {
   id: "",
   name: "",
   description: "",
   price: "",
-  imageUrl: "",
+  imageUrls: [] as string[],
   categoryId: "",
   ingredients: "",
   benefits: "",
@@ -60,8 +62,8 @@ export function AdminDashboard() {
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; email: string; subject: string; message: string; createdAt: string }>>([]);
   const [subscribers, setSubscribers] = useState<Array<{ id: string; email: string; createdAt: string }>>([]);
   const [productForm, setProductForm] = useState(initialProductForm);
-  const [productImageFile, setProductImageFile] = useState<File | null>(null);
-  const [productImagePreviewUrl, setProductImagePreviewUrl] = useState("");
+  const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
+  const [productImagePreviewUrls, setProductImagePreviewUrls] = useState<string[]>([]);
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -74,8 +76,8 @@ export function AdminDashboard() {
       productForm.name.trim().length > 0 &&
       productForm.description.trim().length > 0 &&
       Number(productForm.price) > 0 &&
-      (productForm.imageUrl.trim().length > 0 || Boolean(productImageFile)),
-    [productForm, productImageFile],
+      (productForm.imageUrls.length > 0 || productImageFiles.length > 0),
+    [productForm, productImageFiles],
   );
 
   const loadDashboardData = async () => {
@@ -118,20 +120,20 @@ export function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!productImageFile) {
-      setProductImagePreviewUrl("");
+    if (productImageFiles.length === 0) {
+      setProductImagePreviewUrls([]);
       return undefined;
     }
 
-    const previewUrl = URL.createObjectURL(productImageFile);
-    setProductImagePreviewUrl(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [productImageFile]);
+    const previewUrls = productImageFiles.map((file) => URL.createObjectURL(file));
+    setProductImagePreviewUrls(previewUrls);
+    return () => previewUrls.forEach((url) => URL.revokeObjectURL(url));
+  }, [productImageFiles]);
 
   const resetProductForm = () => {
     setProductForm(initialProductForm);
-    setProductImageFile(null);
-    setProductImagePreviewUrl("");
+    setProductImageFiles([]);
+    setProductImagePreviewUrls([]);
   };
 
   const resetCategoryForm = () => {
@@ -153,16 +155,22 @@ export function AdminDashboard() {
     setErrorMessage("");
 
     try {
-      let imageUrl = productForm.imageUrl.trim();
-      if (productImageFile) {
-        imageUrl = await uploadAdminProductImage(productImageFile);
+      let imageUrls = [...productForm.imageUrls];
+      if (productImageFiles.length > 0) {
+        const uploadedImages = await uploadAdminProductImages(productImageFiles);
+        imageUrls = [...imageUrls, ...uploadedImages].slice(0, MAX_PRODUCT_IMAGES);
+      }
+
+      if (imageUrls.length === 0) {
+        throw new Error("At least one product image is required.");
       }
 
       const payload = {
         name: productForm.name.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price),
-        imageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         categoryId: productForm.categoryId || undefined,
         ingredients: parseLines(productForm.ingredients),
         benefits: parseLines(productForm.benefits),
@@ -208,7 +216,7 @@ export function AdminDashboard() {
       name: product.name,
       description: product.description,
       price: String(product.price),
-      imageUrl: product.imageUrl,
+      imageUrls: product.imageUrls,
       categoryId: product.categoryId,
       ingredients: product.ingredients.join("\n"),
       benefits: product.benefits.join("\n"),
@@ -217,8 +225,25 @@ export function AdminDashboard() {
       stock: String(product.stock),
       isFeatured: product.isFeatured,
     });
-    setProductImageFile(null);
-    setProductImagePreviewUrl("");
+    setProductImageFiles([]);
+    setProductImagePreviewUrls([]);
+  };
+
+  const handleProductImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []).slice(0, MAX_PRODUCT_IMAGES);
+    const remainingSlots = Math.max(MAX_PRODUCT_IMAGES - productForm.imageUrls.length, 0);
+    setProductImageFiles(selectedFiles.slice(0, remainingSlots));
+  };
+
+  const removeSavedProductImage = (index: number) => {
+    setProductForm((current) => ({
+      ...current,
+      imageUrls: current.imageUrls.filter((_, imageIndex) => imageIndex !== index),
+    }));
+  };
+
+  const removeQueuedProductImage = (index: number) => {
+    setProductImageFiles((current) => current.filter((_, imageIndex) => imageIndex !== index));
   };
 
   const handleCategorySubmit = async (event: React.FormEvent) => {
@@ -351,23 +376,58 @@ export function AdminDashboard() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Product Image</Label>
+                    <Label>Product Images</Label>
                     <Input
                       type="file"
+                      multiple
                       accept="image/png,image/jpeg,image/webp,image/gif"
-                      onChange={(event) => setProductImageFile(event.target.files?.[0] || null)}
+                      onChange={handleProductImageSelection}
                     />
-                    <p className="mt-2 text-xs opacity-70">Upload JPG, PNG, WEBP, or GIF up to 20MB.</p>
-                    {(productImagePreviewUrl || productForm.imageUrl) && (
-                      <div className="mt-3 flex items-center gap-3">
-                        <img
-                          src={productImagePreviewUrl || productForm.imageUrl}
-                          alt="Product preview"
-                          className="h-16 w-16 rounded object-cover border border-border"
-                        />
-                        <p className="text-sm opacity-70">
-                          {productImageFile ? productImageFile.name : "Current product image"}
-                        </p>
+                    <p className="mt-2 text-xs opacity-70">Upload up to 10 JPG, PNG, WEBP, or GIF images. The first image is used as the main product image.</p>
+                    {productForm.imageUrls.length > 0 && (
+                      <div className="mt-3">
+                        <p className="mb-2 text-xs uppercase tracking-wide opacity-60">Saved images</p>
+                        <div className="flex flex-wrap gap-3">
+                          {productForm.imageUrls.map((imageUrl, index) => (
+                            <div key={imageUrl} className="relative">
+                              <img
+                                src={imageUrl}
+                                alt={`Saved product ${index + 1}`}
+                                className="h-16 w-16 rounded object-cover border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeSavedProductImage(index)}
+                                className="absolute -right-2 -top-2 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+                              >
+                                x
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {productImagePreviewUrls.length > 0 && (
+                      <div className="mt-3">
+                        <p className="mb-2 text-xs uppercase tracking-wide opacity-60">New uploads</p>
+                        <div className="flex flex-wrap gap-3">
+                          {productImagePreviewUrls.map((previewUrl, index) => (
+                            <div key={previewUrl} className="relative">
+                              <img
+                                src={previewUrl}
+                                alt={`Queued product ${index + 1}`}
+                                className="h-16 w-16 rounded object-cover border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeQueuedProductImage(index)}
+                                className="absolute -right-2 -top-2 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+                              >
+                                x
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -471,6 +531,7 @@ export function AdminDashboard() {
                         <p className="text-sm opacity-70">
                           {product.categoryName} | ${product.price.toFixed(2)} | Stock {product.stock}
                         </p>
+                        <p className="text-xs opacity-60">{product.imageUrls.length} image{product.imageUrls.length === 1 ? "" : "s"}</p>
                       </div>
                       <Button size="sm" variant="outline" onClick={() => handleEditProduct(product)}>
                         Edit

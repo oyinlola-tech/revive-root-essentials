@@ -20,6 +20,29 @@ const slugify = (value = '') =>
 
 const normalizeSlug = (value = '') => slugify(String(value || ''));
 const uuidV4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_PRODUCT_IMAGES = 10;
+
+const normalizeImageUrls = (payload = {}) => {
+  const imageUrls = Array.isArray(payload.imageUrls)
+    ? payload.imageUrls.map((entry) => String(entry || '').trim()).filter(Boolean)
+    : [];
+  const singleImageUrl = String(payload.imageUrl || '').trim();
+
+  if (imageUrls.length > 0) {
+    return imageUrls.slice(0, MAX_PRODUCT_IMAGES);
+  }
+
+  return singleImageUrl ? [singleImageUrl] : [];
+};
+
+const applyProductImagePayload = (payload = {}) => {
+  const imageUrls = normalizeImageUrls(payload);
+  const nextPayload = { ...payload };
+
+  nextPayload.imageUrl = imageUrls[0] || null;
+  nextPayload.imageUrls = imageUrls;
+  return nextPayload;
+};
 
 const resolveUniqueSlug = async (baseSlug, excludeId) => {
   const safeBase = normalizeSlug(baseSlug || 'product');
@@ -229,10 +252,11 @@ exports.getProductByIdentifier = catchAsync(async (req, res, next) => {
 });
 
 exports.createProduct = catchAsync(async (req, res, next) => {
-  if (!req.body.imageUrl) {
+  const imageUrls = normalizeImageUrls(req.body);
+  if (imageUrls.length === 0) {
     return next(new AppError('Product image is required for SEO-ready product creation', 400));
   }
-  const seoPayload = buildSeoPayload(req.body);
+  const seoPayload = buildSeoPayload(applyProductImagePayload(req.body));
   seoPayload.slug = await resolveUniqueSlug(seoPayload.slug || seoPayload.name);
   const product = await Product.create(seoPayload);
   
@@ -248,7 +272,7 @@ exports.updateProduct = catchAsync(async (req, res, next) => {
   if (!product) {
     return next(new AppError('Product not found', 404));
   }
-  const seoPayload = buildSeoPayload({ ...product.toJSON(), ...req.body });
+  const seoPayload = buildSeoPayload(applyProductImagePayload({ ...product.toJSON(), ...req.body }));
   seoPayload.slug = await resolveUniqueSlug(seoPayload.slug || seoPayload.name, product.id);
   await product.update(seoPayload);
   
@@ -314,5 +338,23 @@ exports.uploadProductImage = catchAsync(async (req, res, next) => {
     message: 'Image uploaded successfully',
     imageUrl,
     filename: req.file.filename,
+  });
+});
+
+exports.uploadProductImages = catchAsync(async (req, res, next) => {
+  if (!Array.isArray(req.files) || req.files.length === 0) {
+    return next(new AppError('At least one image file is required', 400));
+  }
+
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const imageUrls = req.files.map((file) => `${baseUrl}/uploads/${file.filename}`);
+
+  res.status(201).json({
+    message: 'Images uploaded successfully',
+    imageUrls,
+    files: req.files.map((file) => ({
+      filename: file.filename,
+      imageUrl: `${baseUrl}/uploads/${file.filename}`,
+    })),
   });
 });

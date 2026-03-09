@@ -17,6 +17,7 @@ router.get('/:id', productController.getProductById);
 
 // Admin only
 router.post('/upload-image', protect, restrictTo('admin', 'superadmin'), upload.single('image'), productController.uploadProductImage);
+router.post('/upload-images', protect, restrictTo('admin', 'superadmin'), upload.array('images', 10), productController.uploadProductImages);
 router.post('/', protect, restrictTo('admin', 'superadmin'), validate(createProductValidation), productController.createProduct);
 router.put('/:id', protect, restrictTo('admin', 'superadmin'), validate(updateProductValidation), productController.updateProduct);
 router.delete('/:id', protect, restrictTo('admin', 'superadmin'), productController.deleteProduct);

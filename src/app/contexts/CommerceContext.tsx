@@ -57,6 +57,9 @@ const normalizeProductShape = (product: Product): Product => ({
   ...product,
   backendId: product.backendId || product.id,
   currency: product.currency || "NGN",
+  images: Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : (product.image ? [product.image] : []),
 });
 
 export function CommerceProvider({ children }: { children: React.ReactNode }) {
@@ -90,6 +93,7 @@ export function CommerceProvider({ children }: { children: React.ReactNode }) {
           category: inferCategory(item.name),
           price: Number(item.price || 0),
           image: item.image || "",
+          images: item.image ? [item.image] : [],
           description: "",
           ingredients: [],
           benefits: [],
