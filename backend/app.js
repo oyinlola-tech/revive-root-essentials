@@ -145,7 +145,7 @@ app.use(helmet(helmetOptions));
 app.use(additionalSecurityHeadersMiddleware);
 app.use(globalLimiter);
 app.use(suspiciousActivityDetectionMiddleware);
-app.use(cors({
+const corsConfig = {
   origin(origin, callback) {
     if (isOriginAllowed(origin)) {
       callback(null, true);
@@ -162,7 +162,11 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200,
   maxAge: 86400,
-}));
+};
+
+app.use(cors(corsConfig));
+// Ensure preflight requests return CORS headers before other middleware runs.
+app.options('*', cors(corsConfig));
 // Use compression with moderate level and threshold to avoid compressing tiny responses
 app.use(compression({ level: 6, threshold: 1024 }));
 app.use('/api', paymentWebhookRoutes);
