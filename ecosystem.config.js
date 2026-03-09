@@ -93,7 +93,7 @@ module.exports = {
       // Health check endpoint
       health_check: {
         enabled: true,
-        endpoint: 'https://api.revive-root-essentials.telente.site/health',
+        endpoint: 'https://revive-api.telente.site/health',
         interval: 30000    // Check every 30 seconds
       }
     },
