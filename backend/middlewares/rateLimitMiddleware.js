@@ -3,6 +3,19 @@ const { ensureRedisConnection } = require('../config/redis');
 const buckets = new Map();
 let lastCleanup = 0;
 
+const getClientIp = (req) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    return String(forwardedFor[0]).split(',')[0].trim();
+  }
+
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
 const cleanupExpiredBuckets = (now) => {
   if (now - lastCleanup < 60 * 1000) return;
   lastCleanup = now;
@@ -14,8 +27,13 @@ const cleanupExpiredBuckets = (now) => {
   }
 };
 
-const rateLimit = ({ windowMs, max, message }) => async (req, res, next) => {
-  const key = `${req.ip}:${req.baseUrl || req.path}`;
+const rateLimit = ({ windowMs, max, message, methods }) => async (req, res, next) => {
+  if (Array.isArray(methods) && methods.length > 0 && !methods.includes(req.method)) {
+    return next();
+  }
+
+  const clientIp = getClientIp(req);
+  const key = `${clientIp}:${req.method}:${req.baseUrl || req.path}`;
   const now = Date.now();
   const redis = await ensureRedisConnection();
 

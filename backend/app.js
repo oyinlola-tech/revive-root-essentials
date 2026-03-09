@@ -100,20 +100,23 @@ const authLimiter = rateLimit({
 
 const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 20,
   message: 'Too many contact submissions. Please try again later.',
+  methods: ['POST'],
 });
 
 const newsletterLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: 'Too many newsletter subscriptions. Please try again later.',
+  methods: ['POST'],
 });
 
 const orderLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   message: 'Too many orders. Please try again shortly.',
+  methods: ['POST'],
 });
 
 // Middlewares
