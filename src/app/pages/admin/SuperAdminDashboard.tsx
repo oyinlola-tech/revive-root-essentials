@@ -11,7 +11,6 @@ import {
   getDashboardStats,
   getUsers,
   logout,
-  updateUserRole,
 } from "../../services/api";
 import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
@@ -54,19 +53,6 @@ export function SuperAdminDashboard() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleRoleChange = async (id: string, role: "user" | "admin" | "superadmin") => {
-    setStatusMessage("");
-    setErrorMessage("");
-
-    try {
-      await updateUserRole(id, role);
-      setStatusMessage("User role updated.");
-      await loadData();
-    } catch (error) {
-      setErrorMessage(getDisplayErrorMessage(error, "Unable to update role."));
-    }
-  };
 
   const handleCreateAdmin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -224,9 +210,12 @@ export function SuperAdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>User Role Management</CardTitle>
+            <CardTitle>User Access Overview</CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="mb-4 text-sm opacity-70">
+              Admin accounts are created manually from the form above. Role changes are not available from this user list.
+            </p>
             <div className="space-y-3">
               {users.map((user) => (
                 <div key={user.id} className="p-4 border border-border rounded-lg flex items-center gap-3">
@@ -234,15 +223,9 @@ export function SuperAdminDashboard() {
                     <p className="font-semibold">{user.name}</p>
                     <p className="text-sm opacity-70">{user.email}</p>
                   </div>
-                  <select
-                    value={user.role}
-                    onChange={(event) => handleRoleChange(user.id, event.target.value as "user" | "admin" | "superadmin")}
-                    className="px-3 py-2 bg-background border border-border rounded-lg"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
-                  </select>
+                  <span className="rounded-full border border-border bg-muted px-3 py-2 text-sm font-medium">
+                    {user.role === "user" ? "Customer" : user.role === "superadmin" ? "Super Admin" : "Admin"}
+                  </span>
                 </div>
               ))}
             </div>

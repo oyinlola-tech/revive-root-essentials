@@ -30,7 +30,6 @@ export default function AdminUsers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [editingRole, setEditingRole] = useState<string>('');
   const [editingStatus, setEditingStatus] = useState<string>('');
   const [updating, setUpdating] = useState(false);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -79,7 +78,6 @@ export default function AdminUsers() {
 
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
-    setEditingRole(user.role);
     setEditingStatus(user.status);
     setShowModal(true);
   };
@@ -91,7 +89,6 @@ export default function AdminUsers() {
       setUpdating(true);
       setError(null);
       await api.adminUpdateUser(selectedUser.id, {
-        role: editingRole as any,
         status: editingStatus as any,
       });
       setShowModal(false);
@@ -398,15 +395,16 @@ export default function AdminUsers() {
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Role
                   </label>
-                  <select
-                    value={editingRole}
-                    onChange={(e) => setEditingRole(e.target.value)}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  >
-                    <option value="user">Customer</option>
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
-                  </select>
+                  <div className="w-full px-4 py-2 border border-border rounded-lg bg-muted text-sm text-muted-foreground">
+                    {selectedUser.role === 'user'
+                      ? 'Customer'
+                      : selectedUser.role === 'superadmin'
+                        ? 'Super Admin'
+                        : 'Admin'}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Admin accounts must be created manually from the super admin page. Roles cannot be changed from this list.
+                  </p>
                 </div>
 
                 <div>
