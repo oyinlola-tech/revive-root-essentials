@@ -114,7 +114,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   let paymentResponse = null;
   try {
     const callbackBase = process.env.FRONTEND_URL;
-    const callbackUrl = callbackBase ? `${callbackBase.replace(/\\/$/, '')}/orders/${order.id}` : undefined;
+    const callbackUrl = callbackBase ? `${callbackBase.replace(/\/$/, '')}/orders/${order.id}` : undefined;
     paymentResponse = await paymentService.initiateTransaction({
       amount: order.totalAmount,
       email: req.user.email,

@@ -165,24 +165,31 @@ const corsConfig = {
 
 // Manual CORS/preflight handler to guarantee headers on every response path
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
+  const origin = req.get('origin');
   const originAllowed = isOriginAllowed(origin);
 
-  if (originAllowed && origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Vary', 'Origin');
+  if (origin && originAllowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  } else if (origin) {
+    res.setHeader('Vary', 'Origin');
   }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', corsConfig.methods.join(','));
-  res.header('Access-Control-Allow-Headers', corsConfig.allowedHeaders.join(','));
-  res.header('Access-Control-Expose-Headers', corsConfig.exposedHeaders.join(','));
+
+  res.setHeader('Access-Control-Allow-Credentials', String(corsConfig.credentials));
+  res.setHeader('Access-Control-Allow-Methods', corsConfig.methods.join(','));
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    req.get('access-control-request-headers') || corsConfig.allowedHeaders.join(','),
+  );
+  res.setHeader('Access-Control-Expose-Headers', corsConfig.exposedHeaders.join(','));
+  res.setHeader('Access-Control-Max-Age', String(corsConfig.maxAge));
 
   if (req.method === 'OPTIONS') {
-    if (!originAllowed) {
+    if (origin && !originAllowed) {
       logger.warn(`Blocked CORS origin (preflight): ${origin}`);
-      return res.sendStatus(403);
+      return res.status(403).json({ error: true, message: 'CORS origin not allowed' });
     }
-    return res.sendStatus(204);
+    return res.status(204).end();
   }
 
   return next();
