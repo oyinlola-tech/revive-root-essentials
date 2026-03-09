@@ -196,12 +196,6 @@ export default function AddressManagement() {
                   Order History
                 </Link>
                 <Link
-                  to="/refund-tracking"
-                  className="block px-3 py-2 rounded text-sm hover:bg-muted text-muted-foreground transition"
-                >
-                  Refunds
-                </Link>
-                <Link
                   to="/address-management"
                   className="block px-3 py-2 rounded text-sm hover:bg-emerald-50 text-emerald-700 font-medium transition"
                 >

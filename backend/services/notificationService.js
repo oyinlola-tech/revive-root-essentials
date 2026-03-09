@@ -1,6 +1,8 @@
 const { sendEmail } = require('../utils/emailService');
 const { sendSms } = require('../utils/smsService');
 const templates = require('../utils/emailTemplates');
+const { User } = require('../models');
+const { Op } = require('sequelize');
 
 const formatAddress = (address) => {
   if (!address || typeof address !== 'object') return 'Not provided';
@@ -16,6 +18,16 @@ const formatAddress = (address) => {
 };
 
 class NotificationService {
+  async getAdminRecipients() {
+    return User.findAll({
+      where: {
+        role: { [Op.in]: ['admin', 'superadmin'] },
+        isVerified: true,
+      },
+      attributes: ['id', 'email', 'name'],
+    });
+  }
+
   async sendOtpNotification({ channel, recipient, name, code, expiresMinutes = 5, verificationUrl }) {
     if (channel === 'phone') {
       await sendSms(recipient, `${code} is your ${process.env.APP_NAME || 'Revive Roots Essentials'} OTP. Expires in ${expiresMinutes} minutes. Do not share this code.`);
@@ -63,6 +75,26 @@ class NotificationService {
     await sendEmail(user.email, `Order received: ${order.orderNumber}`, html);
   }
 
+  async sendAdminOrderAlert(order, items = [], customer = null) {
+    const recipients = await this.getAdminRecipients();
+    if (!recipients.length) return;
+
+    const html = templates.adminOrderAlertTemplate({
+      orderNumber: order.orderNumber,
+      orderDate: new Date(order.createdAt || Date.now()).toLocaleString(),
+      customerName: customer?.name,
+      customerEmail: customer?.email,
+      items,
+      total: order.totalAmount,
+      currency: order.currency || 'NGN',
+      shippingAddress: formatAddress(order.shippingAddress),
+    });
+
+    await Promise.all(recipients
+      .filter((recipient) => recipient.email)
+      .map((recipient) => sendEmail(recipient.email, `New order placed: ${order.orderNumber}`, html)));
+  }
+
   async sendReceiptEmail(user, order, items = []) {
     if (!user?.email) return;
     const html = templates.receiptTemplate({
@@ -88,6 +120,31 @@ class NotificationService {
       currency: order.currency || 'NGN',
     });
     await sendEmail(user.email, `Refund processed: ${order.orderNumber}`, html);
+  }
+
+  async sendRefundStatusEmail(user, order, refund, metadata = {}) {
+    if (!user?.email || !order?.orderNumber || !refund?.status) return;
+
+    const html = templates.refundStatusTemplate({
+      name: user.name,
+      orderNumber: order.orderNumber,
+      status: refund.status,
+      requestedAmount: refund.requestedAmount,
+      approvedAmount: refund.approvedAmount,
+      reason: refund.reason,
+      note: metadata.note || refund.adminNotes,
+      processedAt: metadata.processedAt || refund.processedAt || refund.updatedAt || new Date().toLocaleString(),
+      currency: order.currency || 'NGN',
+    });
+
+    const subjectPrefix = {
+      pending: 'Refund request received',
+      approved: 'Refund approved',
+      rejected: 'Refund update',
+      completed: 'Refund completed',
+    }[refund.status] || 'Refund update';
+
+    await sendEmail(user.email, `${subjectPrefix}: ${order.orderNumber}`, html);
   }
 
   async sendOrderStatusEmail(user, order, note) {

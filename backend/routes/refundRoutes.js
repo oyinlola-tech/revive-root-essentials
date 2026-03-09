@@ -13,6 +13,7 @@ const router = express.Router();
 router.post(
   '/',
   authenticate,
+  requireAdmin,
   createRefundValidation,
   refundController.createRefund,
 );

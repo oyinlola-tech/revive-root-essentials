@@ -3,10 +3,22 @@ const { RefundRequest, Order, User, AuditLog } = require('../models');
 const AppError = require('../utils/AppError');
 const Logger = require('../utils/Logger');
 const auditService = require('./auditService');
+const notificationService = require('./notificationService');
 
 const logger = new Logger('RefundService');
 
 class RefundService {
+  async getRefundNotificationContext(refund) {
+    if (!refund?.userId || !refund?.orderId) return { user: null, order: null };
+
+    const [user, order] = await Promise.all([
+      User.findByPk(refund.userId),
+      Order.findByPk(refund.orderId),
+    ]);
+
+    return { user, order };
+  }
+
   /**
    * Create a new refund request
    * @param {string} orderId - Order ID
@@ -64,6 +76,11 @@ class RefundService {
       amount: requestedAmount,
       reason: refundData.reason,
     });
+
+    const { user, order: refundOrder } = await this.getRefundNotificationContext(refund);
+    await notificationService.sendRefundStatusEmail(user, refundOrder || order, refund, {
+      note: 'We received your request and our team will review it shortly.',
+    }).catch(() => {});
 
     logger.info(`Refund request created: ${refund.id} for order ${orderId}`);
     return refund;
@@ -209,6 +226,11 @@ class RefundService {
       notes: approvalData.notes,
     });
 
+    const { user, order } = await this.getRefundNotificationContext(refund);
+    await notificationService.sendRefundStatusEmail(user, order, refund, {
+      note: approvalData.notes || 'Your refund request has been approved and is now waiting for final processing.',
+    }).catch(() => {});
+
     logger.info(`Refund approved: ${refundId} for amount ${approvedAmount}`);
     return refund;
   }
@@ -241,6 +263,11 @@ class RefundService {
       reason: rejectionData.reason,
       notes: rejectionData.notes,
     });
+
+    const { user, order } = await this.getRefundNotificationContext(refund);
+    await notificationService.sendRefundStatusEmail(user, order, refund, {
+      note: [rejectionData.reason, rejectionData.notes].filter(Boolean).join(' ') || 'Your refund request was reviewed but could not be approved.',
+    }).catch(() => {});
 
     logger.info(`Refund rejected: ${refundId}`);
     return refund;
@@ -285,6 +312,14 @@ class RefundService {
       amount: refund.approvedAmount,
       transactionRef: completionData.transactionRef,
     });
+
+    const { user, order: refundOrder } = await this.getRefundNotificationContext(refund);
+    await notificationService.sendRefundStatusEmail(user, refundOrder || order, refund, {
+      note: completionData.transactionRef
+        ? `Refund completed successfully. Transaction reference: ${completionData.transactionRef}`
+        : 'Your refund has been completed successfully.',
+      processedAt: refund.processedAt,
+    }).catch(() => {});
 
     logger.info(`Refund completed: ${refundId}`);
     return refund;

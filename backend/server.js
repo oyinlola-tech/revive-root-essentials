@@ -3,6 +3,7 @@ const { sequelize } = require('./models');
 const seedSuperadmin = require('./utils/seedSuperadmin');
 const { startNewsletterScheduler } = require('./services/newsletterScheduler');
 const redisProductCacheService = require('./services/redisProductCacheService');
+const { startOrderAutomation } = require('./services/orderAutomationService');
 
 const PORT = Number(process.env.PORT) || 3000;
 const requiredEnvVars = [
@@ -80,6 +81,7 @@ if (process.env.SKIP_DB === 'true') {
     .then(() => {
       server = app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
+        startOrderAutomation();
         if (shouldStartNewsletterScheduler) {
           startNewsletterScheduler();
         }

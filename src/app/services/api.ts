@@ -885,6 +885,9 @@ export const updateMyProfile = async (payload: {
       ...session.user,
       name: updatedUser.name,
       email: updatedUser.email,
+      phone: updatedUser.phone || null,
+      acceptedMarketing: Boolean(updatedUser.acceptedMarketing),
+      acceptedNewsletter: Boolean(updatedUser.acceptedNewsletter),
       role: updatedUser.role,
     },
   });
@@ -1094,6 +1097,13 @@ export const adminUpdateOrderStatus = async (orderId: string, status: string) =>
   return fetchJson<BackendOrder>(`/admin/orders/${orderId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  }, true);
+};
+
+export const adminIssueOrderRefund = async (orderId: string, reason?: string) => {
+  return fetchJson<{ message: string }>(`/orders/${orderId}/refund`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
   }, true);
 };
 

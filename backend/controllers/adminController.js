@@ -7,6 +7,7 @@ const catchAsync = require('../utils/catchAsync');
 const analyticsService = require('../services/analyticsService');
 const auditService = require('../services/auditService');
 const Logger = require('../utils/Logger');
+const notificationService = require('../services/notificationService');
 
 const logger = new Logger('AdminController');
 
@@ -390,6 +391,18 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
     oldStatus,
     newStatus: status,
   });
+
+  const user = order.userId ? await User.findByPk(order.userId) : null;
+  if (user?.email) {
+    const defaultNotes = {
+      pending: 'Your order is pending review and confirmation.',
+      processing: 'Your order is now being processed by our team.',
+      shipped: 'Your order is out for delivery and on the way.',
+      delivered: 'Your order has been delivered.',
+      cancelled: 'Your order has been cancelled. If a refund applies, you will get a separate refund update by email.',
+    };
+    notificationService.sendOrderStatusEmail(user, order, req.body.note || defaultNotes[status]).catch(() => {});
+  }
 
   res.status(200).json({
     success: true,

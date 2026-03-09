@@ -154,17 +154,6 @@ export const OrderDetail = () => {
             </div>
           )}
 
-          {/* Actions */}
-          <div className="p-6 flex gap-4">
-            {order.status !== "delivered" && order.paymentStatus === "paid" && (
-              <button
-                onClick={() => navigate(`/refund-request?orderId=${order.id}`)}
-                className="flex-1 border border-orange-600 text-orange-600 px-4 py-2 rounded hover:bg-orange-50"
-              >
-                Request Refund
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>

@@ -24,8 +24,6 @@ const Account = lazyNamed(() => import("./pages/Account"), "Account");
 const NewsletterUnsubscribe = lazyNamed(() => import("./pages/NewsletterUnsubscribe"), "NewsletterUnsubscribe");
 const OrderHistory = lazyNamed(() => import("./pages/OrderHistory"), "OrderHistory");
 const OrderDetail = lazyNamed(() => import("./pages/OrderDetail"), "OrderDetail");
-const RefundRequest = lazyNamed(() => import("./pages/RefundRequest"), "RefundRequest");
-const RefundTracking = lazy(() => import("./pages/RefundTracking"));
 const AddressManagement = lazy(() => import("./pages/AddressManagement"));
 
 const Login = lazyNamed(() => import("./pages/auth/Login"), "Login");
@@ -62,8 +60,6 @@ export const router = createBrowserRouter([
       { path: "newsletter/unsubscribe", Component: NewsletterUnsubscribe },
       { path: "order-history", Component: OrderHistory },
       { path: "order/:id", Component: OrderDetail },
-      { path: "refund-request", Component: RefundRequest },
-      { path: "refund-tracking", Component: RefundTracking },
       { path: "address-management", Component: AddressManagement },
     ],
   },

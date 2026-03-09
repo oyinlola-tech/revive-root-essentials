@@ -1,10 +1,12 @@
-const { Order, OrderItem, Product, User } = require('../models');
+const { Order, OrderItem, Product, User, RefundRequest } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
 const paymentService = require('../services/paymentService');
 const notificationService = require('../services/notificationService');
 const currencyService = require('../services/currencyService');
+const refundService = require('../services/refundService');
+const { Op } = require('sequelize');
 
 const allowedPaymentMethods = new Set(['card', 'ussd', 'transfer']);
 
@@ -124,6 +126,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   }
 
   await notificationService.sendOrderPlacedEmail(req.user, fullOrder, mapOrderItems(fullOrder.OrderItems));
+  await notificationService.sendAdminOrderAlert(fullOrder, mapOrderItems(fullOrder.OrderItems), req.user);
 
   res.status(201).json({
     orderId: order.id,
@@ -149,11 +152,28 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
     return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
   }
+  const allowedTransitions = {
+    pending: ['processing', 'cancelled'],
+    processing: ['shipped'],
+    shipped: ['delivered'],
+    delivered: [],
+    cancelled: [],
+  };
+  if (status !== order.status && !allowedTransitions[order.status]?.includes(status)) {
+    return next(new AppError(`Cannot change order status from ${order.status} to ${status}`, 400));
+  }
   order.status = status;
   await order.save();
 
   if (user?.email) {
-    notificationService.sendOrderStatusEmail(user, order, req.body.note).catch(() => {});
+    const defaultNotes = {
+      pending: 'Your order is pending review and confirmation.',
+      processing: 'Your order is now being processed by our team.',
+      shipped: 'Your order is on the way.',
+      delivered: 'Your order has been delivered.',
+      cancelled: 'Your order has been cancelled.',
+    };
+    notificationService.sendOrderStatusEmail(user, order, req.body.note || defaultNotes[status]).catch(() => {});
   }
   res.json(order);
 });
@@ -174,6 +194,14 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   }
   order.status = 'cancelled';
   await order.save();
+  const user = await User.findByPk(order.userId);
+  if (user?.email) {
+    notificationService.sendOrderStatusEmail(
+      user,
+      order,
+      'Your order has been cancelled. If a refund applies, you will receive a separate refund update by email.',
+    ).catch(() => {});
+  }
   res.json(order);
 });
 
@@ -277,21 +305,49 @@ exports.refundOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Order not found', 404));
   }
 
-  if (order.paymentStatus !== 'paid') {
-    return next(new AppError('Only paid orders can be refunded', 400));
+  if (order.status !== 'cancelled') {
+    return next(new AppError('Refunds can only be issued for cancelled orders', 400));
   }
 
-  order.paymentStatus = 'refunded';
-  order.status = 'cancelled';
-  await order.save();
+  if (order.paymentStatus !== 'paid') {
+    return next(new AppError('Only cancelled paid orders can be refunded', 400));
+  }
+
+  const existingRefund = await RefundRequest.findOne({
+    where: {
+      orderId: order.id,
+      status: { [Op.in]: ['pending', 'approved', 'completed'] },
+    },
+  });
+  if (existingRefund) {
+    return next(new AppError('A refund flow already exists for this order', 400));
+  }
+
+  const refund = await RefundRequest.create({
+    orderId: order.id,
+    userId: order.userId,
+    reason: req.body.reason || 'Admin issued refund for a cancelled order.',
+    requestedAmount: order.totalAmount,
+    status: 'pending',
+  });
+
+  const approvedRefund = await refundService.approveRefund(refund.id, req.user.id, {
+    approvedAmount: order.totalAmount,
+    notes: req.body.reason || 'Your cancelled order has entered refund processing. We will email you again once the refund is completed.',
+  });
 
   const user = await User.findByPk(order.userId);
   if (user) {
-    await notificationService.sendRefundEmail(user, order, req.body.reason);
+    await notificationService.sendOrderStatusEmail(
+      user,
+      order,
+      'Your cancelled order is now in refund processing. We will keep you updated by email until the refund is completed.',
+    ).catch(() => {});
   }
 
   res.json({
-    message: 'Order refunded successfully',
+    message: 'Refund issued successfully',
     order,
+    refund: approvedRefund,
   });
 });

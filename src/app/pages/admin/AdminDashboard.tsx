@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { Textarea } from "../../components/ui/textarea";
 import {
   AdminOrder,
+  adminIssueOrderRefund,
   AdminProduct,
   createAdminProduct,
   createCategory,
@@ -56,6 +57,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [savingProduct, setSavingProduct] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
+  const [issuingRefundFor, setIssuingRefundFor] = useState("");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -296,6 +298,26 @@ export function AdminDashboard() {
       await loadDashboardData();
     } catch (error) {
       setErrorMessage(getDisplayErrorMessage(error, "Unable to update order status."));
+    }
+  };
+
+  const handleIssueRefund = async (order: AdminOrder) => {
+    const reason = window.prompt(
+      "Optional refund note for the customer email:",
+      "Your cancelled order has entered refund processing and we will keep you updated by email.",
+    ) || undefined;
+
+    try {
+      setIssuingRefundFor(order.id);
+      setStatusMessage("");
+      setErrorMessage("");
+      await adminIssueOrderRefund(order.id, reason);
+      setStatusMessage("Refund issued.");
+      await loadDashboardData();
+    } catch (error) {
+      setErrorMessage(getDisplayErrorMessage(error, "Unable to issue refund."));
+    } finally {
+      setIssuingRefundFor("");
     }
   };
 
@@ -641,6 +663,19 @@ export function AdminDashboard() {
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
+                        {order.status === "cancelled" && order.paymentStatus === "paid" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleIssueRefund(order)}
+                            disabled={issuingRefundFor === order.id}
+                          >
+                            {issuingRefundFor === order.id ? "Issuing Refund..." : "Issue Refund"}
+                          </Button>
+                        )}
+                        {order.paymentStatus === "refunded" && (
+                          <span className="text-sm text-blue-700">Refund Completed</span>
+                        )}
                       </div>
                     </div>
                   ))}

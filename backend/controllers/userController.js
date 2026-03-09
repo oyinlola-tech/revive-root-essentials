@@ -60,8 +60,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     acceptedNewsletter,
   } = req.body;
 
-  if (name) user.name = name;
-  if (phone) user.phone = phone;
+  if (typeof name === 'string' && name.trim()) user.name = name.trim();
+  if (typeof phone === 'string') user.phone = phone.trim() || null;
   if (typeof acceptedMarketing === 'boolean') {
     user.acceptedMarketing = acceptedMarketing;
   }

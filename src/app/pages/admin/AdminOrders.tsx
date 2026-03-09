@@ -29,6 +29,7 @@ export default function AdminOrders() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [issuingRefund, setIssuingRefund] = useState<string | null>(null);
 
   const itemsPerPage = 10;
 
@@ -86,6 +87,35 @@ export default function AdminOrders() {
     } finally {
       setUpdatingStatus(null);
     }
+  };
+
+  const handleIssueRefund = async (order: Order) => {
+    const reason = window.prompt(
+      "Optional refund note for the customer email:",
+      "Your cancelled order has entered refund processing and we will keep you updated by email.",
+    ) || undefined;
+
+    try {
+      setIssuingRefund(order.id);
+      setError(null);
+      await api.adminIssueOrderRefund(order.id, reason);
+      await loadOrders();
+    } catch (err) {
+      setError(getDisplayErrorMessage(err, 'Failed to issue refund'));
+    } finally {
+      setIssuingRefund(null);
+    }
+  };
+
+  const getAvailableStatusActions = (order: Order) => {
+    const transitions: Record<Order['status'], Order['status'][]> = {
+      pending: ['processing', 'cancelled'],
+      processing: ['shipped'],
+      shipped: ['delivered'],
+      delivered: [],
+      cancelled: [],
+    };
+    return transitions[order.status] || [];
   };
 
   const getStatusColor = (status: string) => {
@@ -314,24 +344,36 @@ export default function AdminOrders() {
 
                       <div className="border-t pt-4">
                         <h4 className="font-semibold text-foreground mb-3">
-                          Update Status
+                          Fulfillment Actions
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {['pending', 'processing', 'shipped', 'delivered'].map(
+                          {getAvailableStatusActions(order).map(
                             (status) => (
                               <button
                                 key={status}
                                 onClick={() => handleStatusUpdate(order.id, status)}
                                 disabled={updatingStatus === order.id}
                                 className={`px-4 py-2 rounded-lg font-medium transition capitalize ${
-                                  order.status === status
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-muted hover:bg-accent text-muted-foreground'
+                                  'bg-muted hover:bg-accent text-muted-foreground'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                               >
                                 {status}
                               </button>
                             )
+                          )}
+                          {order.status === 'cancelled' && order.paymentStatus === 'paid' && (
+                            <button
+                              onClick={() => handleIssueRefund(order)}
+                              disabled={issuingRefund === order.id}
+                              className="px-4 py-2 rounded-lg font-medium transition bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {issuingRefund === order.id ? 'Issuing Refund...' : 'Issue Refund'}
+                            </button>
+                          )}
+                          {order.paymentStatus === 'refunded' && (
+                            <span className="px-4 py-2 rounded-lg font-medium bg-blue-50 text-blue-700">
+                              Refund Completed
+                            </span>
                           )}
                         </div>
                       </div>

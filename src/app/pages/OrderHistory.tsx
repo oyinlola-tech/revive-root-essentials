@@ -126,14 +126,6 @@ export const OrderHistory = () => {
                         >
                           View Details
                         </button>
-                        {order.status !== 'delivered' && order.paymentStatus === 'paid' && (
-                          <button
-                            onClick={() => navigate(`/refund-request?orderId=${order.id}`)}
-                            className="text-orange-600 hover:underline font-medium"
-                          >
-                            Request Refund
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>
