@@ -12,9 +12,7 @@ import {
   adminIssueOrderRefund,
   AdminProduct,
   createAdminProduct,
-  createCategory,
   deleteAdminProduct,
-  deleteCategory,
   getAdminOrders,
   getAdminProducts,
   getAuthSession,
@@ -24,12 +22,12 @@ import {
   logout,
   uploadAdminProductImages,
   updateAdminProduct,
-  updateCategory,
   updateOrderStatus,
 } from "../../services/api";
 import { getDisplayErrorMessage } from "../../utils/uiErrorMessages";
 
 const MAX_PRODUCT_IMAGES = 10;
+const FIXED_CATEGORY_NAMES = ["hair care", "skin care"];
 
 const initialProductForm = {
   id: "",
@@ -46,17 +44,10 @@ const initialProductForm = {
   isFeatured: false,
 };
 
-const initialCategoryForm = {
-  id: "",
-  name: "",
-  description: "",
-};
-
 export function AdminDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [savingProduct, setSavingProduct] = useState(false);
-  const [savingCategory, setSavingCategory] = useState(false);
   const [issuingRefundFor, setIssuingRefundFor] = useState("");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [categories, setCategories] = useState<Array<{ id: string; name: string; description: string }>>([]);
@@ -66,18 +57,17 @@ export function AdminDashboard() {
   const [productForm, setProductForm] = useState(initialProductForm);
   const [productImageFiles, setProductImageFiles] = useState<File[]>([]);
   const [productImagePreviewUrls, setProductImagePreviewUrls] = useState<string[]>([]);
-  const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   const editingProduct = Boolean(productForm.id);
-  const editingCategory = Boolean(categoryForm.id);
 
   const canSubmitProduct = useMemo(
     () =>
       productForm.name.trim().length > 0 &&
       productForm.description.trim().length > 0 &&
       Number(productForm.price) > 0 &&
+      productForm.categoryId.trim().length > 0 &&
       (productForm.imageUrls.length > 0 || productImageFiles.length > 0),
     [productForm, productImageFiles],
   );
@@ -94,7 +84,11 @@ export function AdminDashboard() {
         getNewsletterSubscribers(),
       ]);
       setProducts(productData);
-      setCategories(categoryData);
+      setCategories(
+        categoryData.filter((category) =>
+          FIXED_CATEGORY_NAMES.includes(String(category.name || "").toLowerCase().trim()),
+        ),
+      );
       setOrders(orderData);
       setContacts(contactData);
       setSubscribers(subscriberData);
@@ -138,10 +132,6 @@ export function AdminDashboard() {
     setProductImagePreviewUrls([]);
   };
 
-  const resetCategoryForm = () => {
-    setCategoryForm(initialCategoryForm);
-  };
-
   const parseLines = (value: string) =>
     value
       .split("\n")
@@ -150,6 +140,10 @@ export function AdminDashboard() {
 
   const handleProductSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!productForm.categoryId.trim()) {
+      setErrorMessage("Please select a category.");
+      return;
+    }
     if (!canSubmitProduct) return;
 
     setSavingProduct(true);
@@ -248,49 +242,6 @@ export function AdminDashboard() {
     setProductImageFiles((current) => current.filter((_, imageIndex) => imageIndex !== index));
   };
 
-  const handleCategorySubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!categoryForm.name.trim()) return;
-
-    setSavingCategory(true);
-    setStatusMessage("");
-    setErrorMessage("");
-
-    try {
-      if (editingCategory) {
-        await updateCategory(categoryForm.id, {
-          name: categoryForm.name.trim(),
-          description: categoryForm.description.trim(),
-        });
-        setStatusMessage("Category updated.");
-      } else {
-        await createCategory({
-          name: categoryForm.name.trim(),
-          description: categoryForm.description.trim(),
-        });
-        setStatusMessage("Category created.");
-      }
-      resetCategoryForm();
-      await loadDashboardData();
-    } catch (error) {
-      setErrorMessage(getDisplayErrorMessage(error, "Unable to save category."));
-    } finally {
-      setSavingCategory(false);
-    }
-  };
-
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Delete this category?")) return;
-
-    try {
-      await deleteCategory(id);
-      setStatusMessage("Category deleted.");
-      await loadDashboardData();
-    } catch (error) {
-      setErrorMessage(getDisplayErrorMessage(error, "Unable to delete category."));
-    }
-  };
-
   const handleOrderStatus = async (id: string, status: AdminOrder["status"]) => {
     try {
       await updateOrderStatus(id, status);
@@ -382,7 +333,6 @@ export function AdminDashboard() {
         <Tabs defaultValue="products" className="space-y-6">
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
@@ -574,70 +524,6 @@ export function AdminDashboard() {
                         Edit
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleDeleteProduct(product.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="categories" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{editingCategory ? "Edit Category" : "Create Category"}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCategorySubmit} className="space-y-4">
-                  <div>
-                    <Label>Name</Label>
-                    <Input
-                      value={categoryForm.name}
-                      onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={categoryForm.description}
-                      onChange={(event) => setCategoryForm({ ...categoryForm, description: event.target.value })}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={savingCategory || !categoryForm.name.trim()}>
-                      {savingCategory ? "Saving..." : editingCategory ? "Update Category" : "Create Category"}
-                    </Button>
-                    {editingCategory && (
-                      <Button type="button" variant="outline" onClick={resetCategoryForm}>
-                        Cancel Edit
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>All Categories ({categories.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {categories.map((category) => (
-                    <div key={category.id} className="p-4 border border-border rounded-lg flex items-center gap-3">
-                      <div className="flex-1">
-                        <p className="font-semibold">{category.name}</p>
-                        <p className="text-sm opacity-70">{category.description || "No description"}</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setCategoryForm({ id: category.id, name: category.name, description: category.description || "" })}
-                      >
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDeleteCategory(category.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

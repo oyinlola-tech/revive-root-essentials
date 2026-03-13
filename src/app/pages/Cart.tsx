@@ -155,9 +155,17 @@ export function Cart() {
 
       const paymentUrl = response.paymentUrl;
       if (paymentUrl) {
-        setTimeout(() => {
+        const popup = window.open(
+          paymentUrl,
+          "revive-payment",
+          "width=480,height=720,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes",
+        );
+        if (popup) {
+          popup.focus();
+          setSuccessMessage("Payment window opened. Complete payment to finalize your order.");
+        } else {
           window.location.href = paymentUrl;
-        }, 1500);
+        }
       }
     } catch (error) {
       setErrorMessage(getDisplayErrorMessage(error, "Unable to complete checkout."));
@@ -266,7 +274,7 @@ export function Cart() {
                 <DialogHeader>
                   <DialogTitle>Secure Checkout</DialogTitle>
                   <DialogDescription>
-                    Confirm your address and payment method. We will redirect you to a secure payment page.
+                    Confirm your address and payment method. We will open a secure payment popup to complete payment.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCheckout} className="space-y-4">

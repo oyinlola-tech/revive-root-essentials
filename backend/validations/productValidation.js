@@ -27,6 +27,7 @@ const baseProductValidation = [
 exports.createProductValidation = [
   body('name').trim().notEmpty().withMessage('Product name is required'),
   body('price').isFloat({ gt: 0 }).withMessage('Price must be greater than 0'),
+  body('categoryId').isUUID().withMessage('Category is required'),
   body().custom((value) => {
     const urls = Array.isArray(value?.imageUrls) ? value.imageUrls.filter(Boolean) : [];
     const imageUrl = String(value?.imageUrl || '').trim();
@@ -40,4 +41,7 @@ exports.createProductValidation = [
   ...baseProductValidation,
 ];
 
-exports.updateProductValidation = baseProductValidation;
+exports.updateProductValidation = [
+  body('categoryId').isUUID().withMessage('Category is required'),
+  ...baseProductValidation,
+];

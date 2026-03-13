@@ -9,8 +9,8 @@ router.get('/', categoryController.getAllCategories);
 router.get('/:id', categoryController.getCategoryById);
 
 // Admin only
-router.post('/', protect, restrictTo('admin', 'superadmin'), categoryController.createCategory);
-router.put('/:id', protect, restrictTo('admin', 'superadmin'), categoryController.updateCategory);
-router.delete('/:id', protect, restrictTo('admin', 'superadmin'), categoryController.deleteCategory);
+// router.post('/', protect, restrictTo('admin', 'superadmin'), categoryController.createCategory);
+// router.put('/:id', protect, restrictTo('admin', 'superadmin'), categoryController.updateCategory);
+// router.delete('/:id', protect, restrictTo('admin', 'superadmin'), categoryController.deleteCategory);
 
 module.exports = router;

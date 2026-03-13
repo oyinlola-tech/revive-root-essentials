@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Search, AlertCircle } from 'lucide-react';
 import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 const MAX_PRODUCT_IMAGES = 10;
+const FIXED_CATEGORY_NAMES = ['hair care', 'skin care'];
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<api.AdminProduct[]>([]);
@@ -78,7 +79,11 @@ export default function AdminProducts() {
       ]);
       setProducts(productsRes);
       setFilteredProducts(productsRes);
-      setCategories(categoriesRes);
+      setCategories(
+        categoriesRes.filter((category: { name?: string }) =>
+          FIXED_CATEGORY_NAMES.includes(String(category?.name || '').toLowerCase().trim())
+        )
+      );
     } catch (err) {
       setError(getDisplayErrorMessage(err, 'Failed to load data'));
       console.error('Error loading data:', err);

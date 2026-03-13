@@ -409,6 +409,36 @@ const refreshCsrfToken = async (baseUrl: string) => {
   }
 };
 
+export const setAuthSession = (session: AuthSession) => {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+    token: session.token,
+    user: session.user,
+  }));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revive-roots-auth-changed"));
+  }
+};
+
+export const clearAuthSession = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("revive-roots-auth-changed"));
+  }
+};
+
+const redirectToLogin = () => {
+  if (typeof window === "undefined") return;
+  const { pathname, search, hash } = window.location;
+  if (pathname.startsWith("/auth/")) return;
+  const redirect = `${pathname}${search}${hash}`;
+  const next = redirect
+    ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+    : "/auth/login";
+  window.location.assign(next);
+};
+
+export const getAuthSession = () => getSession();
+
 const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = false): Promise<T> => {
   const session = authenticated ? getSession() : null;
   const baseUrls = getApiBaseUrls();
@@ -450,6 +480,10 @@ const fetchJson = async <T>(path: string, init?: RequestInit, authenticated = fa
         });
 
         if (!response.ok) {
+          if (response.status === 401 && authenticated) {
+            clearAuthSession();
+            redirectToLogin();
+          }
           throw new Error(await getErrorMessage(response, path));
         }
 
@@ -475,25 +509,6 @@ const sortToApi = (sortBy?: "featured" | "price-low" | "price-high"): string | u
   if (sortBy === "featured") return "ranked";
   return undefined;
 };
-
-export const setAuthSession = (session: AuthSession) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-    token: session.token,
-    user: session.user,
-  }));
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("revive-roots-auth-changed"));
-  }
-};
-
-export const clearAuthSession = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("revive-roots-auth-changed"));
-  }
-};
-
-export const getAuthSession = () => getSession();
 
 export const getPreferredCurrency = () => localStorage.getItem(CURRENCY_STORAGE_KEY) || "NGN";
 
