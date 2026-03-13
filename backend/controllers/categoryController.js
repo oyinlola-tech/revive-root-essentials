@@ -5,12 +5,33 @@ const cacheService = require('../services/cacheService');
 const Logger = require('../utils/Logger');
 
 const logger = new Logger('CategoryController');
+const DEFAULT_CATEGORIES = [
+  { name: 'Hair Care', description: 'Hair care products' },
+  { name: 'Skin Care', description: 'Skin care products' },
+];
+
+const ensureDefaultCategories = async () => {
+  const existing = await Category.findAll({ attributes: ['id', 'name'] });
+  const existingNames = new Set(existing.map((category) => String(category.name).toLowerCase().trim()));
+  const missing = DEFAULT_CATEGORIES.filter(
+    (category) => !existingNames.has(category.name.toLowerCase()),
+  );
+  if (missing.length === 0) return;
+  await Promise.all(missing.map((category) => Category.create(category)));
+  logger.info('Default categories ensured', { created: missing.map((category) => category.name) });
+};
 
 exports.getAllCategories = catchAsync(async (req, res, next) => {
   // Try to get from cache
   let categories = await cacheService.getCachedCategories();
+  const hasDefaultCategories = Array.isArray(categories) && categories.some((category) =>
+    DEFAULT_CATEGORIES.some(
+      (defaultCategory) => String(category?.name || '').toLowerCase().trim() === defaultCategory.name.toLowerCase(),
+    ),
+  );
   
-  if (!categories) {
+  if (!categories || !hasDefaultCategories) {
+    await ensureDefaultCategories();
     categories = await Category.findAll();
     await cacheService.setCachedCategories(categories);
     logger.debug('Categories cached');
