@@ -10,7 +10,15 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentLink?: string | null;
   paymentMethod?: string | null;
-  shippingAddress?: string;
+  shippingAddress?: string | {
+    country?: string;
+    state?: string;
+    city?: string;
+    line1?: string;
+    line2?: string;
+    postalCode?: string;
+    note?: string;
+  };
   createdAt: string;
-  items?: Array<{ productId?: string; quantity: number; name?: string }>;
+  items?: Array<{ productId?: string; quantity: number; name?: string; price?: number }>;
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { getOrders } from "../services/api";
+import { getOrders, retryOrderPayment } from "../services/api";
 import type { Order } from "../types/order";
 import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
@@ -128,7 +128,17 @@ export const OrderHistory = () => {
                         </button>
                         {order.paymentStatus === "pending" && order.paymentLink && (
                           <button
-                            onClick={() => window.location.assign(order.paymentLink as string)}
+                            onClick={async () => {
+                              try {
+                                const response = await retryOrderPayment(order.id);
+                                const nextLink = response.paymentUrl || order.paymentLink;
+                                if (nextLink) {
+                                  window.location.assign(nextLink as string);
+                                }
+                              } catch (err) {
+                                setError(getDisplayErrorMessage(err, "Failed to retry payment"));
+                              }
+                            }}
                             className="text-emerald-700 hover:underline font-medium"
                           >
                             Retry Payment

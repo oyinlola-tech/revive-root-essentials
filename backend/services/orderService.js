@@ -4,6 +4,26 @@ const AppError = require('../utils/AppError');
 const shippingService = require('./shippingService');
 const currencyService = require('./currencyService');
 
+const normalizeShippingAddress = (input = {}) => {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+
+  const asString = (value) => {
+    const trimmed = String(value || '').trim();
+    return trimmed || undefined;
+  };
+
+  return {
+    country: asString(input.country),
+    state: asString(input.state),
+    city: asString(input.city),
+    line1: asString(input.line1),
+    line2: asString(input.line2),
+    postalCode: asString(input.postalCode),
+  };
+};
+
 class OrderService {
   async createOrder(userId, orderData, items, pricingContext = { currency: 'NGN', rate: 1 }) {
     const transaction = await sequelize.transaction();
@@ -45,7 +65,7 @@ class OrderService {
       const total = Number((subtotal + Number(shippingQuote.fee || 0) + conversionBaseFee).toFixed(2));
       const orderNote = String(orderData.note || '').trim();
       const shippingAddressPayload = {
-        ...orderData.shippingAddress,
+        ...normalizeShippingAddress(orderData.shippingAddress),
         ...(orderNote ? { note: orderNote } : {}),
       };
 

@@ -1,6 +1,7 @@
 const app = require('./app');
 const { sequelize } = require('./models');
 const { ensureRedisConnection, isRedisConfigured } = require('./config/redis');
+const { startOrderAutomation, stopOrderAutomation } = require('./services/orderAutomationService');
 
 const rawPort = process.env.PORT || '3000';
 const PORT = Number(rawPort);
@@ -44,6 +45,7 @@ const shutdown = async (signal, exitCode = 0) => {
   }
 
   try {
+    stopOrderAutomation();
     await sequelize.close();
   } catch (error) {
     console.error('Error closing database connection:', error.message);
@@ -69,6 +71,7 @@ const startServer = async () => {
     server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+    startOrderAutomation();
 
     server.on('error', async (error) => {
       console.error('HTTP server failed:', error.message);

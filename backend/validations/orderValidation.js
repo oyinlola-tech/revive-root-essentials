@@ -49,6 +49,10 @@ exports.orderIdParamValidation = [
   param('id').isUUID().withMessage('Order ID must be a valid UUID'),
 ];
 
+exports.retryPaymentValidation = [
+  ...exports.orderIdParamValidation,
+];
+
 exports.verifyPaymentValidation = [
   ...exports.orderIdParamValidation,
   body('transactionId').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('transactionId must be a positive integer'),

@@ -8,11 +8,11 @@ const analyticsService = require('../services/analyticsService');
 const auditService = require('../services/auditService');
 const Logger = require('../utils/Logger');
 const notificationService = require('../services/notificationService');
+const { ensurePaidForStatus } = require('../utils/orderGuards');
 
 const logger = new Logger('AdminController');
 
 const VALID_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-const STATUS_REQUIRES_PAYMENT = new Set(['processing', 'shipped', 'delivered']);
 const VALID_USER_ROLES = ['user', 'admin', 'superadmin'];
 const VALID_ADMIN_USER_STATUSES = ['active', 'inactive'];
 const countSuperadmins = () => User.count({ where: { role: 'superadmin' } });
@@ -73,12 +73,6 @@ const restoreCartForOrder = async (order) => {
         quantity: Number(item.quantity || 0) || 1,
       });
     }
-  }
-};
-
-const ensurePaidForStatus = (order, nextStatus) => {
-  if (STATUS_REQUIRES_PAYMENT.has(nextStatus) && order.paymentStatus !== 'paid') {
-    throw new AppError('Cannot update status before payment confirmation', 400);
   }
 };
 

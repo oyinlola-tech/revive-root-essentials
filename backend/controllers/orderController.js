@@ -6,10 +6,10 @@ const paymentService = require('../services/paymentService');
 const notificationService = require('../services/notificationService');
 const currencyService = require('../services/currencyService');
 const refundService = require('../services/refundService');
+const { ensurePaidForStatus } = require('../utils/orderGuards');
 const { Op } = require('sequelize');
 
 const allowedPaymentMethods = new Set(['card', 'ussd', 'transfer']);
-const STATUS_REQUIRES_PAYMENT = new Set(['processing', 'shipped', 'delivered']);
 
 const mapOrderItems = (orderItems = []) => orderItems.map((item) => ({
   name: item.Product?.name || 'Product',
@@ -110,12 +110,6 @@ const markOrderPaidFromTransaction = async (order, txn) => {
   order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || txn?.id || order.paymentTransactionRef;
   await order.save();
   return { wasAlreadyPaid };
-};
-
-const ensurePaidForStatus = (order, nextStatus) => {
-  if (STATUS_REQUIRES_PAYMENT.has(nextStatus) && order.paymentStatus !== 'paid') {
-    throw new AppError('Cannot update status before payment confirmation', 400);
-  }
 };
 
 const logFlutterwaveAudit = async ({
@@ -249,6 +243,64 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     total: order.totalAmount,
     status: order.status,
     paymentUrl: paymentLink,
+  });
+});
+
+exports.retryPayment = catchAsync(async (req, res, next) => {
+  const order = await Order.findByPk(req.params.id, {
+    include: [{ model: OrderItem, include: [Product] }],
+  });
+  if (!order) {
+    return next(new AppError('Order not found', 404));
+  }
+
+  if (req.user.role === 'user' && order.userId !== req.user.id) {
+    return next(new AppError('You do not have permission to retry payment for this order', 403));
+  }
+
+  if (order.status === 'cancelled') {
+    return next(new AppError('Cancelled orders cannot be paid', 400));
+  }
+
+  if (order.paymentStatus === 'paid' || order.paymentStatus === 'refunded') {
+    return next(new AppError('This order is already settled', 400));
+  }
+
+  const user = order.userId ? await User.findByPk(order.userId) : null;
+  if (!user?.email) {
+    return next(new AppError('Customer email is required to retry payment', 400));
+  }
+
+  let paymentResponse = null;
+  try {
+    const callbackBase = process.env.FRONTEND_URL;
+    const callbackUrl = callbackBase ? `${callbackBase.replace(/\/$/, '')}/orders/${order.id}` : undefined;
+    paymentResponse = await paymentService.initiateTransaction({
+      amount: order.totalAmount,
+      email: user.email,
+      currency: order.currency,
+      reference: order.orderNumber,
+      callbackUrl,
+      paymentMethod: order.paymentMethod || 'card',
+    });
+  } catch (error) {
+    return next(new AppError('Unable to re-initiate payment. Please try again.', 502));
+  }
+
+  const paymentLink = paymentResponse?.data?.link || null;
+  if (paymentLink && paymentLink !== order.paymentLink) {
+    order.paymentLink = paymentLink;
+  }
+  if (order.paymentStatus === 'failed') {
+    order.paymentStatus = 'pending';
+  }
+  await order.save();
+
+  res.status(200).json({
+    message: 'Payment link refreshed',
+    paymentUrl: paymentLink,
+    orderId: order.id,
+    orderNumber: order.orderNumber,
   });
 });
 

@@ -95,6 +95,7 @@ interface BackendOrder {
   currency: string;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentMethod?: string | null;
   paymentLink?: string | null;
   createdAt: string;
   customerName?: string;
@@ -127,6 +128,7 @@ interface BackendOrder {
     state?: string;
     city?: string;
     line1?: string;
+    line2?: string;
     postalCode?: string;
     note?: string;
   } | null;
@@ -325,7 +327,20 @@ const toStringArray = (value: unknown): string[] => {
 
 const formatShippingAddress = (value: BackendOrder["shippingAddress"]): string | undefined => {
   if (!value) return undefined;
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return formatShippingAddress(parsed as BackendOrder["shippingAddress"]);
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+
   return [
     value.line1,
     value.line2,
@@ -652,6 +667,14 @@ export const createOrder = async (payload: CreateOrderPayload) => {
   }>("/orders", {
     method: "POST",
     body: JSON.stringify(payload),
+  }, true);
+};
+
+export const retryOrderPayment = async (orderId: string) => {
+  return fetchJson<{
+    paymentUrl: string | null;
+  }>(`/orders/${encodeURIComponent(orderId)}/retry-payment`, {
+    method: "POST",
   }, true);
 };
 

@@ -7,6 +7,7 @@ const validate = require('../middlewares/validationMiddleware');
 const {
   createOrderValidation,
   orderIdParamValidation,
+  retryPaymentValidation,
   verifyPaymentValidation,
   updateOrderStatusValidation,
   refundOrderValidation,
@@ -17,6 +18,7 @@ router.use(protect);
 // User routes
 router.get('/', orderController.getUserOrders);
 router.post('/', validate(createOrderValidation), orderController.createOrder);
+router.post('/:id/retry-payment', validate(retryPaymentValidation), orderController.retryPayment);
 router.post('/:id/verify-payment', validate(verifyPaymentValidation), orderController.verifyPayment);
 
 // Admin routes

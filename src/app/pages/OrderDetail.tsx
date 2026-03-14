@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { getOrder } from "../services/api";
+import { getOrder, retryOrderPayment } from "../services/api";
 import type { Order } from "../types/order";
 import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
@@ -10,6 +10,7 @@ export const OrderDetail = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryingPayment, setRetryingPayment] = useState(false);
 
   const formatMoney = (value?: number, currency = "USD") =>
     new Intl.NumberFormat(undefined, {
@@ -18,13 +19,36 @@ export const OrderDetail = () => {
       minimumFractionDigits: 2,
     }).format(Number(value || 0));
 
+  const formatAddress = (value: Order["shippingAddress"]) => {
+    if (!value) return "";
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.startsWith("{")) {
+        try {
+          return formatAddress(JSON.parse(trimmed));
+        } catch {
+          return trimmed;
+        }
+      }
+      return trimmed;
+    }
+    return [
+      value.line1,
+      value.line2,
+      value.city,
+      value.state,
+      value.postalCode,
+      value.country,
+    ].filter(Boolean).join(", ");
+  };
+
   useEffect(() => {
     const loadOrder = async () => {
       if (!id) return;
       try {
         setLoading(true);
-      const result = await getOrder(id);
-      setOrder(result as Order);
+        const result = await getOrder(id);
+        setOrder(result as Order);
         if (result?.orderNumber) {
           document.title = `Order #${result.orderNumber} | Revive Roots Essentials`;
         }
@@ -94,7 +118,7 @@ export const OrderDetail = () => {
               <div className="text-right">
                 <p className="text-sm uppercase tracking-wide text-muted-foreground">Total</p>
                 <p className="text-4xl font-bold text-foreground">
-                  {formatMoney(order.totalAmount, order.currency)}
+                  {formatMoney(Number(order.totalAmount || 0), order.currency)}
                 </p>
               </div>
             </div>
@@ -134,10 +158,24 @@ export const OrderDetail = () => {
                 </span>
                 {order.paymentStatus === "pending" && order.paymentLink && (
                   <button
-                    onClick={() => window.location.assign(order.paymentLink)}
-                    className="ml-2 text-sm font-semibold text-emerald-700 hover:underline"
+                    onClick={async () => {
+                      try {
+                        setRetryingPayment(true);
+                        const response = await retryOrderPayment(order.id);
+                        const nextLink = response.paymentUrl || order.paymentLink;
+                        if (nextLink) {
+                          window.location.assign(nextLink);
+                        }
+                      } catch (err) {
+                        setError(getDisplayErrorMessage(err, "Failed to retry payment"));
+                      } finally {
+                        setRetryingPayment(false);
+                      }
+                    }}
+                    className="ml-2 text-sm font-semibold text-emerald-700 hover:underline disabled:opacity-60"
+                    disabled={retryingPayment}
                   >
-                    Retry payment
+                    {retryingPayment ? "Refreshing..." : "Retry payment"}
                   </button>
                 )}
               </div>
@@ -165,10 +203,10 @@ export const OrderDetail = () => {
             <h2 className="text-xl font-bold text-foreground mb-4">Order Items</h2>
             <div className="space-y-4">
               {order.items && order.items.length > 0 ? (
-                order.items.map((item: any, index: number) => (
+                order.items.map((item, index) => (
                   <div key={index} className="flex justify-between items-center border-b pb-4">
                     <div>
-                      <p className="font-medium text-foreground">{item.name}</p>
+                      <p className="font-medium text-foreground">{item.name || "Product"}</p>
                       <p className="text-sm text-muted-foreground">
                         Quantity: {item.quantity}
                       </p>
@@ -189,7 +227,7 @@ export const OrderDetail = () => {
             <div className="border-b p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">Shipping Address</h2>
               <div className="text-muted-foreground whitespace-pre-line leading-7">
-                {order.shippingAddress}
+                {formatAddress(order.shippingAddress)}
               </div>
             </div>
           )}
