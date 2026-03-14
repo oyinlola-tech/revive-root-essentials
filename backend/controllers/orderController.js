@@ -1,4 +1,4 @@
-const { Order, OrderItem, Product, User, RefundRequest } = require('../models');
+const { Order, OrderItem, Product, User, RefundRequest, AuditLog } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
@@ -26,7 +26,14 @@ const mapTransactionStatus = (txn = {}) => String(
 
 const isSuccessfulTransaction = (txn = {}) => {
   const status = mapTransactionStatus(txn);
-  return ['success', 'successful', 'paid', 'completed'].includes(status);
+  const chargeCode = String(txn.charge_response_code || txn.chargeResponseCode || '').trim();
+  const isChargeApproved = !chargeCode || chargeCode === '00';
+  return ['success', 'successful', 'paid', 'completed'].includes(status) && isChargeApproved;
+};
+
+const isFailedTransaction = (txn = {}) => {
+  const status = mapTransactionStatus(txn);
+  return ['failed', 'failure', 'cancelled', 'canceled', 'declined', 'error'].includes(status);
 };
 
 const markOrderFailedFromTransaction = async (order) => {
@@ -59,6 +66,35 @@ const markOrderPaidFromTransaction = async (order, txn) => {
   order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || txn?.id || order.paymentTransactionRef;
   await order.save();
   return { wasAlreadyPaid };
+};
+
+const logFlutterwaveAudit = async ({
+  req,
+  order,
+  action,
+  status,
+  errorMessage,
+  response,
+}) => {
+  if (!AuditLog) return;
+  try {
+    await AuditLog.create({
+      userId: req?.user?.id || order?.userId || null,
+      action,
+      resourceType: 'order',
+      resourceId: order?.id || order?.orderNumber || null,
+      ipAddress: req?.ip || null,
+      userAgent: req?.get?.('user-agent') || null,
+      status,
+      errorMessage: errorMessage || null,
+      metadata: {
+        orderNumber: order?.orderNumber,
+        response,
+      },
+    });
+  } catch {
+    // Never block payment flows on audit logging failures.
+  }
 };
 
 exports.getUserOrders = catchAsync(async (req, res, next) => {
@@ -237,26 +273,54 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
   }
 
   const transactionId = req.body.transactionId || req.body.transaction_id || req.query.transactionId || req.query.transaction_id;
-  const reference = req.body.reference || order.orderNumber;
+  const reference = req.body.reference || req.query.reference;
   if (!transactionId && !reference) {
     return next(new AppError('transactionId or reference is required to verify payment', 400));
   }
 
-  const paymentData = transactionId
-    ? await paymentService.verifyTransaction(transactionId)
-    : await paymentService.verifyTransactionByReference(reference);
+  let paymentData;
+  try {
+    paymentData = transactionId
+      ? await paymentService.verifyTransaction(transactionId)
+      : await paymentService.verifyTransactionByReference(reference);
+  } catch (error) {
+    await logFlutterwaveAudit({
+      req,
+      order,
+      action: 'flutterwave.verify',
+      status: 'failure',
+      errorMessage: error?.message || 'Payment verification failed',
+      response: null,
+    });
+    throw error;
+  }
+
   const txn = paymentData?.data || paymentData;
+  if (!txn?.tx_ref) {
+    return next(new AppError('Transaction reference missing from payment processor response', 400));
+  }
+
+  await logFlutterwaveAudit({
+    req,
+    order,
+    action: 'flutterwave.verify',
+    status: isSuccessfulTransaction(txn) ? 'success' : 'failure',
+    errorMessage: !isSuccessfulTransaction(txn) ? 'Payment not confirmed' : null,
+    response: paymentData,
+  });
 
   if (!isSuccessfulTransaction(txn)) {
-    await markOrderFailedFromTransaction(order);
-    const user = await User.findByPk(order.userId);
-    if (user) {
-      notificationService.sendPaymentFailedEmail(
-        user,
-        order,
-        mapOrderItems(order.OrderItems),
-        'Payment could not be confirmed. Please retry with the same order.',
-      ).catch(() => {});
+    if (isFailedTransaction(txn)) {
+      await markOrderFailedFromTransaction(order);
+      const user = await User.findByPk(order.userId);
+      if (user) {
+        notificationService.sendPaymentFailedEmail(
+          user,
+          order,
+          mapOrderItems(order.OrderItems),
+          'Payment could not be confirmed. Please retry with the same order.',
+        ).catch(() => {});
+      }
     }
     return next(new AppError('Payment has not been confirmed yet', 400));
   }
@@ -300,23 +364,33 @@ exports.handleFlutterwaveWebhook = catchAsync(async (req, res, next) => {
   }
 
   const txn = payload?.data || {};
+  await logFlutterwaveAudit({
+    req,
+    order: txn?.tx_ref ? { orderNumber: String(txn.tx_ref) } : null,
+    action: 'flutterwave.webhook',
+    status: isSuccessfulTransaction(txn) ? 'success' : 'failure',
+    errorMessage: !isSuccessfulTransaction(txn) ? 'Payment not confirmed' : null,
+    response: payload,
+  });
   if (!isSuccessfulTransaction(txn)) {
-    const txRef = String(txn.tx_ref || '').trim();
-    if (txRef) {
-      const failedOrder = await Order.findOne({
-        where: { orderNumber: txRef },
-        include: [{ model: OrderItem, include: [Product] }],
-      });
-      if (failedOrder) {
-        await markOrderFailedFromTransaction(failedOrder);
-        const user = await User.findByPk(failedOrder.userId);
-        if (user) {
-          notificationService.sendPaymentFailedEmail(
-            user,
-            failedOrder,
-            mapOrderItems(failedOrder.OrderItems),
-            'Payment webhook reported a failed or incomplete transaction.',
-          ).catch(() => {});
+    if (isFailedTransaction(txn)) {
+      const txRef = String(txn.tx_ref || '').trim();
+      if (txRef) {
+        const failedOrder = await Order.findOne({
+          where: { orderNumber: txRef },
+          include: [{ model: OrderItem, include: [Product] }],
+        });
+        if (failedOrder) {
+          await markOrderFailedFromTransaction(failedOrder);
+          const user = await User.findByPk(failedOrder.userId);
+          if (user) {
+            notificationService.sendPaymentFailedEmail(
+              user,
+              failedOrder,
+              mapOrderItems(failedOrder.OrderItems),
+              'Payment webhook reported a failed transaction.',
+            ).catch(() => {});
+          }
         }
       }
     }

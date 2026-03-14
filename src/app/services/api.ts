@@ -1380,6 +1380,10 @@ interface AuditLog {
   ipAddress: string;
   status: string;
   changes?: unknown;
+  metadata?: {
+    orderNumber?: string;
+    response?: unknown;
+  };
   createdAt: string;
 }
 
@@ -1393,8 +1397,19 @@ interface AuditLogsResponse {
   };
 }
 
-export const adminGetAuditLogs = async (limit = 50, offset = 0, action?: string) => {
-  const url = `/admin/audit-logs?limit=${limit}&offset=${offset}${action ? `&action=${action}` : ""}`;
+export const adminGetAuditLogs = async (
+  limit = 50,
+  offset = 0,
+  action?: string,
+  orderNumber?: string,
+) => {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (action) params.set("action", action);
+  if (orderNumber) params.set("orderNumber", orderNumber);
+  const url = `/admin/audit-logs?${params.toString()}`;
   return fetchJson<AuditLogsResponse>(url, {}, true);
 };
 

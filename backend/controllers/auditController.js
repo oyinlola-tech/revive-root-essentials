@@ -18,6 +18,7 @@ exports.getAllLogs = catchAsync(async (req, res, next) => {
     action = null,
     resourceType = null,
     userId = null,
+    orderNumber = null,
     startDate = null,
     endDate = null,
   } = req.query;
@@ -26,6 +27,7 @@ exports.getAllLogs = catchAsync(async (req, res, next) => {
   if (action) filters.action = action;
   if (resourceType) filters.resourceType = resourceType;
   if (userId) filters.userId = userId;
+  if (orderNumber) filters.orderNumber = orderNumber;
   if (startDate) filters.startDate = new Date(startDate);
   if (endDate) filters.endDate = new Date(endDate);
 

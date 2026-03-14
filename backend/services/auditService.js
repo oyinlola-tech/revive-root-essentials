@@ -1,4 +1,5 @@
 const { AuditLog, User } = require('../models');
+const { Op, Sequelize } = require('sequelize');
 const Logger = require('../utils/Logger');
 
 const logger = new Logger('AuditService');
@@ -70,6 +71,7 @@ class AuditService {
         action = null,
         userId = null,
         resourceType = null,
+        orderNumber = null,
         startDate = null,
         endDate = null,
         limit = 50,
@@ -80,6 +82,18 @@ class AuditService {
       if (action) where.action = action;
       if (userId) where.userId = userId;
       if (resourceType) where.resourceType = resourceType;
+      if (orderNumber) {
+        const orderNumberTerm = String(orderNumber).trim();
+        if (orderNumberTerm) {
+          where[Op.or] = [
+            { resourceId: { [Op.like]: `%${orderNumberTerm}%` } },
+            Sequelize.where(
+              Sequelize.json('metadata.orderNumber'),
+              { [Op.like]: `%${orderNumberTerm}%` }
+            ),
+          ];
+        }
+      }
 
       if (startDate || endDate) {
         where.createdAt = {};

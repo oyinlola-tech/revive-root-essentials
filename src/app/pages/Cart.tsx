@@ -35,6 +35,8 @@ export function Cart() {
   const { cartItems, subtotal, conversionBaseFee, updateCartQuantity, removeFromCart, clearCart } = useCommerce();
   const [checkout, setCheckout] = useState(initialCheckout);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState("");
+  const [isPaymentPopupBlocked, setIsPaymentPopupBlocked] = useState(false);
   const [shippingFee, setShippingFee] = useState(0);
   const [isShippingFeeLoading, setIsShippingFeeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -150,22 +152,27 @@ export function Cart() {
       clearCart();
       setCheckout(initialCheckout);
       setShippingFee(0);
-      setIsCheckoutModalOpen(false);
       setSuccessMessage(`Order ${response.orderNumber} created successfully.`);
 
-      const paymentUrl = response.paymentUrl;
-      if (paymentUrl) {
+      const nextPaymentUrl = response.paymentUrl;
+      if (nextPaymentUrl) {
+        setPaymentUrl(nextPaymentUrl);
         const popup = window.open(
-          paymentUrl,
+          nextPaymentUrl,
           "revive-payment",
           "width=480,height=720,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes",
         );
         if (popup) {
           popup.focus();
+          setIsPaymentPopupBlocked(false);
           setSuccessMessage("Payment window opened. Complete payment to finalize your order.");
+          setIsCheckoutModalOpen(false);
         } else {
-          window.location.href = paymentUrl;
+          setIsPaymentPopupBlocked(true);
+          setSuccessMessage("Popup was blocked. Use the button below to open the payment window.");
         }
+      } else {
+        setIsCheckoutModalOpen(false);
       }
     } catch (error) {
       setErrorMessage(getDisplayErrorMessage(error, "Unable to complete checkout."));
@@ -428,6 +435,33 @@ export function Cart() {
                     </p>
                   )}
                   {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
+                  {paymentUrl && isPaymentPopupBlocked && (
+                    <div className="rounded-lg border border-border p-3 text-sm space-y-2">
+                      <p>Popup blocked by your browser. Click below to open the payment window.</p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            const popup = window.open(
+                              paymentUrl,
+                              "revive-payment",
+                              "width=480,height=720,menubar=no,toolbar=no,location=yes,status=no,resizable=yes,scrollbars=yes",
+                            );
+                            if (popup) {
+                              popup.focus();
+                              setIsPaymentPopupBlocked(false);
+                            }
+                          }}
+                        >
+                          Open Payment Popup
+                        </Button>
+                        <Button type="button" onClick={() => window.location.assign(paymentUrl)}>
+                          Open in Same Tab
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   <Button type="submit" className="w-full" disabled={submitting || isShippingFeeLoading}>
                     {submitting ? "Processing..." : `Pay ${formatMoney(total, activeCurrency)}`}

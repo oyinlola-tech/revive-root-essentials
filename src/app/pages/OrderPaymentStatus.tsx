@@ -13,6 +13,7 @@ export function OrderPaymentStatus() {
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [message, setMessage] = useState("Verifying your payment...");
   const [orderMeta, setOrderMeta] = useState<{ orderNumber: string; totalAmount: number; currency: string } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const transactionId = useMemo(
     () => searchParams.get("transaction_id") || searchParams.get("transactionId") || "",
@@ -34,8 +35,32 @@ export function OrderPaymentStatus() {
       return;
     }
 
+    const loadOrderMeta = async () => {
+      const order = await getOrderById(orderId);
+      setOrderMeta({
+        orderNumber: order.orderNumber,
+        totalAmount: Number(order.totalAmount || 0),
+        currency: order.currency || "NGN",
+      });
+      if (order.paymentStatus === "paid") {
+        setViewState("success");
+        setMessage("Payment was already confirmed.");
+        return true;
+      }
+      return false;
+    };
+
     const run = async () => {
       try {
+        if (!transactionId && !txRef) {
+          const alreadyPaid = await loadOrderMeta();
+          if (!alreadyPaid) {
+            setViewState("pending");
+            setMessage("Complete payment in the popup, then return here to refresh the status.");
+          }
+          return;
+        }
+
         const verifyResult = await verifyOrderPayment(orderId, {
           transactionId: transactionId || undefined,
           reference: txRef || undefined,
@@ -58,15 +83,10 @@ export function OrderPaymentStatus() {
         setMessage("Payment is still pending. Please wait a moment and refresh.");
       } catch (error) {
         try {
-          const order = await getOrderById(orderId);
-          setOrderMeta({
-            orderNumber: order.orderNumber,
-            totalAmount: Number(order.totalAmount || 0),
-            currency: order.currency || "NGN",
-          });
-          if (order.paymentStatus === "paid") {
-            setViewState("success");
-            setMessage("Payment was already confirmed.");
+          await loadOrderMeta();
+          if (transactionId || txRef) {
+            setViewState("pending");
+            setMessage("Payment is still pending. Please wait a moment and refresh.");
             return;
           }
         } catch {
@@ -80,6 +100,32 @@ export function OrderPaymentStatus() {
 
     void run();
   }, [id, transactionId, txRef]);
+
+  const handleRefresh = async () => {
+    const orderId = String(id || "").trim();
+    if (!orderId) return;
+    setIsRefreshing(true);
+    try {
+      const order = await getOrderById(orderId);
+      setOrderMeta({
+        orderNumber: order.orderNumber,
+        totalAmount: Number(order.totalAmount || 0),
+        currency: order.currency || "NGN",
+      });
+      if (order.paymentStatus === "paid") {
+        setViewState("success");
+        setMessage("Payment confirmed successfully.");
+      } else {
+        setViewState("pending");
+        setMessage("Payment is still pending. Please wait a moment and refresh.");
+      }
+    } catch (error) {
+      setViewState("error");
+      setMessage(getDisplayErrorMessage(error, "Unable to verify payment right now."));
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen py-16">
@@ -109,6 +155,11 @@ export function OrderPaymentStatus() {
         ) : null}
 
         <div className="mt-8 flex gap-3">
+          {viewState !== "success" && (
+            <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? "Refreshing..." : "Refresh Status"}
+            </Button>
+          )}
           <Link to="/account">
             <Button>Go to Account</Button>
           </Link>
