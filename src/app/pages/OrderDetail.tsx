@@ -100,7 +100,7 @@ export const OrderDetail = () => {
           onClick={() => navigate("/order-history")}
           className="mb-6 text-primary hover:underline"
         >
-          <- Back to Order History
+          {"<-"} Back to Order History
         </button>
 
         <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
