@@ -57,7 +57,7 @@ module.exports = (sequelize) => {
     },
     paymentTransactionRef: {
       type: DataTypes.STRING(100),
-      field: 'squad_transaction_ref',
+      field: 'payment_transaction_ref',
     },
     shippingAddress: {
       type: DataTypes.JSON,

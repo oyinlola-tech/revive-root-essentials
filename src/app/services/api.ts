@@ -229,6 +229,7 @@ export interface UserOrder {
   status: BackendOrder["status"];
   paymentStatus: BackendOrder["paymentStatus"];
   paymentLink?: string | null;
+  paymentMethod?: string | null;
   createdAt: string;
   items?: Array<{
     productId?: string;
@@ -320,6 +321,19 @@ const toStringArray = (value: unknown): string[] => {
   }
 
   return [];
+};
+
+const formatShippingAddress = (value: BackendOrder["shippingAddress"]): string | undefined => {
+  if (!value) return undefined;
+  if (typeof value === "string") return value;
+  return [
+    value.line1,
+    value.line2,
+    value.city,
+    value.state,
+    value.postalCode,
+    value.country,
+  ].filter(Boolean).join(", ");
 };
 
 const inferCategory = (value?: string | null): ProductCategory => {
@@ -651,6 +665,7 @@ export const getOrderById = async (orderId: string): Promise<UserOrder> => {
     status: order.status,
     paymentStatus: order.paymentStatus,
     paymentLink: order.paymentLink || null,
+    paymentMethod: order.paymentMethod || null,
     createdAt: order.createdAt,
     items: (order.OrderItems || []).map((item) => ({
       productId: item.Product?.id,
@@ -658,17 +673,7 @@ export const getOrderById = async (orderId: string): Promise<UserOrder> => {
       name: item.Product?.name || "Product",
       price: Number(item.price || 0),
     })),
-    shippingAddress: typeof order.shippingAddress === "string"
-      ? order.shippingAddress
-      : order.shippingAddress
-        ? [
-          order.shippingAddress.line1,
-          order.shippingAddress.city,
-          order.shippingAddress.state,
-          order.shippingAddress.postalCode,
-          order.shippingAddress.country,
-        ].filter(Boolean).join(", ")
-        : undefined,
+    shippingAddress: formatShippingAddress(order.shippingAddress),
   };
 };
 
@@ -685,6 +690,7 @@ export const getOrders = async (): Promise<UserOrder[]> => {
     status: order.status,
     paymentStatus: order.paymentStatus,
     paymentLink: order.paymentLink || null,
+    paymentMethod: order.paymentMethod || null,
     createdAt: order.createdAt,
     items: (order.OrderItems || []).map((item) => ({
       productId: item.Product?.id,

@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `payment_method` VARCHAR(50) NULL,
   `payment_status` ENUM('pending','paid','failed','refunded') NOT NULL DEFAULT 'pending',
   `payment_link` TEXT NULL,
+  `payment_transaction_ref` VARCHAR(100) NULL,
   `squad_transaction_ref` VARCHAR(100) NULL,
   `shipping_address` JSON NULL,
   `created_at` DATETIME NOT NULL,

@@ -9,6 +9,8 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentLink?: string | null;
+  paymentMethod?: string | null;
+  shippingAddress?: string;
   createdAt: string;
   items?: Array<{ productId?: string; quantity: number; name?: string }>;
 }

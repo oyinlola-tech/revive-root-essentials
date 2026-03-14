@@ -1,4 +1,4 @@
-const { Order, OrderItem, Product, User, RefundRequest, AuditLog } = require('../models');
+const { Order, OrderItem, Product, User, RefundRequest, AuditLog, CartItem } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
@@ -9,6 +9,7 @@ const refundService = require('../services/refundService');
 const { Op } = require('sequelize');
 
 const allowedPaymentMethods = new Set(['card', 'ussd', 'transfer']);
+const STATUS_REQUIRES_PAYMENT = new Set(['processing', 'shipped', 'delivered']);
 
 const mapOrderItems = (orderItems = []) => orderItems.map((item) => ({
   name: item.Product?.name || 'Product',
@@ -52,12 +53,38 @@ const restoreStockForOrder = async (orderId) => {
   )));
 };
 
+const restoreCartForOrder = async (order) => {
+  if (!order?.userId) return;
+  const items = await OrderItem.findAll({
+    where: { orderId: order.id },
+    attributes: ['productId', 'quantity'],
+  });
+  if (!items.length) return;
+
+  for (const item of items) {
+    const existing = await CartItem.findOne({
+      where: { userId: order.userId, productId: item.productId },
+    });
+    if (existing) {
+      existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+      await existing.save();
+    } else {
+      await CartItem.create({
+        userId: order.userId,
+        productId: item.productId,
+        quantity: Number(item.quantity || 0) || 1,
+      });
+    }
+  }
+};
+
 const markOrderFailedFromTransaction = async (order) => {
   if (!order || order.paymentStatus === 'paid' || order.paymentStatus === 'refunded') {
     return;
   }
   if (order.paymentStatus !== 'failed') {
     await restoreStockForOrder(order.id);
+    await restoreCartForOrder(order);
     order.paymentStatus = 'failed';
     await order.save();
   }
@@ -83,6 +110,12 @@ const markOrderPaidFromTransaction = async (order, txn) => {
   order.paymentTransactionRef = txn?.flw_ref || txn?.tx_ref || txn?.id || order.paymentTransactionRef;
   await order.save();
   return { wasAlreadyPaid };
+};
+
+const ensurePaidForStatus = (order, nextStatus) => {
+  if (STATUS_REQUIRES_PAYMENT.has(nextStatus) && order.paymentStatus !== 'paid') {
+    throw new AppError('Cannot update status before payment confirmation', 400);
+  }
 };
 
 const logFlutterwaveAudit = async ({
@@ -198,7 +231,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   }
 
   const paymentLink = paymentResponse?.data?.link || null;
-  if (paymentLink) {
+  if (paymentLink && paymentLink !== order.paymentLink) {
     order.paymentLink = paymentLink;
     await order.save();
   }
@@ -231,11 +264,10 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   }
 
   const user = await User.findByPk(order.userId);
-  if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
-    return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
-  }
-  if (status === 'processing' && order.paymentStatus !== 'paid') {
-    return next(new AppError('Cannot set processing status before payment confirmation', 400));
+  try {
+    ensurePaidForStatus(order, status);
+  } catch (error) {
+    return next(error);
   }
   const allowedTransitions = {
     pending: ['processing', 'cancelled'],
@@ -279,6 +311,7 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   }
   if (order.paymentStatus !== 'paid' && order.paymentStatus !== 'refunded') {
     await restoreStockForOrder(order.id);
+    await restoreCartForOrder(order);
   }
   order.status = 'cancelled';
   await order.save();

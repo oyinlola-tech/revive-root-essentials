@@ -1,5 +1,5 @@
 const {
-  User, Product, Order, OrderItem, Coupon, RefundRequest, AuditLog, sequelize,
+  User, Product, Order, OrderItem, CartItem, Coupon, RefundRequest, AuditLog, sequelize,
 } = require('../models');
 const { Op } = require('sequelize');
 const AppError = require('../utils/AppError');
@@ -12,6 +12,7 @@ const notificationService = require('../services/notificationService');
 const logger = new Logger('AdminController');
 
 const VALID_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_REQUIRES_PAYMENT = new Set(['processing', 'shipped', 'delivered']);
 const VALID_USER_ROLES = ['user', 'admin', 'superadmin'];
 const VALID_ADMIN_USER_STATUSES = ['active', 'inactive'];
 const countSuperadmins = () => User.count({ where: { role: 'superadmin' } });
@@ -49,6 +50,36 @@ const restoreStockForOrder = async (orderId) => {
       where: { id: item.productId },
     })
   )));
+};
+
+const restoreCartForOrder = async (order) => {
+  if (!order?.userId) return;
+  const items = await OrderItem.findAll({
+    where: { orderId: order.id },
+    attributes: ['productId', 'quantity'],
+  });
+  if (!items.length) return;
+  for (const item of items) {
+    const existing = await CartItem.findOne({
+      where: { userId: order.userId, productId: item.productId },
+    });
+    if (existing) {
+      existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+      await existing.save();
+    } else {
+      await CartItem.create({
+        userId: order.userId,
+        productId: item.productId,
+        quantity: Number(item.quantity || 0) || 1,
+      });
+    }
+  }
+};
+
+const ensurePaidForStatus = (order, nextStatus) => {
+  if (STATUS_REQUIRES_PAYMENT.has(nextStatus) && order.paymentStatus !== 'paid') {
+    throw new AppError('Cannot update status before payment confirmation', 400);
+  }
 };
 
 /**
@@ -382,11 +413,10 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
     return next(new AppError('Order not found', 404));
   }
 
-  if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
-    return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
-  }
-  if (status === 'processing' && order.paymentStatus !== 'paid') {
-    return next(new AppError('Cannot set processing status before payment confirmation', 400));
+  try {
+    ensurePaidForStatus(order, status);
+  } catch (error) {
+    return next(error);
   }
 
   const allowedTransitions = {
@@ -404,6 +434,7 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   const oldStatus = order.status;
   if (status === 'cancelled' && order.paymentStatus !== 'paid' && order.paymentStatus !== 'refunded') {
     await restoreStockForOrder(order.id);
+    await restoreCartForOrder(order);
   }
   order.status = status;
   await order.save();

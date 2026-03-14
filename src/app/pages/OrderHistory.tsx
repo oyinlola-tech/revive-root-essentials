@@ -126,6 +126,14 @@ export const OrderHistory = () => {
                         >
                           View Details
                         </button>
+                        {order.paymentStatus === "pending" && order.paymentLink && (
+                          <button
+                            onClick={() => window.location.assign(order.paymentLink as string)}
+                            className="text-emerald-700 hover:underline font-medium"
+                          >
+                            Retry Payment
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

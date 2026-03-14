@@ -1,29 +1,30 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { getOrder } from "../services/api";
+import type { Order } from "../types/order";
 import { getDisplayErrorMessage } from "../utils/uiErrorMessages";
 
 export const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const formatMoney = (value: number, currency = "USD") =>
+  const formatMoney = (value?: number, currency = "USD") =>
     new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
       minimumFractionDigits: 2,
-    }).format(value || 0);
+    }).format(Number(value || 0));
 
   useEffect(() => {
     const loadOrder = async () => {
       if (!id) return;
       try {
         setLoading(true);
-        const result = await getOrder(id);
-        setOrder(result);
+      const result = await getOrder(id);
+      setOrder(result as Order);
         if (result?.orderNumber) {
           document.title = `Order #${result.orderNumber} | Revive Roots Essentials`;
         }
@@ -93,7 +94,7 @@ export const OrderDetail = () => {
               <div className="text-right">
                 <p className="text-sm uppercase tracking-wide text-muted-foreground">Total</p>
                 <p className="text-4xl font-bold text-foreground">
-                  {formatMoney(parseFloat(order.totalAmount), order.currency)}
+                  {formatMoney(order.totalAmount, order.currency)}
                 </p>
               </div>
             </div>
@@ -131,6 +132,14 @@ export const OrderDetail = () => {
                 >
                   {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
                 </span>
+                {order.paymentStatus === "pending" && order.paymentLink && (
+                  <button
+                    onClick={() => window.location.assign(order.paymentLink)}
+                    className="ml-2 text-sm font-semibold text-emerald-700 hover:underline"
+                  >
+                    Retry payment
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -165,7 +174,7 @@ export const OrderDetail = () => {
                       </p>
                     </div>
                     <p className="font-medium text-foreground">
-                      {formatMoney(parseFloat(item.price), order.currency)} each
+                      {formatMoney(Number(item.price || 0), order.currency)} each
                     </p>
                   </div>
                 ))

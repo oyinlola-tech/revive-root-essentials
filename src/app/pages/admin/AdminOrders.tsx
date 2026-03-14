@@ -10,6 +10,7 @@ interface Order {
   currency: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentLink?: string | null;
   createdAt: string;
   customerName?: string;
   customerEmail?: string;
@@ -63,6 +64,7 @@ export default function AdminOrders() {
         customerNote: typeof o.shippingAddress === 'object' && o.shippingAddress
           ? String((o.shippingAddress as any).note || '').trim() || undefined
           : undefined,
+        paymentLink: o.paymentLink || null,
         items: (o.OrderItems || o.items || []).map((item: any) => ({
           name: item.Product?.name || item.name || 'Product',
           quantity: Number(item.quantity || 0),
@@ -406,6 +408,21 @@ export default function AdminOrders() {
                               className="px-4 py-2 rounded-lg font-medium transition bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {issuingRefund === order.id ? 'Issuing Refund...' : 'Issue Refund'}
+                            </button>
+                          )}
+                          {order.paymentStatus === 'pending' && order.paymentLink && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(order.paymentLink as string);
+                                } catch {
+                                  // Clipboard may be blocked; fallback to opening the link.
+                                  window.open(order.paymentLink as string, "_blank", "noopener,noreferrer");
+                                }
+                              }}
+                              className="px-4 py-2 rounded-lg font-medium transition bg-emerald-600 text-white hover:bg-emerald-700"
+                            >
+                              Copy Payment Link
                             </button>
                           )}
                           {order.paymentStatus === 'refunded' && (
