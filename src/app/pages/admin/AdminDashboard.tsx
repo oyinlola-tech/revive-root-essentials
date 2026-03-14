@@ -566,9 +566,9 @@ export function AdminDashboard() {
                           className="px-3 py-2 bg-background border border-border rounded-lg"
                         >
                           <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
+                          <option value="processing" disabled={order.paymentStatus !== "paid"}>Processing</option>
+                          <option value="shipped" disabled={order.paymentStatus !== "paid"}>Shipped</option>
+                          <option value="delivered" disabled={order.paymentStatus !== "paid"}>Delivered</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                         {order.status === "cancelled" && order.paymentStatus === "paid" && (

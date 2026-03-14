@@ -36,6 +36,21 @@ const toAdminUserPayload = (user) => ({
   isEmailVerified: Boolean(user.isVerified),
 });
 
+const restoreStockForOrder = async (orderId) => {
+  if (!orderId) return;
+  const items = await OrderItem.findAll({
+    where: { orderId },
+    attributes: ['productId', 'quantity'],
+  });
+  if (!items.length) return;
+  await Promise.all(items.map((item) => (
+    Product.increment('stock', {
+      by: Number(item.quantity || 0),
+      where: { id: item.productId },
+    })
+  )));
+};
+
 /**
  * ADMIN: Get dashboard statistics
  * GET /api/admin/dashboard
@@ -370,6 +385,9 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
     return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
   }
+  if (status === 'processing' && order.paymentStatus !== 'paid') {
+    return next(new AppError('Cannot set processing status before payment confirmation', 400));
+  }
 
   const allowedTransitions = {
     pending: ['processing', 'cancelled'],
@@ -384,6 +402,9 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   }
 
   const oldStatus = order.status;
+  if (status === 'cancelled' && order.paymentStatus !== 'paid' && order.paymentStatus !== 'refunded') {
+    await restoreStockForOrder(order.id);
+  }
   order.status = status;
   await order.save();
 

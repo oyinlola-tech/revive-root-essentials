@@ -13,7 +13,7 @@ const processStalePendingOrders = async () => {
     where: {
       status: 'pending',
       createdAt: { [Op.lte]: threshold },
-      paymentStatus: { [Op.ne]: 'failed' },
+      paymentStatus: 'paid',
     },
   });
 

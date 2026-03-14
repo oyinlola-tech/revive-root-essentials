@@ -258,7 +258,7 @@ export function Cart() {
               </div>
               {conversionBaseFee > 0 && (
                 <div className="flex justify-between">
-                  <span>Currency Base Fee (₦1000)</span>
+                  <span>Currency Base Fee ({formatMoney(1000, "NGN")})</span>
                   <span>{formatMoney(conversionBaseFee, activeCurrency)}</span>
                 </div>
               )}
@@ -407,7 +407,7 @@ export function Cart() {
                     </div>
                     {conversionBaseFee > 0 && (
                       <div className="flex justify-between">
-                        <span>Currency Base Fee (₦1000)</span>
+                        <span>Currency Base Fee ({formatMoney(1000, "NGN")})</span>
                         <span>{formatMoney(conversionBaseFee, activeCurrency)}</span>
                       </div>
                     )}

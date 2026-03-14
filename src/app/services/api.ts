@@ -95,6 +95,7 @@ interface BackendOrder {
   currency: string;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentLink?: string | null;
   createdAt: string;
   customerName?: string;
   customerEmail?: string;
@@ -227,6 +228,7 @@ export interface UserOrder {
   currency: string;
   status: BackendOrder["status"];
   paymentStatus: BackendOrder["paymentStatus"];
+  paymentLink?: string | null;
   createdAt: string;
   items?: Array<{
     productId?: string;
@@ -648,6 +650,7 @@ export const getOrderById = async (orderId: string): Promise<UserOrder> => {
     currency: order.currency || "NGN",
     status: order.status,
     paymentStatus: order.paymentStatus,
+    paymentLink: order.paymentLink || null,
     createdAt: order.createdAt,
     items: (order.OrderItems || []).map((item) => ({
       productId: item.Product?.id,
@@ -681,6 +684,7 @@ export const getOrders = async (): Promise<UserOrder[]> => {
     currency: order.currency || "NGN",
     status: order.status,
     paymentStatus: order.paymentStatus,
+    paymentLink: order.paymentLink || null,
     createdAt: order.createdAt,
     items: (order.OrderItems || []).map((item) => ({
       productId: item.Product?.id,

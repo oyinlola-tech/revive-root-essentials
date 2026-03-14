@@ -8,6 +8,7 @@ export interface Order {
   currency: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentLink?: string | null;
   createdAt: string;
   items?: Array<{ productId?: string; quantity: number; name?: string }>;
 }

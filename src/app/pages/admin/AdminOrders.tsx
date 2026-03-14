@@ -118,7 +118,11 @@ export default function AdminOrders() {
       delivered: [],
       cancelled: [],
     };
-    return transitions[order.status] || [];
+    const baseActions = transitions[order.status] || [];
+    if (order.paymentStatus !== 'paid') {
+      return baseActions.filter((action) => action === 'cancelled');
+    }
+    return baseActions;
   };
 
   const getStatusColor = (status: string) => {

@@ -50,6 +50,11 @@ module.exports = (sequelize) => {
       defaultValue: 'pending',
       field: 'payment_status',
     },
+    paymentLink: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'payment_link',
+    },
     paymentTransactionRef: {
       type: DataTypes.STRING(100),
       field: 'squad_transaction_ref',

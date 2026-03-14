@@ -36,11 +36,28 @@ const isFailedTransaction = (txn = {}) => {
   return ['failed', 'failure', 'cancelled', 'canceled', 'declined', 'error'].includes(status);
 };
 
+const restoreStockForOrder = async (orderId) => {
+  if (!orderId) return;
+  const items = await OrderItem.findAll({
+    where: { orderId },
+    attributes: ['productId', 'quantity'],
+  });
+  if (!items.length) return;
+
+  await Promise.all(items.map((item) => (
+    Product.increment('stock', {
+      by: Number(item.quantity || 0),
+      where: { id: item.productId },
+    })
+  )));
+};
+
 const markOrderFailedFromTransaction = async (order) => {
   if (!order || order.paymentStatus === 'paid' || order.paymentStatus === 'refunded') {
     return;
   }
   if (order.paymentStatus !== 'failed') {
+    await restoreStockForOrder(order.id);
     order.paymentStatus = 'failed';
     await order.save();
   }
@@ -180,11 +197,17 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Unable to initialize payment. Please try again.', 502));
   }
 
+  const paymentLink = paymentResponse?.data?.link || null;
+  if (paymentLink) {
+    order.paymentLink = paymentLink;
+    await order.save();
+  }
+
   await notificationService.sendPaymentPendingEmail(
     req.user,
     fullOrder,
     mapOrderItems(fullOrder.OrderItems),
-    { paymentUrl: paymentResponse?.data?.link || null },
+    { paymentUrl: paymentLink },
   );
 
   res.status(201).json({
@@ -192,7 +215,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     orderNumber: order.orderNumber,
     total: order.totalAmount,
     status: order.status,
-    paymentUrl: paymentResponse?.data?.link || null,
+    paymentUrl: paymentLink,
   });
 });
 
@@ -210,6 +233,9 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   const user = await User.findByPk(order.userId);
   if (['shipped', 'delivered'].includes(status) && order.paymentStatus !== 'paid') {
     return next(new AppError('Cannot set shipped/delivered status before payment confirmation', 400));
+  }
+  if (status === 'processing' && order.paymentStatus !== 'paid') {
+    return next(new AppError('Cannot set processing status before payment confirmation', 400));
   }
   const allowedTransitions = {
     pending: ['processing', 'cancelled'],
@@ -250,6 +276,9 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   // Allow cancellation only if order is pending
   if (order.status !== 'pending') {
     return next(new AppError('Order cannot be cancelled', 400));
+  }
+  if (order.paymentStatus !== 'paid' && order.paymentStatus !== 'refunded') {
+    await restoreStockForOrder(order.id);
   }
   order.status = 'cancelled';
   await order.save();
