@@ -88,8 +88,10 @@ const cancelStaleUnpaidOrders = async () => {
   });
 
   for (const order of orders) {
-    await restoreStockForOrder(order.id);
-    await restoreCartForOrder(order);
+    if (order.paymentStatus !== 'failed') {
+      await restoreStockForOrder(order.id);
+      await restoreCartForOrder(order);
+    }
     order.status = 'cancelled';
     await order.save();
 

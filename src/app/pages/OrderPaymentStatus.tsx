@@ -160,6 +160,11 @@ export function OrderPaymentStatus() {
               {isRefreshing ? "Refreshing..." : "Refresh Status"}
             </Button>
           )}
+          {id && (
+            <Link to={`/order/${id}`}>
+              <Button variant="outline">View Order Details</Button>
+            </Link>
+          )}
           <Link to="/account">
             <Button>Go to Account</Button>
           </Link>

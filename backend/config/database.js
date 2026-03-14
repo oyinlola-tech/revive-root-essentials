@@ -3,7 +3,16 @@ const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+const rootEnvPath = path.join(__dirname, '..', '..', '.env');
+const backendEnvPath = path.join(__dirname, '..', '.env');
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: backendEnvPath });
+
+const requiredEnv = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'];
+const missing = requiredEnv.filter((key) => !process.env[key]);
+if (missing.length) {
+  throw new Error(`Missing required database env vars: ${missing.join(', ')}`);
+}
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,

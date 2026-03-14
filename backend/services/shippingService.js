@@ -2,7 +2,13 @@ const { Op } = require('sequelize');
 const { ShippingFee } = require('../models');
 const currencyService = require('./currencyService');
 
-const normalize = (value) => String(value || '').trim().toLowerCase();
+const normalize = (value) => {
+  if (value == null) return '';
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value).trim().toLowerCase();
+  }
+  return '';
+};
 const INTERNATIONAL_RULE_TOKEN = '__international__';
 const NIGERIA = 'nigeria';
 
