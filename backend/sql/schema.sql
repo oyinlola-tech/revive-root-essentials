@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_email` (`email`),
-  UNIQUE KEY `uk_users_oauth_subject` (`oauth_subject`)
+  UNIQUE KEY `uk_users_oauth_subject` (`oauth_subject`),
+  CONSTRAINT `chk_users_password_hash` CHECK ((`auth_provider` <> 'local') OR (`password_hash` IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `otps` (

@@ -7,6 +7,7 @@ const AUTO_CANCEL_AFTER_MINUTES = Number(process.env.ORDER_AUTO_CANCEL_MINUTES |
 const POLL_INTERVAL_MS = Number(process.env.ORDER_AUTOMATION_POLL_MS || 60 * 1000);
 
 let timer = null;
+let isRunning = false;
 
 const processStalePendingOrders = async () => {
   const threshold = new Date(Date.now() - AUTO_PROCESS_AFTER_MINUTES * 60 * 1000);
@@ -82,7 +83,7 @@ const cancelStaleUnpaidOrders = async () => {
     where: {
       status: 'pending',
       createdAt: { [Op.lte]: threshold },
-      paymentStatus: 'pending',
+      paymentStatus: { [Op.in]: ['pending', 'failed'] },
     },
   });
 
@@ -107,17 +108,26 @@ const cancelStaleUnpaidOrders = async () => {
   return orders.length;
 };
 
+const runAutomation = async () => {
+  if (isRunning) return;
+  isRunning = true;
+  try {
+    await processStalePendingOrders();
+    await cancelStaleUnpaidOrders();
+  } finally {
+    isRunning = false;
+  }
+};
+
 const startOrderAutomation = () => {
   if (timer) return timer;
 
   timer = setInterval(() => {
-    processStalePendingOrders().catch(() => {});
-    cancelStaleUnpaidOrders().catch(() => {});
+    runAutomation().catch(() => {});
   }, POLL_INTERVAL_MS);
 
   if (typeof timer.unref === 'function') timer.unref();
-  processStalePendingOrders().catch(() => {});
-  cancelStaleUnpaidOrders().catch(() => {});
+  runAutomation().catch(() => {});
   return timer;
 };
 

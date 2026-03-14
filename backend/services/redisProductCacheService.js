@@ -13,6 +13,7 @@
 // ============================================================================
 
 const redis = require('redis');
+const crypto = require('crypto');
 const Logger = require('../utils/Logger');
 const logger = new Logger('RedisCacheService');
 
@@ -211,12 +212,23 @@ async function deleteCachePattern(pattern) {
   }
 
   try {
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-      logger.debug(`Cache DELETE PATTERN: ${pattern} (${keys.length} keys)`);
+    let totalDeleted = 0;
+    let cursor = '0';
+    do {
+      const result = await redisClient.scan(cursor, { MATCH: pattern, COUNT: 200 });
+      const nextCursor = Array.isArray(result) ? result[0] : result.cursor;
+      const keys = Array.isArray(result) ? result[1] : result.keys;
+      cursor = String(nextCursor || '0');
+      if (keys && keys.length > 0) {
+        await redisClient.del(keys);
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.debug(`Cache DELETE PATTERN: ${pattern} (${totalDeleted} keys)`);
     }
-    return keys.length;
+    return totalDeleted;
   } catch (error) {
     logger.error(`Error deleting cache pattern ${pattern}:`, error);
     return 0;
@@ -242,6 +254,20 @@ async function clearAllCache() {
   }
 }
 
+const parseRedisInfo = (info) => {
+  if (!info || typeof info !== 'string') return {};
+  const map = {};
+  info.split('\n').forEach((line) => {
+    if (!line || line.startsWith('#')) return;
+    const idx = line.indexOf(':');
+    if (idx === -1) return;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (key) map[key] = value;
+  });
+  return map;
+};
+
 /**
  * Get cache statistics
  * @returns {Promise<object>}
@@ -255,16 +281,24 @@ async function getCacheStats() {
   }
 
   try {
-    const info = await redisClient.info('stats');
+    const infoStats = await redisClient.info('stats');
+    const infoMemory = await redisClient.info('memory');
+    const infoClients = await redisClient.info('clients');
     const keys = await redisClient.dbSize();
+
+    const stats = parseRedisInfo(infoStats);
+    const memory = parseRedisInfo(infoMemory);
+    const clients = parseRedisInfo(infoClients);
+    const hits = Number(stats.keyspace_hits || 0);
+    const misses = Number(stats.keyspace_misses || 0);
 
     return {
       enabled: true,
-      connectedClients: info.connected_clients,
+      connectedClients: Number(clients.connected_clients || 0),
       totalKeys: keys,
-      memoryUsage: info.used_memory_human,
-      hitRate: info.keyspace_hits && info.keyspace_misses 
-        ? ((info.keyspace_hits / (info.keyspace_hits + info.keyspace_misses)) * 100).toFixed(2)
+      memoryUsage: memory.used_memory_human || 'N/A',
+      hitRate: hits + misses > 0
+        ? ((hits / (hits + misses)) * 100).toFixed(2)
         : 'N/A'
     };
   } catch (error) {
@@ -275,6 +309,25 @@ async function getCacheStats() {
     };
   }
 }
+
+const stableStringify = (value) => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
+  }
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+};
+
+const hashOptions = (options) => {
+  if (!options || (typeof options === 'object' && Object.keys(options).length === 0)) {
+    return '';
+  }
+  const payload = stableStringify(options);
+  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 12);
+};
 
 // ============================================================================
 // PRODUCT-SPECIFIC CACHE OPERATIONS
@@ -287,7 +340,10 @@ async function getCacheStats() {
  * @returns {Promise<array>}
  */
 async function getAllProducts(dbQuery, options = {}) {
-  const cacheKey = CACHE_KEYS.ALL_PRODUCTS;
+  const optionsHash = hashOptions(options);
+  const cacheKey = optionsHash
+    ? `${CACHE_KEYS.ALL_PRODUCTS}:${optionsHash}`
+    : CACHE_KEYS.ALL_PRODUCTS;
 
   // Try to get from cache
   const cached = await getCache(cacheKey);
@@ -338,7 +394,10 @@ async function getProductById(productId, dbQuery) {
  * @returns {Promise<array>}
  */
 async function getProductsByCategory(categoryId, dbQuery, options = {}) {
-  const cacheKey = `${CACHE_KEYS.CATEGORY}${categoryId}`;
+  const optionsHash = hashOptions(options);
+  const cacheKey = optionsHash
+    ? `${CACHE_KEYS.CATEGORY}${categoryId}:${optionsHash}`
+    : `${CACHE_KEYS.CATEGORY}${categoryId}`;
 
   // Try to get from cache
   const cached = await getCache(cacheKey);

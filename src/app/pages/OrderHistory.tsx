@@ -117,7 +117,7 @@ export const OrderHistory = () => {
 
                     <div className="border-t pt-4 flex justify-between items-center">
                       <p className="text-sm text-muted-foreground">
-                        {order.items?.length || 1} item(s)
+                        {order.items?.length ?? 0} item(s)
                       </p>
                       <div className="flex gap-3">
                         <button

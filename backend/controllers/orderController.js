@@ -1,4 +1,4 @@
-const { Order, OrderItem, Product, User, RefundRequest, AuditLog, CartItem } = require('../models');
+const { Order, OrderItem, Product, User, RefundRequest, AuditLog, CartItem, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
@@ -53,6 +53,34 @@ const restoreStockForOrder = async (orderId) => {
   )));
 };
 
+const reserveStockForOrder = async (orderId) => {
+  if (!orderId) return;
+  await sequelize.transaction(async (transaction) => {
+    const items = await OrderItem.findAll({
+      where: { orderId },
+      attributes: ['productId', 'quantity'],
+      transaction,
+    });
+    if (!items.length) return;
+
+    for (const item of items) {
+      const product = await Product.findByPk(item.productId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!product) {
+        throw new AppError('Product no longer exists for this order item', 404);
+      }
+      const needed = Number(item.quantity || 0);
+      if (product.stock < needed) {
+        throw new AppError(`Insufficient stock for ${product.name}. Please update your cart and try again.`, 400);
+      }
+      product.stock -= needed;
+      await product.save({ transaction });
+    }
+  });
+};
+
 const restoreCartForOrder = async (order) => {
   if (!order?.userId) return;
   const items = await OrderItem.findAll({
@@ -91,6 +119,9 @@ const markOrderFailedFromTransaction = async (order) => {
 };
 
 const markOrderPaidFromTransaction = async (order, txn) => {
+  if (order.status === 'cancelled') {
+    throw new AppError('Cancelled orders cannot be marked as paid', 400);
+  }
   if (txn?.tx_ref && String(txn.tx_ref) !== String(order.orderNumber)) {
     throw new AppError('Transaction reference does not match this order', 400);
   }
@@ -266,6 +297,10 @@ exports.retryPayment = catchAsync(async (req, res, next) => {
     return next(new AppError('This order is already settled', 400));
   }
 
+  if (order.paymentStatus === 'failed') {
+    await reserveStockForOrder(order.id);
+  }
+
   const user = order.userId ? await User.findByPk(order.userId) : null;
   if (!user?.email) {
     return next(new AppError('Customer email is required to retry payment', 400));
@@ -388,6 +423,10 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
 
   if (req.user.role === 'user' && order.userId !== req.user.id) {
     return next(new AppError('You do not have permission to verify this order', 403));
+  }
+
+  if (order.status === 'cancelled') {
+    return next(new AppError('This order was cancelled and cannot be paid', 400));
   }
 
   const transactionId = req.body.transactionId || req.body.transaction_id || req.query.transactionId || req.query.transaction_id;
@@ -528,6 +567,10 @@ exports.handleFlutterwaveWebhook = catchAsync(async (req, res, next) => {
 
   if (!order) {
     return next(new AppError('Order not found for webhook transaction', 404));
+  }
+
+  if (order.status === 'cancelled') {
+    return res.status(200).json({ message: 'Order cancelled, payment ignored' });
   }
 
   const { wasAlreadyPaid } = await markOrderPaidFromTransaction(order, txn);
