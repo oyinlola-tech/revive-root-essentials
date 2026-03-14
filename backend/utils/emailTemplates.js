@@ -306,6 +306,43 @@ exports.orderPlacedTemplate = ({ name, orderNumber, orderDate, items, total, shi
   secondaryCtaUrl: `${FRONTEND_URL}/shop`,
 });
 
+exports.paymentPendingTemplate = ({
+  name,
+  orderNumber,
+  orderDate,
+  items,
+  total,
+  paymentMethod,
+  paymentUrl,
+  currency = 'NGN',
+}) => baseTemplate({
+  title: `Payment Pending - ${orderNumber}`,
+  preheader: 'Your order is saved and waiting for payment confirmation.',
+  eyebrow: 'Payment pending',
+  heroTitle: 'Complete your payment',
+  heroBody: 'Your order is saved and ready. Complete payment to confirm and begin fulfillment.',
+  accentLabel: 'Awaiting payment',
+  introTitle: `Hello ${name || 'there'},`,
+  introBody: 'We created your order and reserved your items. Use the secure link below to finish payment.',
+  content: `
+    ${renderOrderItems(items, currency)}
+    ${infoCard('Payment summary', [
+      { label: 'Order number', value: orderNumber },
+      { label: 'Order date', value: orderDate || 'Not available' },
+      { label: 'Payment method', value: paymentMethod || 'Not specified' },
+      { label: 'Amount due', value: formatMoney(total, currency) },
+    ])}
+    ${featureList([
+      'Your order will be confirmed after payment is verified.',
+      'If you run into issues, you can retry payment from your order history.',
+    ])}
+  `,
+  ctaLabel: 'Complete Payment',
+  ctaUrl: paymentUrl || `${FRONTEND_URL}/order-history`,
+  secondaryCtaLabel: 'View Order History',
+  secondaryCtaUrl: `${FRONTEND_URL}/order-history`,
+});
+
 exports.adminOrderAlertTemplate = ({ orderNumber, orderDate, customerName, customerEmail, items, total, shippingAddress, currency = 'NGN' }) => baseTemplate({
   title: `New Order Alert - ${orderNumber}`,
   preheader: 'A new customer order has been placed and needs admin visibility.',

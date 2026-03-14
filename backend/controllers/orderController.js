@@ -180,9 +180,6 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Unable to initialize payment. Please try again.', 502));
   }
 
-  await notificationService.sendOrderPlacedEmail(req.user, fullOrder, mapOrderItems(fullOrder.OrderItems));
-  await notificationService.sendAdminOrderAlert(fullOrder, mapOrderItems(fullOrder.OrderItems), req.user);
-
   res.status(201).json({
     orderId: order.id,
     orderNumber: order.orderNumber,
@@ -333,6 +330,7 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
   const user = await User.findByPk(order.userId);
   if (user && !wasAlreadyPaid) {
     await notificationService.sendReceiptEmail(user, order, mapOrderItems(order.OrderItems));
+    await notificationService.sendAdminOrderAlert(order, mapOrderItems(order.OrderItems), user);
   }
 
   res.json({
@@ -416,6 +414,7 @@ exports.handleFlutterwaveWebhook = catchAsync(async (req, res, next) => {
   const user = await User.findByPk(order.userId);
   if (user && !wasAlreadyPaid) {
     await notificationService.sendReceiptEmail(user, order, mapOrderItems(order.OrderItems));
+    await notificationService.sendAdminOrderAlert(order, mapOrderItems(order.OrderItems), user);
   }
 
   return res.status(200).json({ message: 'Webhook processed' });
