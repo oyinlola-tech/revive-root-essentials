@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import * as api from '../../services/api';
 import { Search, AlertCircle, Download, Filter, Eye } from 'lucide-react';
+import { getDisplayErrorMessage } from '../../utils/uiErrorMessages';
 
 type LocalAuditLog = {
   id: string;
@@ -21,6 +22,10 @@ type LocalAuditLog = {
   status: 'success' | 'failure';
   statusCode?: number;
   errorMessage?: string;
+  metadata?: {
+    orderNumber?: string;
+    response?: unknown;
+  };
   createdAt: string;
   timestamp: string;
 };
@@ -40,6 +45,8 @@ export default function AdminAuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [orderNumberFilter, setOrderNumberFilter] = useState('');
+  const [reconLoading, setReconLoading] = useState(false);
 
   const itemsPerPage = 15;
 
@@ -49,6 +56,9 @@ export default function AdminAuditLogs() {
 
   useEffect(() => {
     const filtered = logs.filter((log) => {
+      const orderNumber = String(log.metadata?.orderNumber || log.resourceId || '').toLowerCase();
+      const matchesOrderNumber = !orderNumberFilter.trim()
+        || orderNumber.includes(orderNumberFilter.trim().toLowerCase());
       const matchesSearch =
         (log.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           log.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,6 +78,7 @@ export default function AdminAuditLogs() {
       const matchesDateTo = !toDate || logDate <= toDate;
 
       return (
+        matchesOrderNumber &&
         matchesSearch &&
         matchesAction &&
         matchesResource &&
@@ -79,7 +90,7 @@ export default function AdminAuditLogs() {
 
     setFilteredLogs(filtered);
     setCurrentPage(1);
-  }, [searchTerm, actionFilter, resourceFilter, statusFilter, dateFrom, dateTo, logs]);
+  }, [searchTerm, actionFilter, resourceFilter, statusFilter, dateFrom, dateTo, logs, orderNumberFilter]);
 
   const loadLogs = async () => {
     try {
@@ -98,6 +109,32 @@ export default function AdminAuditLogs() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReconcileSearch = async () => {
+    const term = orderNumberFilter.trim();
+    if (!term) return;
+    try {
+      setReconLoading(true);
+      setError(null);
+      const response = await api.adminGetAuditLogs(200, 0, undefined, term);
+      const logsList = (response.data || []).map(log => ({
+        ...log,
+        timestamp: log.createdAt,
+      })) as LocalAuditLog[];
+      setLogs(logsList);
+      setFilteredLogs(logsList);
+      setCurrentPage(1);
+    } catch (err) {
+      setError(getDisplayErrorMessage(err, 'Failed to load reconciliation logs'));
+    } finally {
+      setReconLoading(false);
+    }
+  };
+
+  const handleClearReconcile = async () => {
+    setOrderNumberFilter('');
+    await loadLogs();
   };
 
   const handleExport = async () => {
@@ -188,6 +225,47 @@ export default function AdminAuditLogs() {
             <p>{error}</p>
           </div>
         )}
+
+        {/* Reconciliation */}
+        <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Eye className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-semibold text-foreground">Reconciliation</h3>
+          </div>
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
+                Order Number
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. RRE-2024-00123"
+                value={orderNumberFilter}
+                onChange={(e) => setOrderNumberFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                onClick={handleReconcileSearch}
+                disabled={reconLoading || !orderNumberFilter.trim()}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {reconLoading ? 'Searching...' : 'Search Logs'}
+              </button>
+              <button
+                onClick={handleClearReconcile}
+                disabled={reconLoading}
+                className="px-4 py-2 border border-border bg-card hover:bg-muted text-muted-foreground rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Searches audit logs (including Flutterwave responses) for the provided order number.
+          </p>
+        </div>
 
         {/* Filters */}
         <div className="bg-card rounded-lg border border-border shadow p-6 mb-6">
@@ -408,6 +486,14 @@ export default function AdminAuditLogs() {
                             {log.resourceType} - {log.resourceId}
                           </p>
                         </div>
+                        {log.metadata?.orderNumber && (
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase font-semibold">
+                              Order Number
+                            </p>
+                            <p className="text-foreground">{log.metadata.orderNumber}</p>
+                          </div>
+                        )}
                         <div>
                           <p className="text-xs text-muted-foreground uppercase font-semibold">
                             IP Address
@@ -463,6 +549,17 @@ export default function AdminAuditLogs() {
                               </pre>
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {log.metadata?.response && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded">
+                          <p className="text-xs text-emerald-700 uppercase font-semibold mb-2">
+                            Flutterwave Response
+                          </p>
+                          <pre className="text-xs text-emerald-900 bg-card p-2 rounded border border-emerald-200 overflow-auto max-h-48">
+                            {JSON.stringify(log.metadata.response, null, 2)}
+                          </pre>
                         </div>
                       )}
 
