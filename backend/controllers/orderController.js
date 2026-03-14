@@ -180,6 +180,13 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Unable to initialize payment. Please try again.', 502));
   }
 
+  await notificationService.sendPaymentPendingEmail(
+    req.user,
+    fullOrder,
+    mapOrderItems(fullOrder.OrderItems),
+    { paymentUrl: paymentResponse?.data?.link || null },
+  );
+
   res.status(201).json({
     orderId: order.id,
     orderNumber: order.orderNumber,

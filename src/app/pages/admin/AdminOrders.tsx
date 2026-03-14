@@ -153,6 +153,14 @@ export default function AdminOrders() {
     }
   };
 
+  const getPaymentLabel = (status: Order['paymentStatus']) => {
+    if (status === 'pending') return 'Pending payment';
+    if (status === 'paid') return 'Paid';
+    if (status === 'failed') return 'Failed';
+    if (status === 'refunded') return 'Refunded';
+    return status;
+  };
+
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -318,7 +326,7 @@ export default function AdminOrders() {
                               order.paymentStatus
                             )}`}
                           >
-                            {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus}
+                            {getPaymentLabel(order.paymentStatus)}
                           </span>
                         </div>
                       </div>
@@ -327,6 +335,11 @@ export default function AdminOrders() {
 
                   {expandedOrder === order.id && (
                     <div className="border-t px-6 py-5 bg-muted/60">
+                      {order.paymentStatus === 'pending' && (
+                        <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                          Payment is still pending. Do not fulfill this order until payment is confirmed.
+                        </div>
+                      )}
                       <div className="mb-6">
                         {order.customerNote && (
                           <div className="mb-4 p-3 rounded-lg border border-border bg-card">

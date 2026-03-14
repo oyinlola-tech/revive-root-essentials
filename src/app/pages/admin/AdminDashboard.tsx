@@ -554,7 +554,9 @@ export function AdminDashboard() {
                             </p>
                           )}
                         </div>
-                        <div className="text-sm">Payment: {order.paymentStatus}</div>
+                        <div className="text-sm">
+                          Payment: {order.paymentStatus === "pending" ? "Pending payment" : order.paymentStatus}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Label className="text-sm">Status</Label>

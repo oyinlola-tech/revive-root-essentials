@@ -74,6 +74,21 @@ class NotificationService {
     await sendEmail(user.email, `Order received: ${order.orderNumber}`, html);
   }
 
+  async sendPaymentPendingEmail(user, order, items = [], metadata = {}) {
+    if (!user?.email) return;
+    const html = templates.paymentPendingTemplate({
+      name: user.name,
+      orderNumber: order.orderNumber,
+      orderDate: new Date(order.createdAt || Date.now()).toLocaleString(),
+      items,
+      total: order.totalAmount,
+      currency: order.currency || 'NGN',
+      paymentMethod: order.paymentMethod,
+      paymentUrl: metadata.paymentUrl,
+    });
+    await sendEmail(user.email, `Payment pending: ${order.orderNumber}`, html);
+  }
+
   async sendAdminOrderAlert(order, items = [], customer = null) {
     const recipients = await this.getAdminRecipients();
     if (!recipients.length) return;
