@@ -1,8 +1,8 @@
 -- Revive Roots Essentials - Complete MySQL schema
 -- Run with: mysql -u <user> -p < backend/sql/schema.sql
 
-CREATE DATABASE IF NOT EXISTS `revive_roots_essentials`;
-USE `revive_roots_essentials`;
+CREATE DATABASE IF NOT EXISTS `teleorjd_revive-db`;
+USE `teleorjd_revive-db`;
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` CHAR(36) NOT NULL,
