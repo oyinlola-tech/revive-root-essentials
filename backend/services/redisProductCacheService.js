@@ -459,7 +459,7 @@ async function getFlashSaleProducts(dbQuery) {
  * @returns {Promise<void>}
  */
 async function invalidateAllProductCaches() {
-  Logger.info('Invalidating all product caches...');
+  logger.info('Invalidating all product caches...');
 
   const keysToDelete = [
     CACHE_KEYS.ALL_PRODUCTS,
@@ -480,7 +480,7 @@ async function invalidateAllProductCaches() {
     }
   }
 
-  Logger.info('All product caches invalidated');
+  logger.info('All product caches invalidated');
 }
 
 /**
@@ -489,7 +489,7 @@ async function invalidateAllProductCaches() {
  * @returns {Promise<void>}
  */
 async function invalidateProductCache(productId) {
-  Logger.info(`Invalidating cache for product ${productId}`);
+  logger.info(`Invalidating cache for product ${productId}`);
 
   await deleteCache(`${CACHE_KEYS.PRODUCT}${productId}`);
 
@@ -511,7 +511,7 @@ async function invalidateProductCache(productId) {
  * @returns {Promise<void>}
  */
 async function invalidateCategoryCaches(categoryId = null) {
-  Logger.info('Invalidating category caches...');
+  logger.info('Invalidating category caches...');
 
   if (categoryId) {
     await deleteCache(`${CACHE_KEYS.CATEGORY}${categoryId}`);

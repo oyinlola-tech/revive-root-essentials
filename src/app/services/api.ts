@@ -293,8 +293,31 @@ export interface CreateOrderPayload {
 }
 
 const toStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  if (Array.isArray(value)) {
+    return value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+        }
+      } catch {
+        // Fall through to newline or comma splitting.
+      }
+    }
+    return trimmed
+      .split(/\r?\n|,/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  return [];
 };
 
 const inferCategory = (value?: string | null): ProductCategory => {
