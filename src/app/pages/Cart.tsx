@@ -60,7 +60,9 @@ export function Cart() {
         return;
       }
 
-      if (!checkout.country.trim() || !checkout.state.trim() || !checkout.city.trim()) {
+      const needsState = checkout.country.trim().toLowerCase() === "nigeria";
+      const needsCity = checkout.country.trim().toLowerCase() === "nigeria";
+      if (!checkout.country.trim() || (needsState && !checkout.state.trim()) || (needsCity && !checkout.city.trim())) {
         setShippingFee(0);
         return;
       }
@@ -110,7 +112,7 @@ export function Cart() {
       setErrorMessage("State is required for deliveries in Nigeria.");
       return;
     }
-    if (!checkout.city.trim()) {
+    if (checkout.country === "Nigeria" && !checkout.city.trim()) {
       setErrorMessage("City is required.");
       return;
     }
@@ -333,7 +335,7 @@ export function Cart() {
                         value={checkout.city}
                         onChange={(event) => setCheckout({ ...checkout, city: event.target.value })}
                         placeholder="e.g. Lekki"
-                        required
+                        required={checkout.country === "Nigeria"}
                       />
                     </div>
                     <div>

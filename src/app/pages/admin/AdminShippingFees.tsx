@@ -237,7 +237,7 @@ export default function AdminShippingFees() {
               </div>
 
               <div>
-                <Label>City (optional)</Label>
+                <Label>City (optional outside Nigeria)</Label>
                 <Input
                   value={form.city}
                   onChange={(event) => setForm({ ...form, city: event.target.value })}

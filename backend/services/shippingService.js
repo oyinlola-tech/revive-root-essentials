@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { ShippingFee } = require('../models');
+const AppError = require('../utils/AppError');
 const currencyService = require('./currencyService');
 
 const normalize = (value) => {
@@ -52,6 +53,9 @@ class ShippingService {
     });
 
     const bestRule = bestCountryRule || bestInternationalRule;
+    if (!bestRule) {
+      throw new AppError('No shipping fee configured for this destination', 400);
+    }
 
     const baseFee = Number(bestRule?.fee || 0);
     let fee = baseFee;

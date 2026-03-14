@@ -37,7 +37,16 @@ exports.createOrderValidation = [
       }
       return true;
     }),
-  body('shippingAddress.city').trim().notEmpty().withMessage('Shipping city is required'),
+  body('shippingAddress.city')
+    .optional({ checkFalsy: true })
+    .trim()
+    .custom((value, { req }) => {
+      const country = String(req.body?.shippingAddress?.country || '').trim().toLowerCase();
+      if (country === 'nigeria' && !String(value || '').trim()) {
+        throw new Error('Shipping city is required for Nigeria');
+      }
+      return true;
+    }),
   body('shippingAddress.line1').trim().notEmpty().withMessage('Address line is required'),
   body('shippingAddress.postalCode').optional({ checkFalsy: true }).trim().isLength({ min: 3, max: 15 }).withMessage('Postal code is invalid'),
   body('note').optional({ checkFalsy: true }).trim().isLength({ max: 1000 }).withMessage('Order note is too long'),
