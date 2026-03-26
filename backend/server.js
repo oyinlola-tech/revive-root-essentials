@@ -2,6 +2,7 @@ const app = require('./app');
 const { sequelize } = require('./models');
 const { ensureRedisConnection, isRedisConfigured } = require('./config/redis');
 const { startOrderAutomation, stopOrderAutomation } = require('./services/orderAutomationService');
+const { runSchema } = require('./sql/schema');
 
 const rawPort = process.env.PORT || '3000';
 const PORT = Number(rawPort);
@@ -62,6 +63,7 @@ const startServer = async () => {
     }
 
     await sequelize.authenticate();
+    await runSchema(sequelize);
     await sequelize.sync();
 
     if (isRedisConfigured()) {
