@@ -60,6 +60,11 @@ const csrfProtectionMiddleware = (req, res, next) => {
     if (req.path.includes('/webhook') || req.path.includes('/flutterwave')) {
       return next();
     }
+    // If the request uses bearer auth, skip CSRF since token-based auth is not
+    // vulnerable to cookie-based CSRF attacks.
+    if (req.get('authorization')) {
+      return next();
+    }
 
     const token = req.get(CSRF_TOKEN_HEADER) || (req.body && req.body._csrf);
     const cookieToken = getCsrfCookieToken(req);
@@ -89,7 +94,6 @@ const csrfProtectionMiddleware = (req, res, next) => {
       });
     }
 
-    csrfTokens.delete(token);
   }
 
   next();

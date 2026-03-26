@@ -184,6 +184,7 @@ exports.getUserOrders = catchAsync(async (req, res, next) => {
 
 exports.getAllOrders = catchAsync(async (req, res, next) => {
   const orders = await Order.findAll({
+    where: { paymentStatus: 'paid' },
     include: [{ model: OrderItem }],
     order: [['createdAt', 'DESC']],
   });
@@ -196,6 +197,9 @@ exports.getOrderById = catchAsync(async (req, res, next) => {
   });
   if (!order) {
     return next(new AppError('Order not found', 404));
+  }
+  if (req.user.role !== 'user' && order.paymentStatus !== 'paid') {
+    return next(new AppError('Order is not available until payment is verified', 403));
   }
   // Check if user is admin or the owner
   if (req.user.role === 'user' && order.userId !== req.user.id) {

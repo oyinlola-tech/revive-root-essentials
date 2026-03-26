@@ -51,7 +51,8 @@ export const sanitizeApiErrorMessage = ({
   }
 
   if (status === 400) {
-    return "Please review your input and try again.";
+    const trimmed = toText(message);
+    return trimmed || "Please review your input and try again.";
   }
 
   if (status === 401) {

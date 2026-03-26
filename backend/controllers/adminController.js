@@ -93,12 +93,13 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
   ] = await Promise.all([
     User.count(),
     Product.count(),
-    Order.count(),
+    Order.count({ where: { paymentStatus: 'paid' } }),
     Order.sum('totalAmount', { where: { paymentStatus: 'paid' } }),
-    Order.count({ where: { status: 'pending' } }),
+    Order.count({ where: { paymentStatus: 'paid', status: 'pending' } }),
     RefundRequest.count({ where: { status: 'pending' } }),
     Coupon.count({ where: { isActive: true } }),
     Order.findAll({
+      where: { paymentStatus: 'paid' },
       limit: 10,
       order: [['createdAt', 'DESC']],
       attributes: ['id', 'orderNumber', 'totalAmount', 'status', 'createdAt'],
@@ -133,7 +134,7 @@ exports.getAnalytics = catchAsync(async (req, res, next) => {
     period = 'week',
   } = req.query;
 
-  const where = applyDateRange({}, startDate, endDate);
+  const where = applyDateRange({ paymentStatus: 'paid' }, startDate, endDate);
 
   const [
     orderStats,
@@ -252,6 +253,8 @@ exports.getUser = catchAsync(async (req, res, next) => {
       {
         model: Order,
         attributes: ['id', 'orderNumber', 'totalAmount', 'status'],
+        where: { paymentStatus: 'paid' },
+        required: false,
       },
     ],
   });
@@ -354,7 +357,8 @@ exports.getAllOrders = catchAsync(async (req, res, next) => {
 
   const where = {};
   if (status) where.status = status;
-  if (paymentStatus) where.paymentStatus = paymentStatus;
+  // Only surface paid orders in admin views.
+  where.paymentStatus = 'paid';
 
   const { count, rows } = await Order.findAndCountAll({
     where,
@@ -472,7 +476,7 @@ exports.getStats = catchAsync(async (req, res, next) => {
   ] = await Promise.all([
     User.count(),
     Product.count(),
-    Order.count(),
+    Order.count({ where: { paymentStatus: 'paid' } }),
     RefundRequest.count(),
     Coupon.count(),
     AuditLog.count(),
