@@ -56,7 +56,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-const configuredOrigins = (process.env.CORS_ORIGIN || '')
+const configuredOrigins = (process.env.CORS_ORIGIN || process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);

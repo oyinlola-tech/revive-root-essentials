@@ -8,14 +8,16 @@ const backendEnvPath = path.join(__dirname, '..', '.env');
 dotenv.config({ path: rootEnvPath });
 dotenv.config({ path: backendEnvPath });
 
-const requiredEnv = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'];
+const dbName = process.env.DB_NAME || process.env.DB_DATABASE;
+const requiredEnv = ['DB_USER', 'DB_PASSWORD', 'DB_HOST'];
 const missing = requiredEnv.filter((key) => !process.env[key]);
+if (!dbName) missing.push('DB_NAME or DB_DATABASE');
 if (missing.length) {
   throw new Error(`Missing required database env vars: ${missing.join(', ')}`);
 }
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
+  dbName,
   process.env.DB_USER,
   process.env.DB_PASSWORD,
   {
@@ -37,7 +39,7 @@ const ensureDatabase = async () => {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
   });
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``);
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
   await connection.end();
 };
 

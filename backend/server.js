@@ -4,7 +4,7 @@ const { ensureRedisConnection, isRedisConfigured } = require('./config/redis');
 const { startOrderAutomation, stopOrderAutomation } = require('./services/orderAutomationService');
 const { runSchema } = require('./sql/schema');
 
-const rawPort = process.env.PORT || '3000';
+const rawPort = process.env.PORT || process.env.SERVER_PORT || '3000';
 const PORT = Number(rawPort);
 const SHUTDOWN_TIMEOUT_MS = 10000;
 

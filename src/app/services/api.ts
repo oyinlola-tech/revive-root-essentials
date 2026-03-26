@@ -1,7 +1,9 @@
 import type { Product } from "../types/product";
 import { getNetworkErrorMessage, sanitizeApiErrorMessage } from "../utils/uiErrorMessages";
 
-const configuredApiUrl = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
+const configuredApiUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "")
+  .trim()
+  .replace(/\/$/, "");
 const configuredBackendOrigin = (import.meta.env.VITE_BACKEND_ORIGIN || "").trim().replace(/\/$/, "");
 const AUTH_STORAGE_KEY = "revive_roots_auth";
 const CURRENCY_STORAGE_KEY = "revive_roots_currency";
