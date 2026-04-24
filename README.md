@@ -11,7 +11,7 @@ Revive Roots Essentials is a full-stack ecommerce platform for premium hair and 
 - Payments: Flutterwave
 - Email: NodeMailer templates for transactional and marketing emails
 
-## Current Capabilities
+## Current Capabilities 
 
 - Product catalog, categories, featured products, and inventory support
 - Cart, wishlist, checkout, and order history
