@@ -2,7 +2,7 @@
 
 Revive Roots Essentials is a full-stack ecommerce platform for premium hair and skincare products.
 
-## Stack 
+## Stack  
 
 - Frontend: React, Vite, Tailwind CSS
 - Backend: Node.js, Express, Sequelize
